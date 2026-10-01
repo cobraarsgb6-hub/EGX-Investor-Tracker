@@ -131,12 +131,12 @@ const RLM = "\u200F";
 
 function getCairoTimeStr() {
   const d = new Date();
-  return d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 function getCairoFullDateTime(lang) {
   const d = new Date();
-  const timeStr = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit" });
+  const timeStr = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", second: "2-digit" });
   if (lang === "en") {
     const dateStr = d.toLocaleDateString("en-US", { timeZone: "Africa/Cairo", weekday: "short", month: "short", day: "numeric", year: "numeric" });
     return `${dateStr} • ${timeStr} (Cairo Time)`;
@@ -293,8 +293,7 @@ function getLiveBotConfig() {
 async function fetchTa3weemLiveBanks() {
   try {
     const res = await fetch("https://ta3weem.com/ar/currency-exchange-rates/USD-EGP", {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" },
-      signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" }
     });
     if (!res.ok) return null;
     const html = await res.text();
@@ -303,11 +302,11 @@ async function fetchTa3weemLiveBanks() {
 
     for (let i = 1; i < rows.length; i++) {
       const tds = rows[i].match(/<td[^>]*>([\s\S]*?)<\/td>/g) || [];
-      if (tds.length >= 3) {
-        const name = tds[0].replace(/<[^>]+>/g, '').trim();
-        const buyM = tds[1].match(/(\d+\.\d+)/);
-        const sellM = tds[2].match(/(\d+\.\d+)/);
-        const timeM = rows[i].match(/(\d{1,2}:\d{2})/);
+      if (tds.length >= 4) {
+        const name = tds[0].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+        const buyM = tds[1].replace(/<[^>]+>/g, '').match(/(\d+\.\d+)/);
+        const sellM = tds[2].replace(/<[^>]+>/g, '').match(/(\d+\.\d+)/);
+        const timeM = tds[3].replace(/<[^>]+>/g, '').match(/(\d{1,2}:\d{2})/);
         if (name && buyM && sellM) {
           banks.push({
             bank: name,
@@ -330,18 +329,17 @@ async function fetchTa3weemLiveBanks() {
 async function fetchTa3weemCbeActual() {
   try {
     const res = await fetch("https://ta3weem.com/ar/banks/central-bank-of-egypt-cbe", {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" },
-      signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" }
     });
     if (!res.ok) return null;
     const html = await res.text();
     const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
     for (let r of rows) {
-      if (r.includes("USD") || r.includes("دولار أمريكي")) {
+      if (r.includes("USD") || r.includes("دولار")) {
         const tds = r.match(/<td[^>]*>([\s\S]*?)<\/td>/g) || [];
         if (tds.length >= 3) {
-          const buyM = tds[1].match(/(\d+\.\d+)/);
-          const sellM = tds[2].match(/(\d+\.\d+)/);
+          const buyM = tds[1].replace(/<[^>]+>/g, '').match(/(\d+\.\d+)/);
+          const sellM = tds[2].replace(/<[^>]+>/g, '').match(/(\d+\.\d+)/);
           const timeM = r.match(/(\d{1,2}:\d{2})/);
           if (buyM && sellM) {
             return {
@@ -358,87 +356,101 @@ async function fetchTa3weemCbeActual() {
 }
 
 /**
- * محرك سحب الكريبتو وأونصة الذهب مباشرة ولحظياً من Binance Vision
+ * محرك سحب الأسواق اللحظية مباشرة من TradingView (كريبتو، ذهب، فضة، نفط برنت و WTI)
  */
-async function fetchBinanceLivePrices() {
+async function fetchTradingViewLiveMarket() {
+  const result = {
+    btc: 0, btc_chg: "+0.00%",
+    eth: 0, eth_chg: "+0.00%",
+    brent: 0, brent_chg: "+0.00%",
+    wti: 0, wti_chg: "+0.00%",
+    gold_ounce: 0, gold_chg: "+0.00%",
+    silver: 0, silver_chg: "+0.00%"
+  };
+
   try {
-    const binanceSignal = AbortSignal.timeout ? AbortSignal.timeout(3500) : undefined;
-    const [bRes, eRes, gRes] = await Promise.all([
-      fetch("https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT", { headers: { "User-Agent": "Mozilla/5.0" }, signal: binanceSignal }).catch(() => null),
-      fetch("https://data-api.binance.vision/api/v3/ticker/24hr?symbol=ETHUSDT", { headers: { "User-Agent": "Mozilla/5.0" }, signal: binanceSignal }).catch(() => null),
-      fetch("https://data-api.binance.vision/api/v3/ticker/24hr?symbol=PAXGUSDT", { headers: { "User-Agent": "Mozilla/5.0" }, signal: binanceSignal }).catch(() => null)
+    const [cryptoRes, cfdRes] = await Promise.all([
+      fetch("https://scanner.tradingview.com/crypto/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
+        body: JSON.stringify({
+          symbols: { tickers: ["BINANCE:BTCUSDT", "BINANCE:ETHUSDT"] },
+          columns: ["close", "change"]
+        })
+      }).catch(() => null),
+      fetch("https://scanner.tradingview.com/cfd/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
+        body: JSON.stringify({
+          symbols: { tickers: ["FX:UKOIL", "FX:USOIL", "TVC:GOLD", "TVC:SILVER"] },
+          columns: ["close", "change"]
+        })
+      }).catch(() => null)
     ]);
-    const bJ = bRes && bRes.ok ? await bRes.json() : null;
-    const eJ = eRes && eRes.ok ? await eRes.json() : null;
-    const gJ = gRes && gRes.ok ? await gRes.json() : null;
-    return {
-      btc: bJ && bJ.lastPrice ? parseFloat(bJ.lastPrice) : 83800,
-      btc_chg: bJ && bJ.priceChangePercent ? (parseFloat(bJ.priceChangePercent) >= 0 ? "+" : "") + parseFloat(bJ.priceChangePercent).toFixed(2) + "%" : "+0.00%",
-      eth: eJ && eJ.lastPrice ? parseFloat(eJ.lastPrice) : 2690,
-      eth_chg: eJ && eJ.priceChangePercent ? (parseFloat(eJ.priceChangePercent) >= 0 ? "+" : "") + parseFloat(eJ.priceChangePercent).toFixed(2) + "%" : "+0.00%",
-      gold_ounce: gJ && gJ.lastPrice ? parseFloat(gJ.lastPrice) : 4170.0,
-      gold_chg: gJ && gJ.priceChangePercent ? (parseFloat(gJ.priceChangePercent) >= 0 ? "+" : "") + parseFloat(gJ.priceChangePercent).toFixed(2) + "%" : "+0.00%"
-    };
-  } catch(e) {
-    return { btc: 83800, btc_chg: "+0.00%", eth: 2690, eth_chg: "+0.00%", gold_ounce: 4170.0, gold_chg: "+0.00%" };
-  }
-}
 
-/**
- * محرك سحب أسعار النفط الحية (CNBC أساسي + Yahoo Finance احتياطي)
- */
-async function fetchLiveOilPrices() {
-  let brent = 99.95, brentChg = "+1.95%";
-  let wti = 92.14, wtiChg = "+1.90%";
+    if (cryptoRes && cryptoRes.ok) {
+      const cj = await cryptoRes.json();
+      (cj.data || []).forEach(item => {
+        const val = item.d?.[0] ? parseFloat(item.d[0]) : 0;
+        const chg = item.d?.[1] ? (parseFloat(item.d[1]) >= 0 ? "+" : "") + parseFloat(item.d[1]).toFixed(2) + "%" : "+0.00%";
+        if (item.s === "BINANCE:BTCUSDT" && val > 0) {
+          result.btc = val;
+          result.btc_chg = chg;
+        } else if (item.s === "BINANCE:ETHUSDT" && val > 0) {
+          result.eth = val;
+          result.eth_chg = chg;
+        }
+      });
+    }
 
+    if (cfdRes && cfdRes.ok) {
+      const cfdJ = await cfdRes.json();
+      (cfdJ.data || []).forEach(item => {
+        const val = item.d?.[0] ? parseFloat(item.d[0]) : 0;
+        const chg = item.d?.[1] ? (parseFloat(item.d[1]) >= 0 ? "+" : "") + parseFloat(item.d[1]).toFixed(2) + "%" : "+0.00%";
+        if (item.s === "FX:UKOIL" && val > 0) {
+          result.brent = val;
+          result.brent_chg = chg;
+        } else if (item.s === "FX:USOIL" && val > 0) {
+          result.wti = val;
+          result.wti_chg = chg;
+        } else if (item.s === "TVC:GOLD" && val > 0) {
+          result.gold_ounce = val;
+          result.gold_chg = chg;
+        } else if (item.s === "TVC:SILVER" && val > 0) {
+          result.silver = val;
+          result.silver_chg = chg;
+        }
+      });
+    }
+  } catch(e) {}
+
+  // مسار احتياطي عبر Coinbase و Yahoo Finance في حال تعذر TradingView
   try {
-    const cnbcSignal = AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined;
-    const cRes = await fetch("https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=@LCO.1,@CL.1&requestMethod=itv&output=json", {
-      headers: { "User-Agent": "Mozilla/5.0" },
-      signal: cnbcSignal
-    });
-    if (cRes && cRes.ok) {
-      const cJ = await cRes.json();
-      const quotes = cJ?.FormattedQuoteResult?.FormattedQuote || [];
-      const brQuote = quotes.find(q => q.symbol === "@LCO.1");
-      const wtQuote = quotes.find(q => q.symbol === "@CL.1");
-      if (brQuote && brQuote.last) {
-        brent = parseFloat(brQuote.last.replace(/,/g, ''));
-        brentChg = brQuote.change_pct || "+0.00%";
-      }
-      if (wtQuote && wtQuote.last) {
-        wti = parseFloat(wtQuote.last.replace(/,/g, ''));
-        wtiChg = wtQuote.change_pct || "+0.00%";
-      }
-      return { brent, brentChg, wti, wtiChg };
+    if (!result.btc || !result.eth) {
+      const [cbBtc, cbEth] = await Promise.all([
+        fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json()).catch(() => null),
+        fetch("https://api.coinbase.com/v2/prices/ETH-USD/spot", { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json()).catch(() => null)
+      ]);
+      if (!result.btc && cbBtc?.data?.amount) result.btc = parseFloat(cbBtc.data.amount);
+      if (!result.eth && cbEth?.data?.amount) result.eth = parseFloat(cbEth.data.amount);
     }
-  } catch(eCnbc) {}
 
-  try {
-    const ySignal = AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined;
-    const [brRes, wtRes] = await Promise.all([
-      fetch("https://query2.finance.yahoo.com/v8/finance/chart/BZ=F?interval=1d", { headers: { "User-Agent": "Mozilla/5.0" }, signal: ySignal }).catch(() => null),
-      fetch("https://query2.finance.yahoo.com/v8/finance/chart/CL=F?interval=1d", { headers: { "User-Agent": "Mozilla/5.0" }, signal: ySignal }).catch(() => null)
-    ]);
-    if (brRes && brRes.ok) {
-      const j = await brRes.json();
-      const meta = j?.chart?.result?.[0]?.meta;
-      if (meta?.regularMarketPrice) {
-        brent = parseFloat(meta.regularMarketPrice);
-        brentChg = (meta.regularMarketChangePercent >= 0 ? "+" : "") + parseFloat(meta.regularMarketChangePercent || 0).toFixed(2) + "%";
-      }
+    if (!result.brent) {
+      const yBrent = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/BZ=F?interval=1d", {
+        headers: { "User-Agent": "Mozilla/5.0" }
+      }).then(r => r.json()).catch(() => null);
+      const bPrice = yBrent?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if (bPrice) result.brent = parseFloat(bPrice);
     }
-    if (wtRes && wtRes.ok) {
-      const j2 = await wtRes.json();
-      const meta2 = j2?.chart?.result?.[0]?.meta;
-      if (meta2?.regularMarketPrice) {
-        wti = parseFloat(meta2.regularMarketPrice);
-        wtiChg = (meta2.regularMarketChangePercent >= 0 ? "+" : "") + parseFloat(meta2.regularMarketChangePercent || 0).toFixed(2) + "%";
-      }
-    }
-  } catch(eY) {}
 
-  return { brent, brentChg, wti, wtiChg };
+    if (!result.gold_ounce) {
+      const cbPaxg = await fetch("https://api.coinbase.com/v2/prices/PAXG-USD/spot", { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json()).catch(() => null);
+      if (cbPaxg?.data?.amount) result.gold_ounce = parseFloat(cbPaxg.data.amount);
+    }
+  } catch(e2) {}
+
+  return result;
 }
 
 /**
@@ -453,41 +465,44 @@ async function getCachedDashboardData() {
   const liveClock = getCairoTimeStr();
 
   // استدعاء متوازي للمصادر الحية الرسمية
-  const [ta3weemBanks, ta3weemCbe, binanceData, oilData] = await Promise.all([
+  const [ta3weemBanks, ta3weemCbe, tvMarket] = await Promise.all([
     fetchTa3weemLiveBanks(),
     fetchTa3weemCbeActual(),
-    fetchBinanceLivePrices(),
-    fetchLiveOilPrices()
+    fetchTradingViewLiveMarket()
   ]);
 
-  const cbeBuy = (ta3weemCbe && ta3weemCbe.buy) ? ta3weemCbe.buy : 52.2571;
-  const cbeSell = (ta3weemCbe && ta3weemCbe.sell) ? ta3weemCbe.sell : 52.3971;
-  const cbeTime = (ta3weemCbe && ta3weemCbe.updated_at) ? ta3weemCbe.updated_at : "15:45";
+  const cbeBuy = (ta3weemCbe && ta3weemCbe.buy) ? ta3weemCbe.buy : 52.26;
+  const cbeSell = (ta3weemCbe && ta3weemCbe.sell) ? ta3weemCbe.sell : 52.40;
+  const cbeTime = (ta3weemCbe && ta3weemCbe.updated_at) ? ta3weemCbe.updated_at : "16:21";
   const usdRate = cbeBuy;
 
   const defaultBanks = [
     { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.40, sell: 52.50, updated_at: liveClock },
-    { bank: "بنك الشركة المصرفية العربية الدولية (saib)", buy: 52.35, sell: 52.45, updated_at: liveClock },
-    { bank: "البنك الأهلي الكويتي", buy: 52.35, sell: 52.45, updated_at: liveClock },
-    { bank: "البنك التجاري الدولي (CIB)", buy: 52.28, sell: 52.38, updated_at: liveClock },
-    { bank: "بنك مصر", buy: 52.28, sell: 52.38, updated_at: liveClock },
-    { bank: "البنك الأهلي المصري", buy: 52.28, sell: 52.38, updated_at: liveClock },
-    { bank: "بنك القاهرة", buy: 52.28, sell: 52.38, updated_at: liveClock },
-    { bank: "بنك الإسكندرية", buy: 52.28, sell: 52.38, updated_at: liveClock }
+    { bank: "بنك الشركة المصرفية العربية الدولية (saib)", buy: 52.30, sell: 52.40, updated_at: liveClock },
+    { bank: "الأهلي الكويتي (ABK)", buy: 52.27, sell: 52.33, updated_at: liveClock },
+    { bank: "البنك الأهلي المصري (NBE)", buy: 52.27, sell: 52.37, updated_at: liveClock },
+    { bank: "البنك التجاري الدولي (CIB)", buy: 52.27, sell: 52.37, updated_at: liveClock },
+    { bank: "بنك مصر (BM)", buy: 52.27, sell: 52.37, updated_at: liveClock },
+    { bank: "بنك الإسكندرية (ALEXBANK)", buy: 52.25, sell: 52.35, updated_at: liveClock },
+    { bank: "بنك فيصل الإسلامي (Faisal)", buy: 52.27, sell: 52.37, updated_at: liveClock }
   ];
-  const banks = (ta3weemBanks && ta3weemBanks.length > 0) ? ta3weemBanks : defaultBanks;
+  let banks = (ta3weemBanks && ta3weemBanks.length > 0) ? ta3weemBanks : defaultBanks;
+  // ترتيب البنوك دائماً حسب أعلى سعر شراء
+  banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
 
-  const btcPrice = binanceData.btc;
-  const btcChg = binanceData.btc_chg;
-  const ethPrice = binanceData.eth;
-  const ethChg = binanceData.eth_chg;
-  const goldOunce = binanceData.gold_ounce;
-  const goldChg = binanceData.gold_chg;
+  const btcPrice = (tvMarket && tvMarket.btc > 0) ? tvMarket.btc : 83870;
+  const btcChg = (tvMarket && tvMarket.btc_chg) ? tvMarket.btc_chg : "+0.00%";
+  const ethPrice = (tvMarket && tvMarket.eth > 0) ? tvMarket.eth : 2695;
+  const ethChg = (tvMarket && tvMarket.eth_chg) ? tvMarket.eth_chg : "+0.00%";
+  const goldOunce = (tvMarket && tvMarket.gold_ounce > 0) ? tvMarket.gold_ounce : 4165.0;
+  const goldChg = (tvMarket && tvMarket.gold_chg) ? tvMarket.gold_chg : "+0.00%";
 
-  const brentPrice = oilData.brent;
-  const brentChg = oilData.brentChg;
-  const wtiPrice = oilData.wti;
-  const wtiChg = oilData.wtiChg;
+  const brentPrice = (tvMarket && tvMarket.brent > 0) ? tvMarket.brent : 100.85;
+  const brentChg = (tvMarket && tvMarket.brent_chg) ? tvMarket.brent_chg : "+0.00%";
+  const wtiPrice = (tvMarket && tvMarket.wti > 0) ? tvMarket.wti : 91.30;
+  const wtiChg = (tvMarket && tvMarket.wti_chg) ? tvMarket.wti_chg : "+0.00%";
+  const silverPrice = (tvMarket && tvMarket.silver > 0) ? tvMarket.silver : 61.10;
+  const silverChg = (tvMarket && tvMarket.silver_chg) ? tvMarket.silver_chg : "+0.00%";
 
   const g24Usd = Number((goldOunce / 31.1035).toFixed(2));
   const g21Usd = Number((g24Usd * 21 / 24).toFixed(2));
@@ -501,7 +516,7 @@ async function getCachedDashboardData() {
     { code: "GOLD24", name: "ذهب عيار 24 (جرام)", name_en: "Gold 24K (Gram)", usd_price: g24Usd, egp_price: Math.round(g24Usd * usdRate), change: goldChg, updated_at: liveClock },
     { code: "GOLD21", name: "ذهب عيار 21 (جرام)", name_en: "Gold 21K (Gram)", usd_price: g21Usd, egp_price: Math.round(g21Usd * usdRate), change: goldChg, updated_at: liveClock },
     { code: "GOLD18", name: "ذهب عيار 18 (جرام)", name_en: "Gold 18K (Gram)", usd_price: g18Usd, egp_price: Math.round(g18Usd * usdRate), change: goldChg, updated_at: liveClock },
-    { code: "SILVER", name: "أونصة الفضة (Silver)", name_en: "Silver (Ounce)", usd_price: 33.80, egp_price: Math.round(33.80 * usdRate), change: "+0.50%", updated_at: liveClock }
+    { code: "SILVER", name: "أونصة الفضة (Silver)", name_en: "Silver (Ounce)", usd_price: silverPrice, egp_price: Math.round(silverPrice * usdRate), change: silverChg, updated_at: liveClock }
   ];
 
   const rates = [
@@ -561,7 +576,7 @@ async function handleTelegramUpdate(update, originUrl) {
 
   if (!chatId) return;
 
-  if (isCallback && callbackId) {
+  if (isCallback && callbackId && !text.startsWith("refresh_")) {
     try { await answerCallback(callbackId); } catch(e) {}
   }
 
@@ -794,7 +809,7 @@ function formatCommoditiesReport(data, lang) {
       txt += `▫️ <b>${item.name_en || item.name}:</b> <b>$${fmt(uP, uDec)}</b> • <b>${fmt(eP, eP >= 1000 ? 0 : 2)} EGP</b>\n`;
     });
 
-    return txt + `\n⚡ <i>Live feed via Binance & Global Markets.</i>`;
+    return txt + `\n⚡ <i>Live real-time feed via TradingView.</i>`;
   }
 
   let txtAr = `🪙 <b>أسواق الذهب والفضة والنفط والكريبتو</b>\n`
@@ -809,7 +824,7 @@ function formatCommoditiesReport(data, lang) {
     txtAr += `▫️ <b>${item.name}:</b> <b>$${fmt(uP, uDec)}</b> • <b>${fmt(eP, eP >= 1000 ? 0 : 2)} ج.م</b>\n`;
   });
 
-  return txtAr + `\n⚡ <i>أسعار حية مباشرة من بينانس والأسواق العالمية.</i>`;
+  return txtAr + `\n⚡ <i>أسعار حية ولحظية مباشرة عبر تريدنج فيو.</i>`;
 }
 
 /**
@@ -872,28 +887,25 @@ function formatBanksReport(data, lang, cfg) {
   const showCbe = cfg ? (cfg.show_cbe_in_banks !== false) : true;
   const showBest = cfg ? (cfg.show_best_banks !== false) : true;
 
-  const usdBuy = Number(data.cbe_usd_buy || 52.2571);
-  const usdSell = Number(data.cbe_usd_sell || 52.3971);
+  const usdBuy = Number(data.cbe_usd_buy || 52.26);
+  const usdSell = Number(data.cbe_usd_sell || 52.40);
+  const cbeTime = formatCleanTime(data.cbe_updated_at || "16:21");
   const updatedTime = getCairoTimeStr();
 
-  let topBuy = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.40, sell: 52.50 };
-  let lowSell = banks[0] || { bank: "أبوظبي التجاري", buy: 51.85, sell: 51.95 };
+  // ترتيب البنوك حسب أعلى سعر شراء
+  banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
 
-  let maxB = -1, minS = 999;
-  banks.forEach(b => {
-    const buyVal = Number(b.buy || 0);
-    const sellVal = Number(b.sell || 0);
-    if (buyVal > maxB) { maxB = buyVal; topBuy = b; }
-    if (sellVal > 0 && sellVal < minS) { minS = sellVal; lowSell = b; }
-  });
+  let topBuy = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.40, sell: 52.50, updated_at: "16:54" };
+  const topBuyTime = formatCleanTime(topBuy.updated_at);
+  const topBankNameEn = getBankName(topBuy.bank, "en");
 
   if (lang === "en") {
     return `🏦 <b>USD Exchange Rates - Egyptian Banks</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + (showCbe ? `🏛️ <b>Central Bank (CBE):</b> Buy <b>${usdBuy.toFixed(4)}</b> - Sell <b>${usdSell.toFixed(4)}</b>\n━━━━━━━━━━━━━━━━━━\n` : "")
-      + (showBest ? `🟢 <b>Top Buy:</b> ${topBuy.bank} (<b>${Number(topBuy.buy).toFixed(2)}</b>)\n🔵 <b>Lowest Sell:</b> ${lowSell.bank} (<b>${Number(lowSell.sell).toFixed(2)}</b>)\n━━━━━━━━━━━━━━━━━━\n` : "")
+      + (showCbe ? `🏛️ <b>Central Bank (CBE):</b> Buy <b>${usdBuy.toFixed(4)}</b> - Sell <b>${usdSell.toFixed(4)}</b> [${cbeTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
+      + (showBest ? `🟢 <b>Top Buy Bank:</b> ${topBankNameEn}\n   ▫️ Buy <b>${Number(topBuy.buy).toFixed(2)}</b> • Sell <b>${Number(topBuy.sell).toFixed(2)}</b> [${topBuyTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
       + `📊 <b>Top ${Math.min(limit, banks.length)} Banks (Buy - Sell):</b>\n\n`
-      + banks.slice(0, limit).map(b => `▫️ <b>${b.bank}:</b> ${Number(b.buy).toFixed(2)} - ${Number(b.sell).toFixed(2)}`).join("\n")
+      + banks.slice(0, limit).map(b => `▫️ <b>${getBankName(b.bank, "en")}:</b> ${Number(b.buy).toFixed(2)} - ${Number(b.sell).toFixed(2)}`).join("\n")
       + `\n\n⚡ <i>Cairo Time [${updatedTime}] • Live feed via Ta3weem.</i>`;
   }
 
@@ -901,8 +913,8 @@ function formatBanksReport(data, lang, cfg) {
     + `━━━━━━━━━━━━━━━━━━\n`
     + `🕒 وقت الفحص: <b>[${updatedTime}]</b> بتوقيت مصر\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + (showCbe ? `🏛️ <b>البنك المركزي المصري:</b> شراء <b>${usdBuy.toFixed(4)}</b> - بيع <b>${usdSell.toFixed(4)}</b>\n━━━━━━━━━━━━━━━━━━\n` : "")
-    + (showBest ? `🟢 <b>أعلى شراء:</b> ${topBuy.bank} (<b>${Number(topBuy.buy).toFixed(2)}</b>)\n🔵 <b>أقل بيع:</b> ${lowSell.bank} (<b>${Number(lowSell.sell).toFixed(2)}</b>)\n━━━━━━━━━━━━━━━━━━\n` : "")
+    + (showCbe ? `🏛️ <b>البنك المركزي المصري:</b> شراء <b>${usdBuy.toFixed(4)}</b> - بيع <b>${usdSell.toFixed(4)}</b> [${cbeTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
+    + (showBest ? `🟢 <b>أعلى بنك في سعر الشراء:</b> ${topBuy.bank}\n   ▫️ شراء <b>${Number(topBuy.buy).toFixed(2)}</b> • بيع <b>${Number(topBuy.sell).toFixed(2)}</b> [${topBuyTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
     + `📊 <b>أبرز البنوك المصرية (شراء - بيع):</b>\n\n`
     + banks.slice(0, limit).map(b => `▫️ <b>${b.bank}:</b> شراء <b>${Number(b.buy).toFixed(2)}</b> - بيع <b>${Number(b.sell).toFixed(2)}</b>`).join("\n")
     + `\n\n⚡ <i>أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
@@ -968,8 +980,9 @@ function formatExecutiveReport(data, lang) {
 
   const bNameEn = getBankName(topBank.bank, "en");
   const bTime = formatCleanTime(topBank.updated_at);
-  const bankPeakLineEn = `\n  ▫️ <b>Top Bank (${bNameEn}):</b> Buy <b>${Number(topBank.buy).toFixed(2)}</b> - Sell <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
-  const bankPeakLineAr = `\n  ▫️ <b>أعلى سعر بنك (${topBank.bank}):</b> شراء <b>${Number(topBank.buy).toFixed(2)}</b> - بيع <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
+  const cbeTime = formatCleanTime(data.cbe_updated_at || "16:21");
+  const bankPeakLineEn = `\n  ▫️ <b>Top Buy Bank (${bNameEn}):</b> Buy <b>${Number(topBank.buy).toFixed(2)}</b> - Sell <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
+  const bankPeakLineAr = `\n  ▫️ <b>أعلى بنك شراء (${topBank.bank}):</b> شراء <b>${Number(topBank.buy).toFixed(2)}</b> - بيع <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
 
   // السلع المطلوبة: ذهب 24 وخام برنت
   const comms = data.live_commodities || [];
@@ -989,7 +1002,7 @@ function formatExecutiveReport(data, lang) {
       + `  ▫️ <b>EGP:</b> <b>${fmtNumber(foNet)} EGP</b> • <b>USD:</b> <b>${fmtUsd(foNet)}</b>\n\n`
       + `━━━━━━━━━━━━━━━━━━\n`
       + `💵 <b>USD Exchange Rates:</b>\n`
-      + `  ▫️ <b>Central Bank (CBE):</b> Buy <b>${cbeBuy.toFixed(4)}</b> - Sell <b>${cbeSell.toFixed(4)}</b>`
+      + `  ▫️ <b>Central Bank (CBE):</b> Buy <b>${cbeBuy.toFixed(4)}</b> - Sell <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
       + bankPeakLineEn + `\n\n`
       + `━━━━━━━━━━━━━━━━━━\n`
       + `🪙 <b>Gold 24K (Gram):</b> <b>$${fmt(gold24.usd_price, 2)}</b> • <b>${fmt(gold24.egp_price, 0)} EGP</b>\n`
@@ -1006,7 +1019,7 @@ function formatExecutiveReport(data, lang) {
     + `▫️ <b>بالجنيه:</b> <b>${fmtNumber(foNet)} ج.م</b> • <b>بالدولار:</b> <b>${fmtUsd(foNet)}</b>\n\n`
     + `━━━━━━━━━━━━━━━━━━\n`
     + `💵 <b>أسعار صرف الدولار:</b>\n`
-    + `▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> - بيع <b>${cbeSell.toFixed(4)}</b>`
+    + `▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> - بيع <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
     + bankPeakLineAr + `\n\n`
     + `━━━━━━━━━━━━━━━━━━\n`
     + `🪙 <b>ذهب عيار 24 (جرام):</b> <b>$${fmt(gold24.usd_price, 2)}</b> • <b>${fmt(gold24.egp_price, 0)} ج.م</b>\n`
