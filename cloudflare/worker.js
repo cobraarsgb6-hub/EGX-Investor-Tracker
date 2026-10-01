@@ -301,6 +301,8 @@ async function getLiveBotConfig() {
         remoteCfg.hide_currencies = remoteCfg.hide_markets;
       }
       botConfig = { ...botConfig, ...remoteCfg };
+      botConfig.default_lang = remoteCfg.default_lang || "en";
+      botConfig.hide_lang_toggle = false;
       configCache = { data: botConfig, timestamp: now };
       return botConfig;
     }
@@ -470,65 +472,36 @@ async function getCachedDashboardData() {
   let wtiChg = sheetWti?.change || "+0.00%";
   let silverUsd = Number(sheetSilv?.usd_price || 33.40);
 
-  // سحب مباشر من CoinGecko (موثوق وسريع ولا يحظر خوادم Cloudflare)
+  // سحب مباشر لحظي من Binance (بدون حظر وسريع جداً لتحديث البيتكوين والذهب فوراً)
   try {
-    const cgSignal = AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined;
-    const cgRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,pax-gold&vs_currencies=usd&include_24hr_change=true", {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-      signal: cgSignal
-    });
-    if (cgRes && cgRes.ok) {
-      const cg = await cgRes.json();
-      if (cg.bitcoin && cg.bitcoin.usd) {
-        btcPrice = parseFloat(cg.bitcoin.usd);
-        const chg = cg.bitcoin.usd_24h_change || 0;
-        btcChg = (chg >= 0 ? "+" : "") + chg.toFixed(2) + "%";
-      }
-      if (cg.ethereum && cg.ethereum.usd) {
-        ethPrice = parseFloat(cg.ethereum.usd);
-        const echg = cg.ethereum.usd_24h_change || 0;
-        ethChg = (echg >= 0 ? "+" : "") + echg.toFixed(2) + "%";
-      }
-      if (cg["pax-gold"] && cg["pax-gold"].usd) {
-        goldOunce = parseFloat(cg["pax-gold"].usd);
-        const gchg = cg["pax-gold"].usd_24h_change || 0;
-        goldChg = (gchg >= 0 ? "+" : "") + gchg.toFixed(2) + "%";
+    const binanceSignal = AbortSignal.timeout ? AbortSignal.timeout(3500) : undefined;
+    const [bRes, eRes, gRes] = await Promise.all([
+      fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT", { signal: binanceSignal }).catch(() => null),
+      fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT", { signal: binanceSignal }).catch(() => null),
+      fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT", { signal: binanceSignal }).catch(() => null)
+    ]);
+    if (bRes && bRes.ok) {
+      const bJ = await bRes.json();
+      if (bJ.lastPrice) {
+        btcPrice = parseFloat(bJ.lastPrice);
+        btcChg = (parseFloat(bJ.priceChangePercent || 0) >= 0 ? "+" : "") + parseFloat(bJ.priceChangePercent || 0).toFixed(2) + "%";
       }
     }
-  } catch(eCg) {}
-
-  // محاولة ثانوية عبر Binance Vision في حال تعثر CoinGecko
-  if (!btcPrice || !goldOunce) {
-    try {
-      const binanceSignal = AbortSignal.timeout ? AbortSignal.timeout(3500) : undefined;
-      const [bRes, eRes, gRes] = await Promise.all([
-        fetch("https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT", { signal: binanceSignal }).catch(() => null),
-        fetch("https://data-api.binance.vision/api/v3/ticker/24hr?symbol=ETHUSDT", { signal: binanceSignal }).catch(() => null),
-        fetch("https://data-api.binance.vision/api/v3/ticker/24hr?symbol=PAXGUSDT", { signal: binanceSignal }).catch(() => null)
-      ]);
-      if (bRes && bRes.ok) {
-        const bJ = await bRes.json();
-        if (bJ.lastPrice) {
-          btcPrice = parseFloat(bJ.lastPrice);
-          btcChg = (parseFloat(bJ.priceChangePercent || 0) >= 0 ? "+" : "") + parseFloat(bJ.priceChangePercent || 0).toFixed(2) + "%";
-        }
+    if (eRes && eRes.ok) {
+      const eJ = await eRes.json();
+      if (eJ.lastPrice) {
+        ethPrice = parseFloat(eJ.lastPrice);
+        ethChg = (parseFloat(eJ.priceChangePercent || 0) >= 0 ? "+" : "") + parseFloat(eJ.priceChangePercent || 0).toFixed(2) + "%";
       }
-      if (eRes && eRes.ok) {
-        const eJ = await eRes.json();
-        if (eJ.lastPrice) {
-          ethPrice = parseFloat(eJ.lastPrice);
-          ethChg = (parseFloat(eJ.priceChangePercent || 0) >= 0 ? "+" : "") + parseFloat(eJ.priceChangePercent || 0).toFixed(2) + "%";
-        }
+    }
+    if (gRes && gRes.ok) {
+      const gJ = await gRes.json();
+      if (gJ.lastPrice) {
+        goldOunce = parseFloat(gJ.lastPrice);
+        goldChg = (parseFloat(gJ.priceChangePercent || 0) >= 0 ? "+" : "") + parseFloat(gJ.priceChangePercent || 0).toFixed(2) + "%";
       }
-      if (gRes && gRes.ok) {
-        const gJ = await gRes.json();
-        if (gJ.lastPrice) {
-          goldOunce = parseFloat(gJ.lastPrice);
-          goldChg = (parseFloat(gJ.priceChangePercent || 0) >= 0 ? "+" : "") + parseFloat(gJ.priceChangePercent || 0).toFixed(2) + "%";
-        }
-      }
-    } catch(eB) {}
-  }
+    }
+  } catch(eB) {}
 
   // 4. سحب أسعار النفط الحية (Yahoo Finance) مع الاحتفاظ بقيم الشيت كاحتياطي موثوق
   try {
@@ -618,18 +591,28 @@ async function handleTelegramUpdate(update, originUrl) {
 
   const cfg = await getLiveBotConfig();
 
-  if (text === "cmd_lang_en" || text === "/en") {
+  let userLang = "en";
+  if (text.endsWith(":en")) {
+    userLang = "en";
+    text = text.slice(0, -3);
+    userLangPreferences[chatId] = "en";
+  } else if (text.endsWith(":ar")) {
+    userLang = "ar";
+    text = text.slice(0, -3);
+    userLangPreferences[chatId] = "ar";
+  } else if (text === "cmd_lang_en" || text === "/en") {
     userLangPreferences[chatId] = "en";
     await sendMainMenu(chatId, "en", originUrl, cfg, messageId);
     return;
-  }
-  if (text === "cmd_lang_ar" || text === "/ar") {
+  } else if (text === "cmd_lang_ar" || text === "/ar") {
     userLangPreferences[chatId] = "ar";
     await sendMainMenu(chatId, "ar", originUrl, cfg, messageId);
     return;
+  } else {
+    userLang = userLangPreferences[chatId] || cfg.default_lang || "en";
   }
 
-  const lang = userLangPreferences[chatId] || cfg.default_lang || "en";
+  const lang = userLang;
 
   const reply = (txt, kb) => (isCallback && messageId)
     ? editTgMessage(chatId, messageId, txt, kb)
@@ -1012,6 +995,14 @@ function formatExecutiveReport(data, lang) {
   const bankPeakLineEn = `\n  ▫️ <b>Top Bank (${bNameEn}):</b> Buy <b>${Number(topBank.buy).toFixed(2)}</b> - Sell <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
   const bankPeakLineAr = `\n  ▫️ <b>أعلى سعر بنك (${topBank.bank}):</b> شراء <b>${Number(topBank.buy).toFixed(2)}</b> - بيع <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
 
+  // السلع المطلوبة: ذهب 24 وخام برنت
+  const comms = data.live_commodities || [];
+  const gold24 = comms.find(c => c.code === "GOLD24") || { usd_price: 134.26, egp_price: Math.round(134.26 * usdRate) };
+  const brent = comms.find(c => c.code === "BRENT") || { usd_price: 99.94, egp_price: Number((99.94 * usdRate).toFixed(2)) };
+
+  const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
+  const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+
   if (lang === "en") {
     return `📊 <b>Executive Financial Summary</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
@@ -1060,15 +1051,15 @@ function getReportKeyboard(cmdType, lang, cfg) {
 
   const rows = [];
   
-  // زر التحديث اللحظي على رأس لوحة التقرير
-  rows.push([{ text: refreshText, callback_data: `refresh_${cmdType}` }]);
+  // زر التحديث اللحظي على رأس لوحة التقرير مع حفظ لغة الجلسة
+  rows.push([{ text: refreshText, callback_data: `refresh_${cmdType}:${lang}` }]);
 
   if (cmdType === "banks") {
-    rows.push([{ text: (lang === "en" ? "📋 View All 25 Banks" : "📋 عرض كافة الـ 25 بنكاً"), callback_data: "cmd_banks_all" }]);
+    rows.push([{ text: (lang === "en" ? "📋 View All 25 Banks" : "📋 عرض كافة الـ 25 بنكاً"), callback_data: `cmd_banks_all:${lang}` }]);
   }
 
   rows.push([
-    { text: menuText, callback_data: "cmd_menu" },
+    { text: menuText, callback_data: `cmd_menu:${lang}` },
     { text: langToggleText, callback_data: langToggleData }
   ]);
 
@@ -1080,21 +1071,21 @@ function getMenuKeyboard(lang, originUrl, cfg) {
   const rows = [];
 
   const r1 = [];
-  if (!cfg.hide_egx) r1.push({ text: (lang === "en" ? "🏛️ Institutional Flows (EGX)" : "🏛️ تعاملات المؤسسات (EGX)"), callback_data: "cmd_egx" });
-  if (!cfg.hide_banks) r1.push({ text: (lang === "en" ? "🏦 25 Banks & CBE" : "🏦 أسعار البنوك والمركزي"), callback_data: "cmd_banks" });
+  if (!cfg.hide_egx) r1.push({ text: (lang === "en" ? "🏛️ Institutional Flows (EGX)" : "🏛️ تعاملات المؤسسات (EGX)"), callback_data: `cmd_egx:${lang}` });
+  if (!cfg.hide_banks) r1.push({ text: (lang === "en" ? "🏦 25 Banks & CBE" : "🏦 أسعار البنوك والمركزي"), callback_data: `cmd_banks:${lang}` });
   if (r1.length > 0) rows.push(r1);
 
   const r2 = [];
-  if (!cfg.hide_commodities) r2.push({ text: (lang === "en" ? "🪙 Gold, Oil & Crypto" : "🪙 الذهب والنفط والكريبتو"), callback_data: "cmd_commodities" });
-  if (!cfg.hide_currencies) r2.push({ text: (lang === "en" ? "💵 Foreign Currencies" : "💵 أسعار العملات الأجنبية"), callback_data: "cmd_currencies" });
+  if (!cfg.hide_commodities) r2.push({ text: (lang === "en" ? "🪙 Gold, Oil & Crypto" : "🪙 الذهب والنفط والكريبتو"), callback_data: `cmd_commodities:${lang}` });
+  if (!cfg.hide_currencies) r2.push({ text: (lang === "en" ? "💵 Foreign Currencies" : "💵 أسعار العملات الأجنبية"), callback_data: `cmd_currencies:${lang}` });
   if (r2.length > 0) rows.push(r2);
 
   if (!cfg.hide_report) {
-    rows.push([{ text: (lang === "en" ? "📊 Full Executive Report" : "📊 التقرير المالي الشامل"), callback_data: "cmd_report" }]);
+    rows.push([{ text: (lang === "en" ? "📊 Full Executive Report" : "📊 التقرير المالي الشامل"), callback_data: `cmd_report:${lang}` }]);
   }
 
   rows.push([
-    { text: (lang === "en" ? "🔄 Refresh Menu" : "🔄 تحديث القائمة"), callback_data: "refresh_menu" },
+    { text: (lang === "en" ? "🔄 Refresh Menu" : "🔄 تحديث القائمة"), callback_data: `refresh_menu:${lang}` },
     { text: (lang === "en" ? "🌐 اللغة العربية" : "🌐 English"), callback_data: (lang === "en" ? "cmd_lang_ar" : "cmd_lang_en") }
   ]);
 
