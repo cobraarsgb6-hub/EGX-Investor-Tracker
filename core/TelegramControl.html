@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة تحكم وتخصيص بوت تلجرام | EGX Bot Control Center</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    :root {
+      --bg: #090e1a;
+      --card-bg: #111827;
+      --card-border: #1f2937;
+      --input-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.3);
+      --red: #ef4444;
+      --radius: 14px;
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Cairo', sans-serif;
+      padding: 16px;
+      padding-bottom: 90px;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Header */
+    .header-card {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .header-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .header-title h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .header-title p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #34d399;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    /* Cards */
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 10px;
+    }
+
+    /* Switch Rows */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .toggle-row:last-child {
+      border-bottom: none;
+    }
+
+    .toggle-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .toggle-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toggle-desc {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    /* iOS-like Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #334155;
+      transition: var(--transition);
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: var(--transition);
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--green);
+      box-shadow: 0 0 10px var(--green-glow);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+
+    /* Form Fields */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+
+    .form-select, .form-input, .form-textarea {
+      background: var(--input-bg);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.88rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: var(--transition);
+      width: 100%;
+    }
+
+    .form-select:focus, .form-input:focus, .form-textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    /* Cloud Sync Box */
+    .sync-box {
+      background: rgba(56, 189, 248, 0.05);
+      border: 1px dashed rgba(56, 189, 248, 0.3);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .sync-btn {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #fff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+    .sync-btn:hover {
+      background: #0ea5e9;
+    }
+    .sync-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Floating Save Bar */
+    .save-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: center;
+      z-index: 1000;
+      box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .save-btn {
+      max-width: 640px;
+      width: 100%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+      transition: var(--transition);
+    }
+    .save-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+    }
+    .save-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Notification Toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #10b981;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 2000;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toast" id="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toast-msg">تم حفظ الإعدادات وتطبيقها في البوت فوراً!</span>
+  </div>
+
+  <div class="container">
+    
+    <!-- Top Header -->
+    <div class="header-card">
+      <div class="header-info">
+        <div class="header-icon">
+          <i class="fa-brands fa-telegram"></i>
+        </div>
+        <div class="header-title">
+          <h1>لوحة تحكم وتخصيص البوت</h1>
+          <p>تحكم كامل في الأزرار والتقارير والأسعار أونلاين 24/7</p>
+        </div>
+      </div>
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span>متصل سحابياً</span>
+      </div>
+    </div>
+
+    <!-- Section 1: Buttons Visibility -->
+    <div class="section-card">
+      <div class="section-title">
+        <i class="fa-solid fa-sliders"></i>
+        <span>التحكم في ظهور أزرار وقوائم تلجرام</span>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">🏛️ البورصة المصرية (EGX)</span>
+          <span class="toggle-desc">عرض زر تدفقات المؤسسات (مشتريات/مبيعات/صافي)</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="btn_egx" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">🏦 أسعار 25 بنكاً والبنك المركزي</span>
+          <span class="toggle-desc">عرض زر أسعار صرف الدولار في القطاع المصرفي</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="btn_banks" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">🪙 الذهب والمعادن الثمينة</span>
+          <span class="toggle-desc">عرض زر أسعار الذهب لحظياً (عيار 24، 21، 18، الجنيه)</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="btn_gold" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">⚡ العملات والنفط والكريبتو</span>
+          <span class="toggle-desc">عرض زر اليورو والريال والدرهم ونفط برنت والبتكوين</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="btn_markets" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">📊 التقرير المالي الشامل</span>
+          <span class="toggle-desc">عرض زر الملخص التنفيذي المدمج لكافة الأسواق</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="btn_report" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">⭐ قائمتي المخصصة (Watchlist)</span>
+          <span class="toggle-desc">السماح للمستخدمين بإضافة ومتابعة عملاتهم المفضلة</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="btn_watchlist" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">🌐 زر تبديل اللغة (عربي / English)</span>
+          <span class="toggle-desc">إتاحة التحويل الفوري بين اللغتين في القائمة</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="btn_lang" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">💵 زر تبديل العملة (جنيه / دولار)</span>
+          <span class="toggle-desc">إتاحة تبديل العملة الأساسية لعرض الأرقام</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="btn_curr" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">⚙️ زر لوحة التحكم داخل البوت</span>
+          <span class="toggle-desc">إظهار زر فتح هذه اللوحة مباشرة من داخل تلجرام</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="btn_control_in_bot" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Section 2: Banks Customization -->
+    <div class="section-card">
+      <div class="section-title">
+        <i class="fa-solid fa-building-columns"></i>
+        <span>تخصيص تقرير البنوك</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">عدد البنوك المعروضة في التقرير السريع:</label>
+        <select class="form-select" id="banks_count">
+          <option value="5">أفضل 5 بنوك فقط (موجز جداً)</option>
+          <option value="8" selected>أفضل 8 بنوك (متوازن وموصى به)</option>
+          <option value="10">أفضل 10 بنوك</option>
+          <option value="25">عرض كافة الـ 25 بنكاً دفعة واحدة</option>
+        </select>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">🏛️ إبراز سعر البنك المركزي (CBE)</span>
+          <span class="toggle-desc">عرض سعر الشراء والبيع الفعلي المعتمد في البداية</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="show_cbe" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">🟢🔵 إبراز أفضل بنك للبيع والشراء</span>
+          <span class="toggle-desc">عرض بطاقتي أعلى سعر شراء وأقل سعر بيع</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="show_best_banks" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Section 3: Defaults & Messages -->
+    <div class="section-card">
+      <div class="section-title">
+        <i class="fa-solid fa-gear"></i>
+        <span>الإعدادات العامة والرسائل</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label">اللغة الافتراضية للجميع:</label>
+          <select class="form-select" id="default_lang">
+            <option value="ar" selected>العربية (Arabic)</option>
+            <option value="en">English (الإنجليزية)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">العملة الافتراضية للتقارير:</label>
+          <select class="form-select" id="default_curr">
+            <option value="EGP" selected>الجنيه المصري (EGP)</option>
+            <option value="USD">الدولار الأمريكي ($)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">رسالة الترحيب عند تشغيل البوت (/start):</label>
+        <textarea class="form-textarea" id="welcome_msg_ar" placeholder="نص رسالة الترحيب بالعربية...">🏛️ منظومة البورصة المصرية وأسواق الصرف الحية 24/7
+
+أهلاً بك! تتبع لحظي لتدفقات المؤسسات بالبورصة، وأسعار البنك المركزي الفعلي، و25 بنكاً مصرياً، والذهب والنفط والكريبتو.
+
+👇 اختر ما تريد من القائمة التفاعلية أدناه:</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">التوقيع أسفل كل تقرير (Footer Note):</label>
+        <input type="text" class="form-input" id="footer_text_ar" value="🔒 بيانات موثقة رسمياً لحظياً.">
+      </div>
+    </div>
+
+    <!-- Section 4: Cloud Sync Engine -->
+    <div class="section-card">
+      <div class="section-title">
+        <i class="fa-solid fa-cloud-bolt"></i>
+        <span>المزامنة السحابية المباشرة (Cloud Sync 24/7)</span>
+      </div>
+
+      <div class="sync-box">
+        <div>
+          <div style="font-weight: 700; font-size: 0.88rem; color: #fff;">تحديث الشيت والبوت الآن سحابياً</div>
+          <div style="font-size: 0.74rem; color: var(--text-muted);" id="sync-status">سحب أحدث أسعار العملات والذهب والنفط والكريبتو للشيت أونلاين</div>
+        </div>
+        <button class="sync-btn" id="btn-sync-now" onclick="triggerCloudSync()">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span>مزامنة الآن</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Floating Save Bar -->
+  <div class="save-bar">
+    <button class="save-btn" onclick="saveBotSettings()">
+      <i class="fa-solid fa-floppy-disk"></i>
+      <span>حفظ وتطبيق التعديلات في البوت فوراً</span>
+    </button>
+  </div>
+
+  <script>
+    // Initialize Telegram WebApp if available
+    var tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) {
+      tg.expand();
+      tg.enableClosingConfirmation();
+    }
+
+    // Load existing settings
+    window.addEventListener("DOMContentLoaded", function() {
+      loadBotSettings();
+    });
+
+    function showToast(msg, isSuccess) {
+      var toast = document.getElementById("toast");
+      var text = document.getElementById("toast-msg");
+      text.innerText = msg;
+      toast.style.background = isSuccess ? "#10b981" : "#ef4444";
+      toast.classList.add("show");
+      setTimeout(function() {
+        toast.classList.remove("show");
+      }, 3500);
+    }
+
+    function loadBotSettings() {
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(data) {
+            applyConfigToUI(data);
+          })
+          .getTelegramBotConfig();
+      } else {
+        fetch("?action=get_tg_config")
+          .then(function(res) { return res.json(); })
+          .then(function(data) { applyConfigToUI(data); })
+          .catch(function(e) {});
+      }
+    }
+
+    function applyConfigToUI(data) {
+      if (!data) return;
+      if (data.hide_egx !== undefined) document.getElementById("btn_egx").checked = !data.hide_egx;
+      if (data.hide_banks !== undefined) document.getElementById("btn_banks").checked = !data.hide_banks;
+      if (data.hide_gold !== undefined) document.getElementById("btn_gold").checked = !data.hide_gold;
+      if (data.hide_markets !== undefined) document.getElementById("btn_markets").checked = !data.hide_markets;
+      if (data.hide_report !== undefined) document.getElementById("btn_report").checked = !data.hide_report;
+      if (data.hide_watchlist !== undefined) document.getElementById("btn_watchlist").checked = !data.hide_watchlist;
+      if (data.hide_lang_toggle !== undefined) document.getElementById("btn_lang").checked = !data.hide_lang_toggle;
+      if (data.hide_curr_toggle !== undefined) document.getElementById("btn_curr").checked = !data.hide_curr_toggle;
+      if (data.show_control_btn !== undefined) document.getElementById("btn_control_in_bot").checked = data.show_control_btn;
+      
+      if (data.banks_count) document.getElementById("banks_count").value = data.banks_count;
+      if (data.show_cbe_in_banks !== undefined) document.getElementById("show_cbe").checked = data.show_cbe_in_banks;
+      if (data.show_best_banks !== undefined) document.getElementById("show_best_banks").checked = data.show_best_banks;
+      
+      if (data.default_lang) document.getElementById("default_lang").value = data.default_lang;
+      if (data.default_curr) document.getElementById("default_curr").value = data.default_curr;
+      if (data.welcome_msg_ar) document.getElementById("welcome_msg_ar").value = data.welcome_msg_ar;
+      if (data.footer_text_ar) document.getElementById("footer_text_ar").value = data.footer_text_ar;
+    }
+
+    function saveBotSettings() {
+      var config = {
+        hide_egx: !document.getElementById("btn_egx").checked,
+        hide_banks: !document.getElementById("btn_banks").checked,
+        hide_gold: !document.getElementById("btn_gold").checked,
+        hide_markets: !document.getElementById("btn_markets").checked,
+        hide_report: !document.getElementById("btn_report").checked,
+        hide_watchlist: !document.getElementById("btn_watchlist").checked,
+        hide_lang_toggle: !document.getElementById("btn_lang").checked,
+        hide_curr_toggle: !document.getElementById("btn_curr").checked,
+        show_control_btn: document.getElementById("btn_control_in_bot").checked,
+        
+        banks_count: parseInt(document.getElementById("banks_count").value) || 8,
+        show_cbe_in_banks: document.getElementById("show_cbe").checked,
+        show_best_banks: document.getElementById("show_best_banks").checked,
+        
+        default_lang: document.getElementById("default_lang").value,
+        default_curr: document.getElementById("default_curr").value,
+        welcome_msg_ar: document.getElementById("welcome_msg_ar").value,
+        footer_text_ar: document.getElementById("footer_text_ar").value
+      };
+
+      var btn = document.querySelector(".save-btn");
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ والتطبيق...';
+
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ وتطبيق التعديلات في البوت فوراً';
+            showToast("✅ تم حفظ الإعدادات وتطبيقها على بوت تلجرام بنجاح!", true);
+            try {
+              if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+              }
+            } catch(e) {}
+          })
+          .withFailureHandler(function(err) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ وتطبيق التعديلات في البوت فوراً';
+            showToast("⚠️ حدث خطأ أثناء الحفظ، يرجى المحاولة ثانية", false);
+          })
+          .saveTelegramBotConfig(config);
+      } else {
+        fetch("", {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "save_tg_config", config: config })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ وتطبيق التعديلات في البوت فوراً';
+          showToast("✅ تم حفظ الإعدادات وتطبيقها على بوت تلجرام بنجاح!", true);
+        })
+        .catch(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ وتطبيق التعديلات في البوت فوراً';
+          showToast("⚠️ حدث خطأ أثناء الحفظ، يرجى المحاولة ثانية", false);
+        });
+      }
+    }
+
+    function triggerCloudSync() {
+      var sBtn = document.getElementById("btn-sync-now");
+      var sStatus = document.getElementById("sync-status");
+      sBtn.disabled = true;
+      sBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> مزامنة...';
+      sStatus.innerText = "جاري الاتصال السحابي وسحب أحدث الأسعار...";
+
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(data) {
+            sBtn.disabled = false;
+            sBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> مزامنة الآن';
+            sStatus.innerText = "✅ تمت المزامنة السحابية بنجاح!";
+            showToast("✅ تم تحديث الشيت والبوت بأحدث الأسعار الحية!", true);
+          })
+          .withFailureHandler(function(err) {
+            sBtn.disabled = false;
+            sBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> مزامنة الآن';
+            sStatus.innerText = "⚠️ فشل التحديث السحابي";
+            showToast("⚠️ تعذر التحديث السحابي", false);
+          })
+          .cloudSyncOnlineRates();
+      } else {
+        fetch("?action=cloud_sync")
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            sBtn.disabled = false;
+            sBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> مزامنة الآن';
+            sStatus.innerText = "✅ تمت المزامنة السحابية بنجاح!";
+            showToast("✅ تم تحديث الشيت والبوت بأحدث الأسعار الحية!", true);
+          })
+          .catch(function(err) {
+            sBtn.disabled = false;
+            sBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> مزامنة الآن';
+            sStatus.innerText = "⚠️ فشل التحديث السحابي المباشر";
+            showToast("⚠️ تعذر التحديث السحابي", false);
+          });
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,2624 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منظومة تتبع البورصة المصرية وأسعار الصرف والطاقة</title>
+    
+    <!-- Cairo Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome & Chart.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #0a3d62;
+            --primary-dark: #072a44;
+            --accent: #e58e26;
+            --accent-hover: #d37a15;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --green-text: #059669;
+            --green-bg: #ecfdf5;
+            --red-text: #dc2626;
+            --red-bg: #fef2f2;
+            --blue-accent: #2563eb;
+            --blue-bg: #eff6ff;
+            --gold-accent: #d97706;
+            --gold-bg: #fffbeb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navbar */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 10px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(10, 61, 98, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        /* TOP CORNER CURRENCY TOGGLE (من فوق في الجنب) */
+        .navbar-corner-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .nav-currency-switcher {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            border-radius: 10px;
+            padding: 3px;
+            gap: 3px;
+        }
+        .nav-curr-btn {
+            background: transparent;
+            border: none;
+            color: #e2e8f0;
+            padding: 6px 14px;
+            border-radius: 7px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .nav-curr-btn.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 8px rgba(229, 142, 38, 0.5);
+        }
+        .nav-curr-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        /* Market Status Clock Pill */
+        .market-clock-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .pulse-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .pulse-green {
+            background-color: #10b981;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 1.5s infinite;
+        }
+        .pulse-red {
+            background-color: #ef4444;
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .navbar-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 7px 14px;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+
+        .nav-btn.active, .nav-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Layout Grid */
+        .layout-container {
+            display: flex;
+            flex: 1;
+            max-width: 1720px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            gap: 24px;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar {
+            width: 380px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        /* Cards */
+        .controls-card, .sidebar-card, .section-card, .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+        }
+
+        .sidebar-card {
+            padding: 18px;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header h3 {
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-source {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            background: #f1f5f9;
+            color: var(--text-muted);
+            border-radius: 6px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        /* Live Sync Tracker Bar */
+        .sync-tracker-bar {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .sync-live-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #065f46;
+            font-weight: 700;
+        }
+
+        /* USD Clickable Special Card */
+        .usd-highlight-card {
+            background: linear-gradient(135deg, #1e3a8a 0%, #0a3d62 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(10, 61, 98, 0.25);
+            margin-bottom: 14px;
+        }
+        .usd-highlight-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(10, 61, 98, 0.35);
+        }
+        .usd-highlight-card::after {
+            content: '🔎 انقر هنا لاستعراض وتثبيت أسعار 25 بنكاً';
+            display: block;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: #fde047;
+            font-weight: 700;
+            text-align: left;
+        }
+
+        /* Currency Rows */
+        .currency-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .currency-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+        .currency-row:hover {
+            background: #ffffff;
+            border-color: #cbd5e1;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .curr-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .curr-flag {
+            font-size: 1.4rem;
+        }
+
+        .curr-name {
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        .curr-sub-rates {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .curr-rates {
+            text-align: left;
+        }
+
+        .curr-main-rate {
+            font-weight: 800;
+            font-size: 0.98rem;
+            color: var(--primary);
+        }
+
+        /* Asset Grid for Oil & Crypto */
+        .asset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .asset-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            transition: all 0.2s;
+        }
+        .asset-card:hover {
+            background: #fff;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+        }
+        .asset-card-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .asset-price-usd {
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: var(--primary);
+        }
+        .asset-price-egp {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        @keyframes priceGlow {
+            0% { background-color: #bbf7d0; box-shadow: 0 0 8px rgba(34, 197, 94, 0.5); }
+            100% { background-color: transparent; box-shadow: none; }
+        }
+        .price-flash {
+            animation: priceGlow 1.2s ease-out;
+        }
+
+
+        /* View Section Switching */
+        .view-section {
+            display: none;
+        }
+        .view-section.active {
+            display: block;
+        }
+
+        /* Controls Card */
+        .controls-card {
+            padding: 14px 20px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .segments-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active, .tab-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .rate-lock-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .btn {
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+        }
+        .btn-accent:hover {
+            background: var(--accent-hover);
+        }
+        .btn-excel {
+            background: #107c41;
+            color: white;
+        }
+        .btn-excel:hover {
+            background: #0b5e31;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            padding: 18px;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 5px;
+            height: 100%;
+        }
+        .kpi-egyptian::before { background-color: #3b82f6; }
+        .kpi-arabs::before { background-color: #10b981; }
+        .kpi-foreigners::before { background-color: #f59e0b; }
+        .kpi-institution::before { background-color: #8b5cf6; }
+
+        .kpi-title {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .kpi-val-primary {
+            font-size: 1.45rem;
+            font-weight: 800;
+            margin-bottom: 2px;
+        }
+        .kpi-val-secondary {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        /* Section Cards & Tables */
+        .section-card {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+        .section-header h2 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+            font-size: 0.92rem;
+        }
+        th {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 16px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .type-pill {
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: var(--primary-dark);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .net-positive {
+            color: var(--green-text);
+            font-weight: 800;
+            background-color: var(--green-bg);
+            border-radius: 6px;
+            padding: 3px 8px;
+            display: inline-block;
+        }
+        .net-negative {
+            color: var(--red-text);
+            font-weight: 800;
+            background-color: var(--red-bg);
+            border-radius: 6px;
+            padding: 3px 8px;
+            display: inline-block;
+        }
+        .secondary-val {
+            display: block;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            font-weight: 600;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 61, 98, 0.65);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px;
+        }
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Calculator Styles */
+        .calc-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .calc-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .calc-input-group label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+        .calc-field {
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--primary);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .calc-field:focus {
+            border-color: var(--accent);
+        }
+        .calc-swap-btn {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            color: var(--primary);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            margin-top: 22px;
+            transition: all 0.2s;
+        }
+        .calc-swap-btn:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: rotate(180deg);
+        }
+
+        .calc-result-banner {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 2px solid #a7f3d0;
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .calc-result-number {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--green-text);
+        }
+        .calc-rate-sub {
+            font-size: 0.85rem;
+            color: #065f46;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .matrix-table th {
+            background: #f1f5f9;
+            color: var(--primary);
+            font-size: 0.85rem;
+        }
+
+        /* Quick Calc in Sidebar */
+        .quick-calc-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .quick-calc-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Toast Notifications */
+        #toast-box {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #0f172a;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            z-index: 99999;
+            animation: toastIn 0.3s ease-out;
+        }
+        @keyframes toastIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Loading Spinner */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 61, 98, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.2);
+            border-top: 5px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1024px) {
+            .layout-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+            }
+            .calc-grid {
+                grid-template-columns: 1fr;
+            }
+            .calc-swap-btn {
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification -->
+    <div id="toast-box">
+        <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1.2rem;"></i>
+        <span id="toast-msg">تم التحديث بنجاح</span>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <h2 style="font-weight: 800; font-size: 1.4rem;">جاري الاتصال وسحب البيانات...</h2>
+        <p style="color: #cbd5e1; margin-top: 6px;">يتم سحب أحدث بيانات البورصة ومؤشرات السوق</p>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="fa-solid fa-chart-line" style="color: var(--accent);"></i>
+            <span>منظومة تتبع البورصة المصرية ومؤشرات الأسواق</span>
+        </div>
+
+        <!-- Cairo Time & EGX Market Status Badge -->
+        <div class="market-clock-pill" title="توقيت القاهرة وحالة جلسة التداول الرسمية">
+            <span class="pulse-dot {% if market_status.is_market_open %}pulse-green{% else %}pulse-red{% endif %}" id="market-pulse-dot"></span>
+            <span>القاهرة: <strong id="live-cairo-clock">{{ market_status.cairo_time_formatted }}</strong></span>
+            <span style="opacity: 0.5;">|</span>
+            <span id="lbl-market-status-desc">{{ market_status.status_description }}</span>
+        </div>
+
+        <!-- TOP CORNER: CURRENCY SWITCHER (من فوق في الجنب كما طلب المستخدم) -->
+        <div class="navbar-corner-controls">
+            <div class="nav-currency-switcher" title="التبديل الفوري بين عرض جميع معاملات البورصة بالجنيه، بالدولار، أو كلاهما">
+                <button class="nav-curr-btn {% if settings.currency_view == 'both' or not settings.currency_view %}active{% endif %}" id="nav-btn-both" onclick="setCurrencyView('both')">
+                    <i class="fa-solid fa-coins"></i> الجنيه والدولار
+                </button>
+                <button class="nav-curr-btn {% if settings.currency_view == 'egp' %}active{% endif %}" id="nav-btn-egp" onclick="setCurrencyView('egp')">
+                    🇪🇬 بالجنيه فقط
+                </button>
+                <button class="nav-curr-btn {% if settings.currency_view == 'usd' %}active{% endif %}" id="nav-btn-usd" onclick="setCurrencyView('usd')">
+                    🇺🇸 بالدولار فقط
+                </button>
+            </div>
+
+            <div class="navbar-nav">
+                <button class="nav-btn active" id="nav-live" onclick="switchMainView('live')">
+                    <i class="fa-solid fa-bolt"></i> متابعة اليوم
+                </button>
+                <button class="nav-btn" id="nav-archive" onclick="switchMainView('archive')">
+                    <i class="fa-solid fa-box-archive"></i> أرشيف المؤسسات
+                </button>
+                <button class="nav-btn" onclick="openCurrencyCalculatorModal()" style="background: rgba(229, 142, 38, 0.25); border-color: var(--accent);">
+                    <i class="fa-solid fa-calculator" style="color: #fde047;"></i> الحاسبة الشاملة
+                </button>
+                <button class="nav-btn" onclick="openEGXHoursModal()" title="دليل مواعيد فتح وإغلاق البورصة المصرية" style="background: rgba(255,255,255,0.08);">
+                    <i class="fa-solid fa-circle-question"></i> مواعيد البورصة
+                </button>
+                <button class="nav-btn" onclick="openGoogleSheetsModal()" title="المزامنة ورفع البيانات إلى Google Sheets" style="background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #34d399; font-weight: 700;">
+                    <i class="fa-solid fa-table"></i> Google Sheets
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="layout-container">
+        
+        <!-- Main Content Area -->
+        <main class="main-content">
+
+            <!-- LIVE SYNC MONITOR BAR (إثبات وتأكيد حدوث المزامنة للمستخدم) -->
+            <div class="sync-tracker-bar">
+                <div class="sync-live-text">
+                    <span class="pulse-dot pulse-green"></span>
+                    <span>المزامنة التلقائية للعملات: <strong>نشطة (تحديث حي)</strong></span>
+                    <span style="opacity: 0.4;">|</span>
+                    <span>سرعة التحديث:</span>
+                    <select id="sync-speed-select" onchange="changeSyncSpeed(this.value)" style="padding: 2px 8px; border-radius: 6px; font-weight: 800; border: 1px solid var(--border); font-size: 0.8rem; background: white; color: var(--primary); cursor: pointer;">
+                        <option value="30" selected>⚡ لحظي فائق (كل 30 ثانية)</option>
+                        <option value="60">⏱️ كل دقيقة</option>
+                        <option value="300">🔋 كل 5 دقائق</option>
+                        <option value="600">🔌 كل 10 دقائق</option>
+                    </select>
+                    <span style="opacity: 0.4;">|</span>
+                    <span>آخر تحديث: <strong id="lbl-last-sync-time">{{ market_status.last_currency_sync or 'تمت الآن' }}</strong></span>
+                    <span style="opacity: 0.4;">|</span>
+                    <span>التالي خلال: <strong id="lbl-countdown-timer" style="color: var(--primary); background: #e0f2fe; padding: 2px 8px; border-radius: 6px;">00:30</strong></span>
+                </div>
+                <button class="btn btn-accent" style="padding: 5px 12px; font-size: 0.8rem;" onclick="triggerManualSync()">
+                    <i class="fa-solid fa-rotate"></i> مزامنة فورية الآن
+                </button>
+            </div>
+
+            
+            <!-- VIEW 1: LIVE TRACKER -->
+            <div id="view-live-section" class="view-section active">
+                
+                <!-- Controls Card -->
+                <div class="controls-card">
+                    <div class="segments-tabs">
+                        <button class="tab-btn {% if current_sb == '1' %}active{% endif %}" onclick="changeSegment('1')">الأسهم والسندات والأذون (الإجمالي)</button>
+                        <button class="tab-btn {% if current_sb == '2' %}active{% endif %}" onclick="changeSegment('2')">الأسهم فقط</button>
+                        <button class="tab-btn {% if current_sb == '3' %}active{% endif %}" onclick="changeSegment('3')">السندات فقط</button>
+                        <button class="tab-btn {% if current_sb == '4' %}active{% endif %}" onclick="changeSegment('4')">الأذون فقط</button>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <!-- Fixed Rate Lock Badge -->
+                        <div class="rate-lock-info" title="سعر الصرف المعتمد والمثبت حالياً في كل العمليات الحسابية">
+                            <i class="fa-solid fa-lock"></i>
+                            <span>سعر الدولار المعتمد: <strong id="lbl-fixed-usd">{{ usd_rate|round(2) }}</strong> ج.م</span>
+                        </div>
+
+                        <button class="btn btn-accent" onclick="triggerScrape()">
+                            <i class="fa-solid fa-rotate"></i> تحديث البورصة الآن
+                        </button>
+                        <a href="/export/excel?sb={{ current_sb }}&rate={{ usd_rate }}" id="btn-export-excel" class="btn btn-excel">
+                            <i class="fa-solid fa-file-excel"></i> إكسيل
+                        </a>
+                    </div>
+                </div>
+
+                <!-- KPI Grid -->
+                <div class="kpi-grid" id="kpi-container">
+                    <!-- Rendered by JS -->
+                </div>
+
+                <!-- 1. All Investors Table -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-layer-group"></i> إجمالي تعاملات المستثمرين (الجدول الأساسي)</h2>
+                        <span class="section-badge" id="lbl-segment-name">الأسهم والسندات والأذون</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="tbl-all">
+                            <thead>
+                                <tr>
+                                    <th>فئة المستثمر</th>
+                                    <th>قيمة بيع</th>
+                                    <th>قيمة شراء</th>
+                                    <th>صافي القيمة</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. Individuals Table -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-user"></i> الأفراد حسب الجنسية (Individuals)</h2>
+                        <span class="section-badge">أفراد</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="tbl-individuals">
+                            <thead>
+                                <tr>
+                                    <th>فئة المستثمر</th>
+                                    <th>قيمة بيع</th>
+                                    <th>قيمة شراء</th>
+                                    <th>صافي القيمة</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. Institutions Table -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-building-columns"></i> المؤسسات حسب الجنسية (Institutions)</h2>
+                        <span class="section-badge">مؤسسات وصناديق</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="tbl-institutions">
+                            <thead>
+                                <tr>
+                                    <th>فئة المستثمر</th>
+                                    <th>قيمة بيع</th>
+                                    <th>قيمة شراء</th>
+                                    <th>صافي القيمة</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- VIEW 2: INSTITUTION FLOW ARCHIVE (DAILY, WEEKLY, MONTHLY) -->
+            <div id="view-archive-section" class="view-section">
+                
+                <!-- Archive Controls -->
+                <div class="controls-card">
+                    <div class="segments-tabs">
+                        <button class="tab-btn active" id="arch-tab-daily" onclick="switchArchivePeriod('daily')">
+                            <i class="fa-solid fa-calendar-day"></i> يومي (Daily)
+                        </button>
+                        <button class="tab-btn" id="arch-tab-weekly" onclick="switchArchivePeriod('weekly')">
+                            <i class="fa-solid fa-calendar-week"></i> أسبوعي (Weekly)
+                        </button>
+                        <button class="tab-btn" id="arch-tab-monthly" onclick="switchArchivePeriod('monthly')">
+                            <i class="fa-solid fa-calendar"></i> شهري (Monthly)
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="openGoogleSheetsModal()" class="btn" style="background: #0f9d58; color: white; font-weight: 700;">
+                            <i class="fa-solid fa-table"></i> رفع إلى Google Sheets
+                        </button>
+                        <a href="/export/archive/excel?sb={{ current_sb }}" id="btn-export-archive-excel" class="btn btn-excel">
+                            <i class="fa-solid fa-file-excel"></i> تصدير الأرشيف إكسيل
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Archive Summary KPIs -->
+                <div class="kpi-grid">
+                    <div class="kpi-card kpi-institution">
+                        <div class="kpi-title">
+                            <span>إجمالي السيولة الداخلة (شراء المؤسسات)</span>
+                            <i class="fa-solid fa-arrow-down-left" style="color: var(--green-text);"></i>
+                        </div>
+                        <div class="kpi-val-primary" id="arch-kpi-inflow-primary" style="color: var(--green-text);">
+                            0 ج.م
+                        </div>
+                        <div class="kpi-val-secondary" id="arch-kpi-inflow-secondary">
+                            $0
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-institution">
+                        <div class="kpi-title">
+                            <span>إجمالي السيولة الخارجة (بيع المؤسسات)</span>
+                            <i class="fa-solid fa-arrow-up-right" style="color: var(--red-text);"></i>
+                        </div>
+                        <div class="kpi-val-primary" id="arch-kpi-outflow-primary" style="color: var(--red-text);">
+                            0 ج.م
+                        </div>
+                        <div class="kpi-val-secondary" id="arch-kpi-outflow-secondary">
+                            $0
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-institution">
+                        <div class="kpi-title">
+                            <span>صافي تدفق المؤسسات (دخل - خرج)</span>
+                            <span id="arch-kpi-status-badge" style="font-size: 0.8rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">--</span>
+                        </div>
+                        <div class="kpi-val-primary" id="arch-kpi-net-primary">
+                            0 ج.م
+                        </div>
+                        <div class="kpi-val-secondary" id="arch-kpi-net-secondary">
+                            $0
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flow Visual Chart -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-chart-area"></i> حركة تدفق سيولة المؤسسات (دخل vs خرج)</h2>
+                        <span class="section-badge" id="lbl-chart-curr-badge">مقارنة تراكمية بالجنيه المصري</span>
+                    </div>
+                    <div style="height: 320px; width: 100%;">
+                        <canvas id="archiveFlowChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Archive Detailed Table -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-table-list"></i> جدول حركة سيولة المؤسسات التاريخي</h2>
+                        <span class="section-badge">سجلات الأرشيف</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="tbl-archive">
+                            <thead id="tbl-archive-head"></thead>
+                            <tbody id="tbl-archive-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- Sidebar: Currency & Gold Rates (Ta3weem), Oil, Crypto, and Calculator -->
+        <aside class="sidebar">
+            
+            <!-- USD CLICKABLE CARD (Opens 25 Banks List) -->
+            <div class="usd-highlight-card" onclick="openBanksModal()" title="انقر لعرض قائمة أسعار الدولار في كافة البنوك الـ 25 وتثبيت أي سعر">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.8rem;">🇺🇸</span>
+                        <div>
+                            <div style="font-size: 1.1rem; font-weight: 800;">الدولار الأمريكي (USD)</div>
+                            <div style="font-size: 0.8rem; color: #cbd5e1;" id="lbl-active-bank-title">{{ settings.selected_bank or 'البنك الأهلي المصري' }}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: left;">
+                        <div style="font-size: 1.35rem; font-weight: 900; color: #fde047;" id="lbl-highlight-usd-rate">{{ usd_rate|round(2) }} <span style="font-size: 0.85rem;">ج.م</span></div>
+                        <span class="badge-source" style="background: rgba(255,255,255,0.2); color: white;">سعر معتمد</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Energy & Commodities (Oil) -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <h3><i class="fa-solid fa-oil-well" style="color: #0284c7;"></i> أسواق الطاقة والنفط</h3>
+                    <span class="badge-source">عالمي لحظي</span>
+                </div>
+                <div class="asset-grid" id="oil-container">
+                    {% if ta3weem and ta3weem.commodities %}
+                        {% for item in ta3weem.commodities %}
+                        <div class="asset-card">
+                            <div class="asset-card-title">
+                                <span>{{ item.icon }} {{ item.name }}</span>
+                                <span style="color: {% if item.is_positive %}var(--green-text){% else %}var(--red-text){% endif %}; font-weight: 800;">{{ item.change_24h }}</span>
+                            </div>
+                            <div class="asset-price-usd">{{ item.usd_price_formatted }}</div>
+                            <div class="asset-price-egp">≈ {{ item.egp_price_formatted }}</div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Cryptocurrencies (BTC, ETH) -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <h3><i class="fa-brands fa-bitcoin" style="color: #f59e0b;"></i> العملات المشفرة (Crypto)</h3>
+                    <span class="badge-source">بينانس لحظي</span>
+                </div>
+                <div class="asset-grid" id="crypto-container">
+                    {% if ta3weem and ta3weem.crypto %}
+                        {% for c in ta3weem.crypto %}
+                        <div class="asset-card">
+                            <div class="asset-card-title">
+                                <span>{{ c.icon }} {{ c.name }} ({{ c.code }})</span>
+                                <span style="color: {% if c.is_positive %}var(--green-text){% else %}var(--red-text){% endif %}; font-weight: 800;">{{ c.change_24h }}</span>
+                            </div>
+                            <div class="asset-price-usd">{{ c.usd_price_formatted }}</div>
+                            <div class="asset-price-egp">≈ {{ c.egp_price_formatted }}</div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Major Currencies Widget -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <h3><i class="fa-solid fa-money-bill-transfer" style="color: var(--accent);"></i> باقي العملات الرئيسية</h3>
+                    <span class="badge-source">تعويم لحظي</span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.8rem; color: var(--text-muted);">
+                    <span><i class="fa-solid fa-clock-rotate-left"></i> محدث: <span id="lbl-ta3weem-time">{{ ta3weem.updated_at if ta3weem else '' }}</span></span>
+                    <button onclick="refreshTa3weem()" style="background: none; border: none; color: var(--accent); font-weight: 700; cursor: pointer;">
+                        <i class="fa-solid fa-rotate"></i> تحديث
+                    </button>
+                </div>
+
+                <div class="currency-list" id="ta3weem-currency-list">
+                    {% if ta3weem and ta3weem.currencies %}
+                        {% for c in ta3weem.currencies %}
+                        {% if c.code != 'USD' %}
+                        <div class="currency-row">
+                            <div class="curr-info">
+                                <span class="curr-flag">{{ c.flag }}</span>
+                                <div>
+                                    <div class="curr-name">{{ c.name_ar or c.name }}</div>
+                                    <div class="curr-sub-rates">شراء: {{ c.buy }} | بيع: {{ c.sell }}</div>
+                                </div>
+                            </div>
+                            <div class="curr-rates">
+                                <div class="curr-main-rate">{{ c.rate }} <span style="font-size: 0.7rem;">ج.م</span></div>
+                                <div style="font-size: 0.75rem; color: {% if '-' in c.change %}var(--red-text){% else %}var(--green-text){% endif %}; text-align: left; font-weight: 700;">
+                                    {{ c.change }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Gold Rates Widget -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <h3><i class="fa-solid fa-coins" style="color: #f59e0b;"></i> أسعار الذهب (تعويم)</h3>
+                    <span class="badge-source">مصر</span>
+                </div>
+                <div class="currency-list" id="ta3weem-gold-list">
+                    {% if ta3weem and ta3weem.gold %}
+                        {% for g in ta3weem.gold %}
+                        <div class="currency-row">
+                            <div class="curr-info">
+                                <i class="fa-solid fa-ring" style="color: #f59e0b; font-size: 1.1rem;"></i>
+                                <span class="curr-name">{{ g.name }}</span>
+                            </div>
+                            <div class="curr-rates">
+                                <div class="curr-main-rate">{{ g.rate_formatted }} <span style="font-size: 0.7rem;">ج.م</span></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Currency Converter Widget -->
+            <div class="sidebar-card" style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);">
+                <div class="sidebar-header">
+                    <h3><i class="fa-solid fa-calculator" style="color: var(--accent);"></i> تحويل سريع</h3>
+                    <button class="badge-source" onclick="openCurrencyCalculatorModal()" style="cursor: pointer; border: none;">الحاسبة الشاملة ↗</button>
+                </div>
+                <div class="quick-calc-box">
+                    <div class="quick-calc-row">
+                        <input type="number" id="quick-calc-amount" value="1000" class="calc-field" style="width: 50%; font-size: 0.95rem; padding: 6px 10px;" oninput="runQuickCalc()">
+                        <select id="quick-calc-from" class="calc-field" style="width: 50%; font-size: 0.85rem; padding: 6px;" onchange="runQuickCalc()">
+                            <option value="USD" selected>🇺🇸 دولار أمريكي</option>
+                            <option value="EGP">🇪🇬 جنيه مصري</option>
+                            <option value="EUR">🇪🇺 يورو</option>
+                            <option value="SAR">🇸🇦 ريال سعودي</option>
+                            <option value="AED">🇦🇪 درهم إماراتي</option>
+                            <option value="KWD">🇰🇼 دينار كويتي</option>
+                            <option value="BTC">🪙 بتكوين</option>
+                            <option value="GOLD21">🥇 ذهب عيار 21</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);">
+                        <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">المعادل بالج.م:</span>
+                        <strong id="quick-calc-egp-result" style="color: var(--green-text); font-size: 1.15rem;">--</strong>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+    </div>
+
+    <!-- MODAL 1: 25 BANKS USD RATES LIST (When Clicking USD Card) -->
+    <div class="modal-overlay" id="modal-banks" onclick="if(event.target === this) closeBanksModal()">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-building-columns"></i> أسعار الدولار في البنوك المصرية (25 بنكاً) - موقع تعويم</h3>
+                <button class="modal-close" onclick="closeBanksModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                    <input type="text" id="bank-search-input" placeholder="🔍 ابحث عن اسم البنك..." oninput="filterBanksTable(this.value)" style="padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; width: 280px; font-weight: 700;">
+                    
+                    <div style="display: flex; gap: 10px; font-size: 0.85rem; font-weight: 700;">
+                        <span style="background: #ecfdf5; color: #065f46; padding: 4px 10px; border-radius: 6px; border: 1px solid #a7f3d0;">
+                            أعلى شراء (للبيع له): <strong id="lbl-modal-highest-buy">{{ ta3weem.highest_buy }}</strong> ج.م
+                        </span>
+                        <span style="background: #eff6ff; color: #1e40af; padding: 4px 10px; border-radius: 6px; border: 1px solid #bfdbfe;">
+                            أقل بيع (للشراء منه): <strong id="lbl-modal-lowest-sell">{{ ta3weem.lowest_sell }}</strong> ج.م
+                        </span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="tbl-modal-banks">
+                        <thead>
+                            <tr>
+                                <th>البنك</th>
+                                <th>سعر الشراء</th>
+                                <th>سعر البيع</th>
+                                <th>متوسط السعر</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl-modal-banks-body">
+                            {% if ta3weem and ta3weem.banks %}
+                                {% for b in ta3weem.banks %}
+                                <tr>
+                                    <td><strong>{{ b.bank }}</strong></td>
+                                    <td style="color: var(--green-text); font-weight: 800;">{{ b.buy }} ج.م</td>
+                                    <td style="color: var(--primary); font-weight: 800;">{{ b.sell }} ج.م</td>
+                                    <td style="color: var(--text-muted); font-weight: 700;">{{ b.avg }} ج.م</td>
+                                    <td>
+                                        <button class="btn btn-accent" style="padding: 4px 10px; font-size: 0.78rem;" onclick="selectBankDirect('{{ b.buy }}', '{{ b.sell }}', '{{ b.bank }}')">
+                                            <i class="fa-solid fa-check"></i> اعتماد هذا السعر
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: FULL MULTI-CURRENCY & COMMODITIES CALCULATOR -->
+    <div class="modal-overlay" id="modal-calculator" onclick="if(event.target === this) closeCurrencyCalculatorModal()">
+        <div class="modal-box" style="max-width: 950px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-calculator" style="color: #fde047;"></i> حاسبة التحويل الشاملة بين كافة العملات والسلع</h3>
+                <button class="modal-close" onclick="closeCurrencyCalculatorModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                
+                <!-- Input / Output Grid -->
+                <div class="calc-grid">
+                    <div class="calc-input-group">
+                        <label>المبلغ المراد تحويله:</label>
+                        <input type="number" id="calc-amount" value="1000" class="calc-field" oninput="calculateFullConversion()">
+                        <select id="calc-from-currency" class="calc-field" style="margin-top: 8px; font-size: 0.95rem;" onchange="calculateFullConversion()">
+                            <option value="USD" selected>🇺🇸 دولار أمريكي (USD)</option>
+                            <option value="EGP">🇪🇬 جنيه مصري (EGP)</option>
+                            <option value="EUR">🇪🇺 يورو أوروبي (EUR)</option>
+                            <option value="SAR">🇸🇦 ريال سعودي (SAR)</option>
+                            <option value="AED">🇦🇪 درهم إماراتي (AED)</option>
+                            <option value="KWD">🇰🇼 دينار كويتي (KWD)</option>
+                            <option value="GBP">🇬🇧 جنيه إسترليني (GBP)</option>
+                            <option value="QAR">🇶🇦 ريال قطري (QAR)</option>
+                            <option value="CNY">🇨🇳 يوان صيني (CNY)</option>
+                            <option value="GOLD24">🥇 ذهب عيار 24 (جرام)</option>
+                            <option value="GOLD21">🥈 ذهب عيار 21 (جرام)</option>
+                            <option value="BTC">🪙 بتكوين (Bitcoin)</option>
+                            <option value="ETH">🔷 إيثريوم (Ethereum)</option>
+                            <option value="BRENT">🛢️ نفط برنت (برميل)</option>
+                        </select>
+                    </div>
+
+                    <button class="calc-swap-btn" onclick="swapCalculatorCurrencies()" title="عكس التحويل">
+                        <i class="fa-solid fa-right-left"></i>
+                    </button>
+
+                    <div class="calc-input-group">
+                        <label>التحويل إلى:</label>
+                        <div id="calc-single-target-box" style="margin-bottom: 8px;">
+                            <select id="calc-to-currency" class="calc-field" style="font-size: 0.95rem; width: 100%;" onchange="calculateFullConversion()">
+                                <option value="EGP" selected>🇪🇬 جنيه مصري (EGP)</option>
+                                <option value="USD">🇺🇸 دولار أمريكي (USD)</option>
+                                <option value="EUR">🇪🇺 يورو أوروبي (EUR)</option>
+                                <option value="SAR">🇸🇦 ريال سعودي (SAR)</option>
+                                <option value="AED">🇦🇪 درهم إماراتي (AED)</option>
+                                <option value="KWD">🇰🇼 دينار كويتي (KWD)</option>
+                                <option value="GBP">🇬🇧 جنيه إسترليني (GBP)</option>
+                                <option value="QAR">🇶🇦 ريال قطري (QAR)</option>
+                                <option value="CNY">🇨🇳 يوان صيني (CNY)</option>
+                                <option value="GOLD24">🥇 ذهب عيار 24 (جرام)</option>
+                                <option value="GOLD21">🥈 ذهب عيار 21 (جرام)</option>
+                                <option value="BTC">🪙 بتكوين (Bitcoin)</option>
+                                <option value="ETH">🔷 إيثريوم (Ethereum)</option>
+                                <option value="BRENT">🛢️ نفط برنت (برميل)</option>
+                            </select>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700; margin-top: 4px;">
+                            سعر الصرف المعتمد حالياً: <span id="calc-active-rate-info" style="color: var(--primary);">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Big Result Banner -->
+                <div class="calc-result-banner">
+                    <div style="font-size: 0.9rem; color: #065f46; font-weight: 700;" id="calc-result-summary">النتيجة المعادلة:</div>
+                    <div class="calc-result-number" id="calc-result-display">--</div>
+                    <div class="calc-rate-sub" id="calc-rate-equation">--</div>
+                </div>
+
+                <!-- All-in-One Multi-Asset Distribution Table -->
+                <h4 style="font-size: 1rem; font-weight: 800; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-list-check" style="color: var(--accent);"></i> جدول التوزيع الفوري لنفس المبلغ عبر كافة الأصول والعملات:
+                </h4>
+                <div class="table-responsive">
+                    <table class="matrix-table" id="tbl-calc-matrix">
+                        <thead>
+                            <tr>
+                                <th>الأصل / العملة</th>
+                                <th>القيمة المعادلة</th>
+                                <th>سعر الوحدة بالج.م</th>
+                                <th>سعر الوحدة بالدولار ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl-calc-matrix-body">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: EGX MARKET HOURS & TRADING SESSIONS GUIDE -->
+    <div class="modal-overlay" id="modal-egx-hours" onclick="if(event.target === this) closeEGXHoursModal()">
+        <div class="modal-box" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-clock"></i> مواعيد وساعات التداول الرسمية في البورصة المصرية (EGX)</h3>
+                <button class="modal-close" onclick="closeEGXHoursModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="font-size: 0.95rem; line-height: 1.8;">
+                
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px; margin-bottom: 18px;">
+                    <h4 style="color: #1e40af; font-weight: 800; margin-bottom: 4px;">📅 أيام العمل والتداول:</h4>
+                    <p>من <strong>الأحد إلى الخميس</strong> (5 أيام تداول أسبوعياً).<br>
+                    <strong>عطلة نهاية الأسبوع:</strong> يومي <strong>الجمعة والسبت</strong>.</p>
+                </div>
+
+                <h4 style="color: var(--primary); font-weight: 800; margin-bottom: 10px;">⏰ تفاصيل الجلسات اليومية (بتوقيت القاهرة):</h4>
+                
+                <div class="table-responsive" style="margin-bottom: 20px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الجلسة</th>
+                                <th>التوقيت</th>
+                                <th>الوصف والوظيفة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>الجلسة الاستكشافية</strong></td>
+                                <td style="font-weight: 800; color: #0284c7;">09:30 ص - 10:00 ص</td>
+                                <td>تسجيل أوامر البيع والشراء وتعديلها دون تنفيذ لتحديد سعر الفتح النظري.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>جلسة التداول الرئيسية</strong></td>
+                                <td style="font-weight: 800; color: #16a34a;">10:00 ص - 02:30 م</td>
+                                <td>التداول الفعلي وتنفيذ العمليات على الأسهم والسندات والأذون (تنتهي الأوامر النشطة للأسهم 02:00 م ويليها الإغلاق).</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الصفقات ذات الحجم الكبير (Block Trades)</strong></td>
+                                <td style="font-weight: 800; color: #d97706;">09:15 ص - 09:45 ص<br>02:00 م - 02:30 م</td>
+                                <td>تنفيذ الصفقات الكبرى المباشرة التي تتجاوز حداً مالياً معيناً دون التأثير على سعر السهم بالسوق.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>سوق السندات الحكومية وأذون الخزانة</strong></td>
+                                <td style="font-weight: 800; color: #7c3aed;">10:00 ص - 02:30 م</td>
+                                <td>تداول أدوات الدين الحكومية وسندات الشركات.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>جلسة شهر رمضان المبارك</strong></td>
+                                <td style="font-weight: 800; color: #ea580c;">10:00 ص - 01:30 م</td>
+                                <td>مواعيد مخفضة رسمياً تطبق طوال شهر رمضان المبارك فقط.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 14px;">
+                    <h4 style="color: #991b1b; font-weight: 800; margin-bottom: 4px;">🏖️ الإجازات الرسمية والعطلات:</h4>
+                    <p style="color: #7f1d1d; font-size: 0.9rem;">
+                        تغلق البورصة في كافة الإجازات الرسمية الصادرة بقرارات مجلس الوزراء والبنك المركزي المصري (مثل: 25 يناير، عيد الفطر، عيد الأضحى، رأس السنة الهجرية، 30 يونيو، 23 يوليو، 6 أكتوبر).
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: GOOGLE SHEETS INTEGRATION & SYNC -->
+    <div class="modal-overlay" id="modal-google-sheets" onclick="if(event.target === this) closeGoogleSheetsModal()">
+        <div class="modal-box" style="max-width: 860px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0f9d58 0%, #0b8043 100%); color: white;">
+                <h3 style="color: white; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-table"></i> المزامنة والرفع المباشر إلى Google Sheets
+                </h3>
+                <button class="modal-close" style="color: white;" onclick="closeGoogleSheetsModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="font-size: 0.95rem; line-height: 1.7;">
+                
+                <!-- Status Banner -->
+                <div id="gs-status-box" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="font-weight: 800; color: #166534; font-size: 1.05rem;" id="gs-status-title">
+                            <i class="fa-solid fa-circle-check"></i> حالة الربط السحابي: جاهز
+                        </div>
+                        <div style="font-size: 0.85rem; color: #15803d; margin-top: 4px;" id="gs-status-subtitle">
+                            آخر مزامنة: لم تتم بعد
+                        </div>
+                    </div>
+                    <button class="btn" onclick="syncGoogleSheetsNow()" style="background: #0f9d58; color: white; font-weight: 800; padding: 8px 18px; box-shadow: 0 4px 10px rgba(15, 157, 88, 0.3);">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> رفع ومزامنة الآن ⚡
+                    </button>
+                </div>
+
+                <!-- Section 1: Webhook Config -->
+                <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                    <h4 style="font-weight: 800; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-link" style="color: #0f9d58;"></i> رابط Google Apps Script Webhook:
+                    </h4>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+                        <input type="text" id="gs-webhook-url" class="calc-field" placeholder="https://script.google.com/macros/s/AKfycb.../exec" style="flex: 1; font-family: monospace; font-size: 0.9rem; direction: ltr; text-align: left;">
+                        <button class="btn btn-secondary" onclick="saveGoogleSheetsConfig()" style="font-weight: 700; white-space: nowrap;">
+                            <i class="fa-solid fa-floppy-disk"></i> حفظ الرابط
+                        </button>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <input type="checkbox" id="gs-auto-sync" style="width: 18px; height: 18px; cursor: pointer;" onchange="saveGoogleSheetsConfig()">
+                        <label for="gs-auto-sync" style="font-weight: 700; color: var(--primary); cursor: pointer; font-size: 0.9rem;">
+                            تفعيل المزامنة التلقائية لـ Google Sheets يومياً فور حفظ جلسة البورصة (الساعة 02:00 ظهراً)
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Section 2: Step-by-Step Guide with Script -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                    <h4 style="font-weight: 800; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent);"></i> خطوات الربط البسيطة في دقيقة واحدة (بدون أي إعدادات سحابية معقدة):
+                    </h4>
+                    
+                    <ol style="margin-right: 20px; font-size: 0.9rem; color: #334155; line-height: 1.9;">
+                        <li>افتح أي شيت جديد على جوجل عبر الرابط: <a href="https://sheets.new" target="_blank" style="color: #0f9d58; font-weight: 800; text-decoration: underline;">sheets.new ↗</a></li>
+                        <li>من القائمة العلوية للشيت، اضغط على <strong>الإضافات (Extensions)</strong> ثم <strong>Apps Script</strong>.</li>
+                        <li>امسح أي كود موجود بالداخل، ثم اضغط على زر <strong>نسخ الكود الجاهز</strong> بالأسفل والصقه هناك.</li>
+                        <li>اضغط من أعلى اليمين على <strong>Deploy (نشر)</strong> &larr; <strong>New deployment</strong> &larr; اختر نوع <strong>Web app</strong>.</li>
+                        <li>اجعل خيار <strong>Who has access</strong> على <strong>Anyone (أي شخص)</strong> ثم اضغط <strong>Deploy</strong> ووافق على الصلاحيات.</li>
+                        <li>انسخ رابط الويب (Web App URL) والصقه في خانة الرابط أعلاه واضغط <strong>رفع ومزامنة الآن ⚡</strong>.</li>
+                    </ol>
+
+                    <div style="margin-top: 14px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-weight: 800; font-size: 0.85rem; color: var(--primary);">كود Google Apps Script الجاهز للتنسيق التلقائي:</span>
+                            <button class="btn btn-accent" style="padding: 4px 12px; font-size: 0.8rem;" onclick="copyAppsScriptCode()">
+                                <i class="fa-solid fa-copy"></i> نسخ الكود بالكامل
+                            </button>
+                        </div>
+                        <textarea id="gs-script-preview" readonly style="width: 100%; height: 140px; font-family: Consolas, monospace; font-size: 0.8rem; background: #0f172a; color: #38bdf8; padding: 10px; border-radius: 8px; direction: ltr; text-align: left; resize: vertical; border: none;"></textarea>
+                    </div>
+                </div>
+
+                <!-- Section 3: Live IMPORTDATA Alternative -->
+                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 16px;">
+                    <h4 style="font-weight: 800; color: #92400e; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-bolt"></i> خيار إضافي: الربط اللحظي المباشر عبر معادلات شيت (=IMPORTDATA):
+                    </h4>
+                    <p style="font-size: 0.85rem; color: #78350f; margin-bottom: 12px;">
+                        يمكنك أيضاً نسخ المعادلة ولصقها في الخلية A1 في شيت جوجل لجلب البيانات تلقائياً دون أي كود برمجي:
+                    </p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" readonly value='=IMPORTDATA("http://127.0.0.1:5050/api/google-sheets/export-archive.csv")' class="calc-field" style="flex: 1; font-family: monospace; font-size: 0.85rem; direction: ltr; text-align: left; background: white;" id="formula-archive">
+                            <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="copyFormula('formula-archive')">
+                                <i class="fa-solid fa-copy"></i> نسخ معادلة الأرشيف
+                            </button>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" readonly value='=IMPORTDATA("http://127.0.0.1:5050/api/google-sheets/export-rates.csv")' class="calc-field" style="flex: 1; font-family: monospace; font-size: 0.85rem; direction: ltr; text-align: left; background: white;" id="formula-rates">
+                            <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="copyFormula('formula-rates')">
+                                <i class="fa-solid fa-copy"></i> نسخ معادلة الأسعار والعملات
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        // Server injected state
+        let currentData = {{ cached_data|tojson if cached_data else 'null' }};
+        let currentSb = "{{ current_sb }}";
+        let fixedUsdRate = {{ usd_rate }};
+        let currentCurrencyView = "{{ settings.currency_view or 'both' }}";
+        let ta3weemData = {{ ta3weem|tojson if ta3weem else '{}' }};
+        let archiveData = {
+            daily: {{ daily_history|tojson if daily_history else '[]' }},
+            weekly: {{ weekly_summary|tojson if weekly_summary else '[]' }},
+            monthly: {{ monthly_summary|tojson if monthly_summary else '[]' }}
+        };
+        let currentArchivePeriod = 'daily';
+        let archiveChart = null;
+        let syncIntervalSeconds = 30;
+        let countdownSeconds = 30;
+
+
+        // Base Asset Prices in EGP (Reactively updated from Ta3weem)
+        function getAssetPricesEgp() {
+            let usd = fixedUsdRate || 52.07;
+            let prices = {
+                'EGP': 1.0,
+                'USD': usd,
+                'EUR': 59.10,
+                'SAR': 13.89,
+                'AED': 14.20,
+                'KWD': 169.58,
+                'GBP': 68.95,
+                'QAR': 14.31,
+                'CNY': 7.35,
+                'GOLD24': 6970.46,
+                'GOLD21': 6099.15,
+                'BTC': 84431.0 * usd,
+                'ETH': 2734.0 * usd,
+                'BRENT': 96.09 * usd
+            };
+
+            if (ta3weemData && ta3weemData.currencies) {
+                ta3weemData.currencies.forEach(c => {
+                    if (c.code && c.rate) prices[c.code] = c.rate;
+                });
+            }
+            if (ta3weemData && ta3weemData.gold) {
+                ta3weemData.gold.forEach(g => {
+                    if (g.name.includes("24") && g.rate) prices['GOLD24'] = g.rate;
+                    if (g.name.includes("21") && g.rate) prices['GOLD21'] = g.rate;
+                });
+            }
+            if (ta3weemData && ta3weemData.crypto) {
+                ta3weemData.crypto.forEach(cr => {
+                    if (cr.code === 'BTC') prices['BTC'] = cr.usd_price * usd;
+                    if (cr.code === 'ETH') prices['ETH'] = cr.usd_price * usd;
+                });
+            }
+            if (ta3weemData && ta3weemData.commodities) {
+                ta3weemData.commodities.forEach(co => {
+                    if (co.code === 'BRENT') prices['BRENT'] = co.usd_price * usd;
+                });
+            }
+            prices['USD'] = usd;
+            return prices;
+        }
+
+        // Toast Helper
+        function showToast(msg) {
+            const t = document.getElementById("toast-box");
+            document.getElementById("toast-msg").innerText = msg;
+            t.style.display = "flex";
+            setTimeout(() => { t.style.display = "none"; }, 3500);
+        }
+
+        // Formatters
+        function formatNumber(num) {
+            if (num === null || num === undefined) return "--";
+            return Number(num).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        }
+
+        function formatUSD(num) {
+            if (num === null || num === undefined) return "--";
+            return "$" + Number(num).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        }
+
+        // DYNAMIC CELL RENDERER (Respects currentCurrencyView completely)
+        function renderCell(egpVal, usdVal, isNet = false) {
+            let egpStr = formatNumber(egpVal) + " ج.م";
+            let realUsd = fixedUsdRate > 0 ? (egpVal / fixedUsdRate) : usdVal;
+            let usdStr = formatUSD(realUsd);
+
+            if (isNet) {
+                let isBuy = egpVal >= 0;
+                let sign = isBuy ? "+" : "-";
+                let badgeClass = isBuy ? "net-positive" : "net-negative";
+                
+                if (currentCurrencyView === 'egp') {
+                    return `<span class="${badgeClass}">${sign}${egpStr}</span>`;
+                } else if (currentCurrencyView === 'usd') {
+                    return `<span class="${badgeClass}">${sign}${usdStr}</span>`;
+                } else {
+                    return `
+                        <span class="${badgeClass}">${sign}${egpStr}</span>
+                        <span class="secondary-val">${sign}${usdStr}</span>
+                    `;
+                }
+            } else {
+                if (currentCurrencyView === 'egp') {
+                    return `<strong>${egpStr}</strong>`;
+                } else if (currentCurrencyView === 'usd') {
+                    return `<strong>${usdStr}</strong>`;
+                } else {
+                    return `<strong>${egpStr}</strong><span class="secondary-val">${usdStr}</span>`;
+                }
+            }
+        }
+
+        function renderTable(tableId, rows) {
+            const tbody = document.querySelector(`#${tableId} tbody`);
+            tbody.innerHTML = "";
+            if (!rows || rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">لا توجد بيانات متاحة حالياً، اضغط "تحديث الآن" لجلب البيانات</td></tr>`;
+                return;
+            }
+
+            rows.forEach(r => {
+                const tr = document.createElement("tr");
+                let icon = r.type === "مصريين" ? "🇪🇬" : (r.type === "عرب" ? "🇸🇦" : "🌐");
+                
+                tr.innerHTML = `
+                    <td><span class="type-pill">${icon} ${r.type}</span></td>
+                    <td>${renderCell(r.sell_egp, r.sell_usd)}</td>
+                    <td>${renderCell(r.buy_egp, r.buy_usd)}</td>
+                    <td>${renderCell(r.net_egp, r.net_usd, true)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // RENDER LIVE KPIS (Switches primary value based on currency view)
+        function renderKPIs(allRows) {
+            const kpiContainer = document.getElementById("kpi-container");
+            kpiContainer.innerHTML = "";
+            if (!allRows) return;
+
+            const mapClass = {
+                "مصريين": "kpi-egyptian",
+                "عرب": "kpi-arabs",
+                "أجانب": "kpi-foreigners"
+            };
+
+            allRows.forEach(r => {
+                const card = document.createElement("div");
+                card.className = `kpi-card ${mapClass[r.type] || ''}`;
+                
+                let isBuy = r.net_egp >= 0;
+                let sign = isBuy ? "+" : "-";
+                let statusText = isBuy ? "صافي شراء" : "صافي بيع";
+                let colorClass = isBuy ? "color: var(--green-text)" : "color: var(--red-text)";
+                let realUsd = fixedUsdRate > 0 ? (r.net_egp / fixedUsdRate) : r.net_usd;
+
+                let valHtml = "";
+                if (currentCurrencyView === 'usd') {
+                    valHtml = `
+                        <div class="kpi-val-primary" style="${colorClass}">
+                            ${sign}${formatUSD(realUsd)}
+                        </div>
+                    `;
+                } else if (currentCurrencyView === 'egp') {
+                    valHtml = `
+                        <div class="kpi-val-primary" style="${colorClass}">
+                            ${sign}${formatNumber(r.net_egp)} <span style="font-size: 0.9rem; font-weight: 600;">ج.م</span>
+                        </div>
+                    `;
+                } else {
+                    valHtml = `
+                        <div class="kpi-val-primary" style="${colorClass}">
+                            ${sign}${formatNumber(r.net_egp)} <span style="font-size: 0.9rem; font-weight: 600;">ج.م</span>
+                        </div>
+                        <div class="kpi-val-secondary">
+                            ${sign}${formatUSD(realUsd)}
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="kpi-title">
+                        <span>صافي تعاملات ${r.type}</span>
+                        <span style="font-size: 0.8rem; font-weight: 700; ${colorClass}">${statusText}</span>
+                    </div>
+                    ${valHtml}
+                `;
+                kpiContainer.appendChild(card);
+            });
+        }
+
+        function updateUI() {
+            if (!currentData || !currentData.tables) return;
+            document.getElementById("lbl-segment-name").innerText = currentData.segment_name || "";
+            document.getElementById("lbl-fixed-usd").innerText = fixedUsdRate.toFixed(2);
+            document.getElementById("lbl-highlight-usd-rate").innerHTML = `${fixedUsdRate.toFixed(2)} <span style="font-size: 0.85rem;">ج.م</span>`;
+            
+            // Set active currency toggle button in navbar
+            document.querySelectorAll(".nav-curr-btn").forEach(b => b.classList.remove("active"));
+            const activeNavBtn = document.getElementById(`nav-btn-${currentCurrencyView}`);
+            if (activeNavBtn) activeNavBtn.classList.add("active");
+
+            renderTable("tbl-all", currentData.tables.all);
+            renderTable("tbl-individuals", currentData.tables.individuals);
+            renderTable("tbl-institutions", currentData.tables.institutions);
+            renderKPIs(currentData.tables.all);
+
+            document.getElementById("btn-export-excel").href = `/export/excel?sb=${currentSb}&rate=${fixedUsdRate}`;
+            document.getElementById("btn-export-archive-excel").href = `/export/archive/excel?sb=${currentSb}`;
+
+            runQuickCalc();
+        }
+
+        // GLOBAL AND PERSISTENT CURRENCY VIEW (من فوق في الجنب)
+        function setCurrencyView(view) {
+            currentCurrencyView = view;
+            localStorage.setItem('egx_currency_view', view);
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currency_view: view })
+            }).catch(e => console.log(e));
+
+            document.querySelectorAll(".nav-curr-btn").forEach(b => b.classList.remove("active"));
+            const activeNavBtn = document.getElementById(`nav-btn-${view}`);
+            if (activeNavBtn) activeNavBtn.classList.add("active");
+
+            updateUI();
+            updateArchiveView();
+            showToast(view === 'usd' ? 'تم تحويل العرض إلى: بالدولار الأمريكي فقط' : (view === 'egp' ? 'تم تحويل العرض إلى: بالجنيه المصري فقط' : 'تم تفعيل العرض بالجنيه والدولار معاً'));
+        }
+
+        // Banks Modal & Direct Selection
+        function openBanksModal() {
+            document.getElementById("modal-banks").classList.add("active");
+        }
+
+        function closeBanksModal() {
+            document.getElementById("modal-banks").classList.remove("active");
+        }
+
+        function openEGXHoursModal() {
+            document.getElementById("modal-egx-hours").classList.add("active");
+        }
+
+        function closeEGXHoursModal() {
+            document.getElementById("modal-egx-hours").classList.remove("active");
+        }
+
+        function filterBanksTable(query) {
+            const rows = document.querySelectorAll("#tbl-modal-banks-body tr");
+            query = query.trim().toLowerCase();
+            rows.forEach(r => {
+                const name = r.cells[0].innerText.toLowerCase();
+                r.style.display = name.includes(query) ? "" : "none";
+            });
+        }
+
+        function selectBankDirect(buyRate, sellRate, bankName) {
+            fixedUsdRate = parseFloat(buyRate);
+            localStorage.setItem('egx_fixed_usd_rate', fixedUsdRate);
+            document.getElementById("lbl-active-bank-title").innerText = bankName;
+
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fixed_usd_rate: fixedUsdRate,
+                    selected_bank: bankName
+                })
+            }).catch(e => console.log(e));
+
+            closeBanksModal();
+            updateUI();
+            updateArchiveView();
+            showToast(`✅ تم اعتماد وتثبيت سعر ${bankName} (${fixedUsdRate.toFixed(2)} ج.م) في كافة الحسابات`);
+        }
+
+        // Full Multi-Currency Calculator
+        function openCurrencyCalculatorModal() {
+            document.getElementById("modal-calculator").classList.add("active");
+            calculateFullConversion();
+        }
+
+        function closeCurrencyCalculatorModal() {
+            document.getElementById("modal-calculator").classList.remove("active");
+        }
+
+        function swapCalculatorCurrencies() {
+            const fromSel = document.getElementById("calc-from-currency");
+            const toSel = document.getElementById("calc-to-currency");
+            const temp = fromSel.value;
+            fromSel.value = toSel.value;
+            toSel.value = temp;
+            calculateFullConversion();
+        }
+
+        function calculateFullConversion() {
+            const amount = parseFloat(document.getElementById("calc-amount").value) || 0;
+            const fromCode = document.getElementById("calc-from-currency").value;
+            const toCode = document.getElementById("calc-to-currency").value;
+            const prices = getAssetPricesEgp();
+
+            const fromPriceEgp = prices[fromCode] || 1.0;
+            const toPriceEgp = prices[toCode] || 1.0;
+
+            const totalEgp = amount * fromPriceEgp;
+            const convertedVal = totalEgp / toPriceEgp;
+
+            let formattedVal = formatNumber(convertedVal);
+            if (convertedVal < 0.01 && convertedVal > 0) {
+                formattedVal = convertedVal.toFixed(6);
+            }
+            document.getElementById("calc-result-display").innerText = formattedVal;
+            document.getElementById("calc-result-summary").innerText = `${formatNumber(amount)} ${fromCode} = `;
+            
+            const rateOne = (fromPriceEgp / toPriceEgp);
+            document.getElementById("calc-rate-equation").innerText = `1 ${fromCode} = ${rateOne.toLocaleString('en-US', {maximumFractionDigits: 6})} ${toCode} (المعادل بالج.م: ${formatNumber(fromPriceEgp)} ج.م)`;
+            document.getElementById("calc-active-rate-info").innerText = `1 USD = ${fixedUsdRate.toFixed(2)} EGP`;
+
+            // Matrix
+            const matrixBody = document.getElementById("tbl-calc-matrix-body");
+            matrixBody.innerHTML = "";
+
+            const assetDefinitions = [
+                { code: 'EGP', name: '🇪🇬 الجنيه المصري' },
+                { code: 'USD', name: '🇺🇸 الدولار الأمريكي' },
+                { code: 'EUR', name: '🇪🇺 اليورو الأوروبي' },
+                { code: 'SAR', name: '🇸🇦 الريال السعودي' },
+                { code: 'AED', name: '🇦🇪 الدرهم الإماراتي' },
+                { code: 'KWD', name: '🇰🇼 الدينار الكويتي' },
+                { code: 'GBP', name: '🇬🇧 الجنيه الإسترليني' },
+                { code: 'QAR', name: '🇶🇦 الريال القطري' },
+                { code: 'CNY', name: '🇨🇳 اليوان الصيني' },
+                { code: 'GOLD21', name: '🥈 جرام ذهب عيار 21' },
+                { code: 'GOLD24', name: '🥇 جرام ذهب عيار 24' },
+                { code: 'BTC', name: '🪙 البتكوين (BTC)' },
+                { code: 'ETH', name: '🔷 الإيثريوم (ETH)' },
+                { code: 'BRENT', name: '🛢️ برميل نفط برنت' }
+            ];
+
+            assetDefinitions.forEach(item => {
+                const itemPriceEgp = prices[item.code] || 1.0;
+                const itemVal = totalEgp / itemPriceEgp;
+                let valStr = formatNumber(itemVal);
+                if (itemVal < 0.01 && itemVal > 0) valStr = itemVal.toFixed(6);
+
+                const itemPriceUsd = itemPriceEgp / (prices['USD'] || 52.07);
+
+                const tr = document.createElement("tr");
+                if (item.code === fromCode) tr.style.backgroundColor = "#fef9c3";
+
+                tr.innerHTML = `
+                    <td><strong>${item.name}</strong></td>
+                    <td style="color: var(--primary); font-weight: 800; font-size: 1.05rem;">${valStr}</td>
+                    <td style="color: var(--text-muted); font-weight: 700;">${formatNumber(itemPriceEgp)} ج.م</td>
+                    <td style="color: var(--green-text); font-weight: 700;">$${formatNumber(itemPriceUsd)}</td>
+                `;
+                matrixBody.appendChild(tr);
+            });
+        }
+
+        function runQuickCalc() {
+            const amt = parseFloat(document.getElementById("quick-calc-amount").value) || 0;
+            const fromCode = document.getElementById("quick-calc-from").value;
+            const prices = getAssetPricesEgp();
+            const fromPriceEgp = prices[fromCode] || 1.0;
+            const totalEgp = amt * fromPriceEgp;
+            document.getElementById("quick-calc-egp-result").innerText = formatNumber(totalEgp) + " ج.م";
+        }
+
+        // View Switching
+        function switchMainView(view) {
+            document.querySelectorAll(".navbar-nav .nav-btn").forEach(b => {
+                if (b.id === 'nav-live' || b.id === 'nav-archive') b.classList.remove("active");
+            });
+            document.querySelectorAll(".view-section").forEach(s => s.classList.remove("active"));
+
+            if (view === 'live') {
+                document.getElementById("nav-live").classList.add("active");
+                document.getElementById("view-live-section").classList.add("active");
+            } else if (view === 'archive') {
+                document.getElementById("nav-archive").classList.add("active");
+                document.getElementById("view-archive-section").classList.add("active");
+                updateArchiveView();
+            }
+        }
+
+        function changeSegment(sb) {
+            currentSb = sb;
+            document.querySelectorAll(".segments-tabs .tab-btn").forEach(b => b.classList.remove("active"));
+            event.target.classList.add("active");
+            triggerScrape();
+        }
+
+        function triggerScrape(silent = false) {
+            if (!silent) document.getElementById("loading-overlay").style.display = "flex";
+            
+            // First show latest saved snapshot immediately
+            fetch(`/api/latest-egx?sb=${currentSb}&_t=${Date.now()}`)
+            .then(r => r.json())
+            .then(d => {
+                if (d.status === 'success' && d.data) {
+                    currentData = d.data;
+                    updateUI();
+                    fetchArchiveData();
+                }
+            }).catch(() => {});
+
+            fetch('/api/fetch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sb: currentSb, rate: fixedUsdRate })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!silent) document.getElementById("loading-overlay").style.display = "none";
+                if (data.status === 'success') {
+                    currentData = data.data;
+                    updateUI();
+                    fetchArchiveData();
+                    if (!silent) showToast("✅ تم تحديث بيانات البورصة المصرية بنجاح");
+                } else if (!silent) {
+                    showToast("⚡ تم عرض أحدث بيانات مسجلة للجلسة");
+                }
+            })
+            .catch(err => {
+                if (!silent) {
+                    document.getElementById("loading-overlay").style.display = "none";
+                    showToast("⚡ تم عرض أحدث بيانات مسجلة للجلسة");
+                }
+            });
+        }
+
+        function renderOilCards(commodities) {
+            const c = document.getElementById("oil-container");
+            if (!c || !commodities) return;
+            c.innerHTML = "";
+            commodities.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "asset-card price-flash";
+                const color = item.is_positive ? "var(--green-text)" : "var(--red-text)";
+                div.innerHTML = `
+                    <div class="asset-card-title">
+                        <span>${item.icon} ${item.name}</span>
+                        <span style="color: ${color}; font-weight: 800;">${item.change_24h}</span>
+                    </div>
+                    <div class="asset-price-usd">${item.usd_price_formatted}</div>
+                    <div class="asset-price-egp">≈ ${item.egp_price_formatted}</div>
+                `;
+                c.appendChild(div);
+            });
+        }
+
+        function renderCryptoCards(crypto) {
+            const c = document.getElementById("crypto-container");
+            if (!c || !crypto) return;
+            c.innerHTML = "";
+            crypto.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "asset-card price-flash";
+                const color = item.is_positive ? "var(--green-text)" : "var(--red-text)";
+                div.innerHTML = `
+                    <div class="asset-card-title">
+                        <span>${item.icon} ${item.name} (${item.code})</span>
+                        <span style="color: ${color}; font-weight: 800;">${item.change_24h}</span>
+                    </div>
+                    <div class="asset-price-usd">${item.usd_price_formatted}</div>
+                    <div class="asset-price-egp">≈ ${item.egp_price_formatted}</div>
+                `;
+                c.appendChild(div);
+            });
+        }
+
+        function renderCurrenciesList(currencies) {
+            const c = document.getElementById("ta3weem-currency-list");
+            if (!c || !currencies) return;
+            c.innerHTML = "";
+            currencies.forEach(item => {
+                if (item.code === 'USD') return;
+                const div = document.createElement("div");
+                div.className = "currency-row price-flash";
+                const color = (item.change && item.change.includes("-")) ? "var(--red-text)" : "var(--green-text)";
+                div.innerHTML = `
+                    <div class="curr-info">
+                        <span class="curr-flag">${item.flag || '🌐'}</span>
+                        <div>
+                            <div class="curr-name">${item.name_ar || item.name}</div>
+                            <div class="curr-sub-rates">شراء: ${item.buy} | بيع: ${item.sell}</div>
+                        </div>
+                    </div>
+                    <div class="curr-rates">
+                        <div class="curr-main-rate">${item.rate} <span style="font-size: 0.7rem;">ج.م</span></div>
+                        <div style="font-size: 0.75rem; color: ${color}; text-align: left; font-weight: 700;">
+                            ${item.change || '0.0%'}
+                        </div>
+                    </div>
+                `;
+                c.appendChild(div);
+            });
+        }
+
+        function renderGoldList(gold) {
+            const c = document.getElementById("ta3weem-gold-list");
+            if (!c || !gold) return;
+            c.innerHTML = "";
+            gold.forEach(g => {
+                const div = document.createElement("div");
+                div.className = "currency-row price-flash";
+                div.innerHTML = `
+                    <div class="curr-info">
+                        <i class="fa-solid fa-ring" style="color: #f59e0b; font-size: 1.1rem;"></i>
+                        <span class="curr-name">${g.name}</span>
+                    </div>
+                    <div class="curr-rates">
+                        <div class="curr-main-rate">${g.rate_formatted} <span style="font-size: 0.7rem;">ج.م</span></div>
+                    </div>
+                `;
+                c.appendChild(div);
+            });
+        }
+
+        function renderBanksModalTable(banks) {
+            const tbody = document.getElementById("tbl-modal-banks-body");
+            if (!tbody || !banks) return;
+            tbody.innerHTML = "";
+            banks.forEach(b => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><strong>${b.bank}</strong></td>
+                    <td style="color: var(--green-text); font-weight: 800;">${b.buy} ج.م</td>
+                    <td style="color: var(--primary); font-weight: 800;">${b.sell} ج.م</td>
+                    <td style="color: var(--text-muted); font-weight: 700;">${b.avg} ج.م</td>
+                    <td>
+                        <button class="btn btn-accent" style="padding: 4px 10px; font-size: 0.78rem;" onclick="selectBankDirect('${b.buy}', '${b.sell}', '${b.bank}')">
+                            <i class="fa-solid fa-check"></i> اعتماد هذا السعر
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function refreshTa3weem(silent = false) {
+            if (!silent) document.getElementById("loading-overlay").style.display = "flex";
+            fetch('/api/ta3weem?refresh=1&_t=' + Date.now())
+
+            .then(res => res.json())
+            .then(data => {
+                if (!silent) document.getElementById("loading-overlay").style.display = "none";
+                if (data.status === 'success') {
+                    ta3weemData = data.data;
+                    document.getElementById("lbl-ta3weem-time").innerText = ta3weemData.updated_at || '';
+                    document.getElementById("lbl-last-sync-time").innerText = ta3weemData.updated_at || 'تمت الآن';
+                    
+                    // RE-RENDER ALL ASSET LISTS DYNAMICALLY
+                    renderOilCards(ta3weemData.commodities);
+                    renderCryptoCards(ta3weemData.crypto);
+                    renderCurrenciesList(ta3weemData.currencies);
+                    renderGoldList(ta3weemData.gold);
+                    renderBanksModalTable(ta3weemData.banks);
+
+                    if (ta3weemData.highest_buy) document.getElementById("lbl-modal-highest-buy").innerText = ta3weemData.highest_buy;
+                    if (ta3weemData.lowest_sell) document.getElementById("lbl-modal-lowest-sell").innerText = ta3weemData.lowest_sell;
+
+                    // Dynamically update USD rate to active bank's latest rate from Ta3weem
+                    let activeBank = null;
+                    const activeTitle = document.getElementById("lbl-active-bank-title") ? document.getElementById("lbl-active-bank-title").innerText : "";
+                    if (ta3weemData.banks && ta3weemData.banks.length > 0) {
+                        activeBank = ta3weemData.banks.find(b => activeTitle && (activeTitle.includes(b.bank) || b.bank.includes(activeTitle))) ||
+                                     ta3weemData.banks.find(b => b.bank.includes("الأهلي") || b.bank.includes("NBE")) ||
+                                     ta3weemData.banks[0];
+                    }
+                    if (activeBank) {
+                        fixedUsdRate = parseFloat(activeBank.buy) || parseFloat(activeBank.sell) || fixedUsdRate;
+                    } else if (ta3weemData.usd_rate) {
+                        fixedUsdRate = ta3weemData.usd_rate;
+                    }
+
+                    countdownSeconds = syncIntervalSeconds;
+                    updateUI();
+                    
+                    // Visual glow on USD card
+                    const usdCard = document.querySelector(".usd-highlight-card");
+                    if (usdCard) {
+                        usdCard.classList.remove("price-flash");
+                        void usdCard.offsetWidth;
+                        usdCard.classList.add("price-flash");
+                    }
+                    
+                    if (silent) {
+                        showToast("⚡ تم تحديث الأسعار اللحظية بنجاح");
+                    } else {
+                        showToast("✅ تمت مزامنة كافة الأسعار وتحديث الشاشة بنجاح");
+                    }
+                }
+            })
+            .catch(e => {
+                if (!silent) document.getElementById("loading-overlay").style.display = "none";
+                console.error("Refresh error:", e);
+            });
+        }
+
+
+        function triggerManualSync() {
+            // 1. Live currencies and assets
+            refreshTa3weem(false);
+            
+            // 2. Fetch latest saved EGX session data immediately
+            fetch(`/api/latest-egx?sb=${currentSb}&_t=${Date.now()}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.data) {
+                    currentData = data.data;
+                    updateUI();
+                    fetchArchiveData();
+                }
+            })
+            .catch(() => {});
+            
+            // 3. Trigger live background scrape
+            triggerScrape(true);
+        }
+
+        function fetchArchiveData() {
+            fetch(`/api/archive?sb=${currentSb}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    archiveData = {
+                        daily: data.daily || [],
+                        weekly: data.weekly || [],
+                        monthly: data.monthly || []
+                    };
+                    if (document.getElementById("view-archive-section").classList.contains("active")) {
+                        updateArchiveView();
+                    }
+                }
+            });
+        }
+
+        // Archive Functions
+        function switchArchivePeriod(period) {
+            currentArchivePeriod = period;
+            document.querySelectorAll("#view-archive-section .tab-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById(`arch-tab-${period}`).classList.add("active");
+            updateArchiveView();
+        }
+
+        function updateArchiveView() {
+            let list = archiveData[currentArchivePeriod] || [];
+            let sumInflowEgp = 0, sumOutflowEgp = 0, sumNetEgp = 0;
+            let sumInflowUsd = 0, sumOutflowUsd = 0, sumNetUsd = 0;
+
+            list.forEach(r => {
+                sumInflowEgp += (r.total_inflow_egp || 0);
+                sumOutflowEgp += (r.total_outflow_egp || 0);
+                sumNetEgp += (r.total_net_egp || 0);
+                
+                // Recalculate USD based on fixedUsdRate
+                let realInflowUsd = fixedUsdRate > 0 ? (r.total_inflow_egp / fixedUsdRate) : (r.total_inflow_usd || 0);
+                let realOutflowUsd = fixedUsdRate > 0 ? (r.total_outflow_egp / fixedUsdRate) : (r.total_outflow_usd || 0);
+                let realNetUsd = fixedUsdRate > 0 ? (r.total_net_egp / fixedUsdRate) : (r.total_net_usd || 0);
+
+                sumInflowUsd += realInflowUsd;
+                sumOutflowUsd += realOutflowUsd;
+                sumNetUsd += realNetUsd;
+            });
+
+            let netSign = sumNetEgp >= 0 ? "+" : "-";
+            let netColor = sumNetEgp >= 0 ? "var(--green-text)" : "var(--red-text)";
+
+            // Update Archive KPIs according to currentCurrencyView
+            if (currentCurrencyView === 'usd') {
+                document.getElementById("arch-kpi-inflow-primary").innerText = formatUSD(sumInflowUsd);
+                document.getElementById("arch-kpi-inflow-secondary").innerText = "";
+
+                document.getElementById("arch-kpi-outflow-primary").innerText = formatUSD(sumOutflowUsd);
+                document.getElementById("arch-kpi-outflow-secondary").innerText = "";
+
+                document.getElementById("arch-kpi-net-primary").style.color = netColor;
+                document.getElementById("arch-kpi-net-primary").innerText = `${netSign}${formatUSD(sumNetUsd)}`;
+                document.getElementById("arch-kpi-net-secondary").innerText = "";
+                document.getElementById("lbl-chart-curr-badge").innerText = "مقارنة تراكمية بالدولار الأمريكي ($)";
+            } else if (currentCurrencyView === 'egp') {
+                document.getElementById("arch-kpi-inflow-primary").innerText = formatNumber(sumInflowEgp) + " ج.م";
+                document.getElementById("arch-kpi-inflow-secondary").innerText = "";
+
+                document.getElementById("arch-kpi-outflow-primary").innerText = formatNumber(sumOutflowEgp) + " ج.م";
+                document.getElementById("arch-kpi-outflow-secondary").innerText = "";
+
+                document.getElementById("arch-kpi-net-primary").style.color = netColor;
+                document.getElementById("arch-kpi-net-primary").innerText = `${netSign}${formatNumber(sumNetEgp)} ج.م`;
+                document.getElementById("arch-kpi-net-secondary").innerText = "";
+                document.getElementById("lbl-chart-curr-badge").innerText = "مقارنة تراكمية بالجنيه المصري (ج.م)";
+            } else {
+                document.getElementById("arch-kpi-inflow-primary").innerText = formatNumber(sumInflowEgp) + " ج.م";
+                document.getElementById("arch-kpi-inflow-secondary").innerText = formatUSD(sumInflowUsd);
+
+                document.getElementById("arch-kpi-outflow-primary").innerText = formatNumber(sumOutflowEgp) + " ج.م";
+                document.getElementById("arch-kpi-outflow-secondary").innerText = formatUSD(sumOutflowUsd);
+
+                document.getElementById("arch-kpi-net-primary").style.color = netColor;
+                document.getElementById("arch-kpi-net-primary").innerText = `${netSign}${formatNumber(sumNetEgp)} ج.م`;
+                document.getElementById("arch-kpi-net-secondary").innerText = `${netSign}${formatUSD(sumNetUsd)}`;
+                document.getElementById("lbl-chart-curr-badge").innerText = "مقارنة تراكمية بالجنيه والدولار معاً";
+            }
+
+            let badge = document.getElementById("arch-kpi-status-badge");
+            badge.innerText = sumNetEgp >= 0 ? "صافي دخول سيولة" : "صافي خروج سيولة";
+            badge.style.backgroundColor = sumNetEgp >= 0 ? "var(--green-bg)" : "var(--red-bg)";
+            badge.style.color = sumNetEgp >= 0 ? "var(--green-text)" : "var(--red-text)";
+
+            renderArchiveTable();
+            renderArchiveChart();
+        }
+
+        function renderArchiveTable() {
+            let list = archiveData[currentArchivePeriod] || [];
+            const thead = document.getElementById("tbl-archive-head");
+            const tbody = document.getElementById("tbl-archive-body");
+
+            thead.innerHTML = `
+                <tr>
+                    <th>الفترة الزمنية</th>
+                    <th>كام دخل (شراء المؤسسات)</th>
+                    <th>كام خرج (بيع المؤسسات)</th>
+                    <th>صافي التدفق (دخل - خرج)</th>
+                    <th>صافي الأجانب 🌐</th>
+                    <th>صافي العرب 🇸🇦</th>
+                    <th>صافي المصريين 🇪🇬</th>
+                </tr>
+            `;
+
+            tbody.innerHTML = "";
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 35px; color: var(--primary); font-weight: 700; font-size: 1rem;"><i class="fa-solid fa-circle-check" style="color: var(--green-text); margin-left: 8px;"></i> تم تصفير الأرشيف الاسترشادي بنجاح. سيبدأ التسجيل والأرشفة التلقائية الحقيقية 100% لجلسات التداول الفورية بدءاً من 1 أكتوبر.</td></tr>`;
+                return;
+            }
+
+
+            list.forEach(r => {
+                let tr = document.createElement("tr");
+                let label = r.date || (r.week_period ? `${r.start_date} إلى ${r.end_date}` : r.month_period);
+
+                tr.innerHTML = `
+                    <td><strong>${label}</strong></td>
+                    <td>${renderCell(r.total_inflow_egp, r.total_inflow_usd)}</td>
+                    <td>${renderCell(r.total_outflow_egp, r.total_outflow_usd)}</td>
+                    <td>${renderCell(r.total_net_egp, r.total_net_usd, true)}</td>
+                    <td>${renderCell(r.foreign_net_egp, r.foreign_net_usd, true)}</td>
+                    <td>${renderCell(r.arab_net_egp, r.arab_net_usd, true)}</td>
+                    <td>${renderCell(r.egypt_net_egp, r.egypt_net_usd, true)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderArchiveChart() {
+            let list = [...(archiveData[currentArchivePeriod] || [])].reverse();
+            const ctx = document.getElementById('archiveFlowChart').getContext('2d');
+            
+            let labels = list.map(r => r.date || (r.week_period ? `${r.start_date}` : r.month_period));
+            let isUsd = currentCurrencyView === 'usd';
+
+            let inflowData, outflowData, netData, unitLabel;
+            if (isUsd) {
+                unitLabel = 'القيمة (مليار دولار أمريكي)';
+                inflowData = list.map(r => ((r.total_inflow_egp / fixedUsdRate) / 1e9).toFixed(3));
+                outflowData = list.map(r => ((r.total_outflow_egp / fixedUsdRate) / 1e9).toFixed(3));
+                netData = list.map(r => ((r.total_net_egp / fixedUsdRate) / 1e9).toFixed(3));
+            } else {
+                unitLabel = 'القيمة (مليار جنيه مصري)';
+                inflowData = list.map(r => (r.total_inflow_egp / 1e9).toFixed(2));
+                outflowData = list.map(r => (r.total_outflow_egp / 1e9).toFixed(2));
+                netData = list.map(r => (r.total_net_egp / 1e9).toFixed(2));
+            }
+
+            if (archiveChart) {
+                archiveChart.destroy();
+            }
+
+            archiveChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: `السيولة الداخلة (شراء) - ${unitLabel}`,
+                            data: inflowData,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: '#10b981',
+                            borderWidth: 1
+                        },
+                        {
+                            label: `السيولة الخارجة (بيع) - ${unitLabel}`,
+                            data: outflowData,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: '#ef4444',
+                            borderWidth: 1
+                        },
+                        {
+                            label: `صافي التدفق - ${unitLabel}`,
+                            data: netData,
+                            type: 'line',
+                            borderColor: '#0a3d62',
+                            backgroundColor: '#0a3d62',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: { display: true, text: unitLabel }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top', rtl: true }
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // AUTO-SYNC TIMERS & COUNTDOWN
+        // ==========================================
+
+        function changeSyncSpeed(sec) {
+
+            syncIntervalSeconds = parseInt(sec);
+            countdownSeconds = syncIntervalSeconds;
+            showToast(`⚡ تم ضبط تردد التحديث إلى: كل ${sec} ثانية`);
+        }
+
+        // 1. Countdown timer ticking every second
+        setInterval(() => {
+            if (countdownSeconds > 0) {
+                countdownSeconds--;
+                let m = Math.floor(countdownSeconds / 60);
+                let s = countdownSeconds % 60;
+                let mStr = m < 10 ? "0" + m : m;
+                let sStr = s < 10 ? "0" + s : s;
+                document.getElementById("lbl-countdown-timer").innerText = `${mStr}:${sStr}`;
+            } else {
+                countdownSeconds = syncIntervalSeconds;
+                refreshTa3weem(true);
+            }
+        }, 1000);
+
+
+        // 2. Cairo Market Clock polling every 10 seconds
+        setInterval(() => {
+            fetch('/api/market-status')
+            .then(res => res.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    document.getElementById("live-cairo-clock").innerText = res.data.cairo_time_formatted;
+                    document.getElementById("lbl-market-status-desc").innerText = res.data.status_description;
+                    const dot = document.getElementById("market-pulse-dot");
+                    if (res.data.is_market_open) {
+                        dot.className = "pulse-dot pulse-green";
+                    } else {
+                        dot.className = "pulse-dot pulse-red";
+                    }
+                }
+            })
+            .catch(() => {});
+        }, 10000);
+
+        // ==========================================
+        // GOOGLE SHEETS INTEGRATION LOGIC
+        // ==========================================
+        let googleSheetsConfig = {
+            webhook_url: "",
+            auto_sync: false,
+            last_sync_time: null,
+            last_sync_status: null,
+            last_sync_message: null
+        };
+
+        function openGoogleSheetsModal() {
+            document.getElementById("modal-google-sheets").classList.add("active");
+            loadGoogleSheetsConfig();
+            fetchAppsScriptCode();
+        }
+
+        function closeGoogleSheetsModal() {
+            document.getElementById("modal-google-sheets").classList.remove("active");
+        }
+
+        function loadGoogleSheetsConfig() {
+            fetch('/api/google-sheets/config')
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === 'success' && res.config) {
+                    googleSheetsConfig = res.config;
+                    document.getElementById("gs-webhook-url").value = googleSheetsConfig.webhook_url || '';
+                    document.getElementById("gs-auto-sync").checked = !!googleSheetsConfig.auto_sync;
+                    
+                    const titleEl = document.getElementById("gs-status-title");
+                    const subEl = document.getElementById("gs-status-subtitle");
+                    
+                    if (googleSheetsConfig.last_sync_status === 'success') {
+                        titleEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #16a34a;"></i> حالة الربط: متصل ومزامن بنجاح`;
+                        subEl.innerText = `آخر مزامنة: ${googleSheetsConfig.last_sync_time || 'حديثاً'} | ${googleSheetsConfig.last_sync_message || ''}`;
+                    } else if (googleSheetsConfig.last_sync_status === 'error') {
+                        titleEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #dc2626;"></i> حالة الربط: حدث خطأ أثناء المزامنة`;
+                        subEl.innerText = `${googleSheetsConfig.last_sync_message || 'تأكد من رابط الـ Webhook'}`;
+                    } else {
+                        titleEl.innerHTML = `<i class="fa-solid fa-cloud" style="color: #0f9d58;"></i> حالة الربط: جاهز للمزامنة`;
+                        subEl.innerText = googleSheetsConfig.webhook_url ? "تم حفظ الرابط، يمكنك الضغط على رفع ومزامنة الآن" : "أدخل رابط الـ Webhook للبدء في الرفع التلقائي";
+                    }
+                }
+            })
+            .catch(() => {});
+        }
+
+        function saveGoogleSheetsConfig() {
+            const url = document.getElementById("gs-webhook-url").value.trim();
+            const autoSync = document.getElementById("gs-auto-sync").checked;
+            
+            fetch('/api/google-sheets/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ webhook_url: url, auto_sync: autoSync })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    showToast("💾 تم حفظ إعدادات Google Sheets بنجاح");
+                    loadGoogleSheetsConfig();
+                }
+            })
+            .catch(e => showToast("❌ فشل حفظ الإعدادات: " + e));
+        }
+
+        function syncGoogleSheetsNow() {
+            const url = document.getElementById("gs-webhook-url").value.trim();
+            if (!url) {
+                alert("يرجى إدخال رابط الـ Webhook أولاً قبل بدء المزامنة.");
+                return;
+            }
+            
+            saveGoogleSheetsConfig();
+            
+            const statusTitle = document.getElementById("gs-status-title");
+            const statusSub = document.getElementById("gs-status-subtitle");
+            statusTitle.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="color: #0284c7;"></i> جاري الرفع والمزامنة مع Google Sheets...`;
+            statusSub.innerText = "يتم الآن تجميع الأرشيف والأسعار وتحديث كافة التبويبات...";
+            
+            fetch('/api/google-sheets/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ webhook_url: url, sb: currentSb })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    showToast("📊 تم رفع وتحديث كافة البيانات في Google Sheets بنجاح!");
+                    loadGoogleSheetsConfig();
+                } else {
+                    alert("خطأ أثناء المزامنة: " + res.message);
+                    loadGoogleSheetsConfig();
+                }
+            })
+            .catch(err => {
+                alert("فشل الاتصال: " + err);
+                loadGoogleSheetsConfig();
+            });
+        }
+
+        function fetchAppsScriptCode() {
+            fetch('/api/google-sheets/apps-script')
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    document.getElementById("gs-script-preview").value = res.script;
+                }
+            })
+            .catch(() => {});
+        }
+
+        function copyAppsScriptCode() {
+            const code = document.getElementById("gs-script-preview").value;
+            navigator.clipboard.writeText(code).then(() => {
+                showToast("📋 تم نسخ كود Apps Script بنجاح! الصقه في محرر جوجل شيت");
+            }).catch(() => {
+                const el = document.getElementById("gs-script-preview");
+                el.select();
+                document.execCommand("copy");
+                showToast("📋 تم نسخ كود Apps Script بنجاح!");
+            });
+        }
+
+        function copyFormula(id) {
+            const el = document.getElementById(id);
+            el.select();
+            navigator.clipboard.writeText(el.value).then(() => {
+                showToast("📋 تم نسخ المعادلة بنجاح! الصقها في الخلية A1 في شيت جوجل");
+            }).catch(() => {
+                document.execCommand("copy");
+                showToast("📋 تم نسخ المعادلة بنجاح!");
+            });
+        }
+
+        // Initialize UI
+        if (currentData) {
+            updateUI();
+        } else {
+            triggerScrape();
+        }
+    </script>
+</body>
+</html>

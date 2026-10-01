@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">منظومة البورصة المصرية وأسواق الصرف والسلع الحية</title>
+  
+  <!-- خطوط احترافية: Plus Jakarta Sans للإنجليزية و Cairo للعربية -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --primary: #090e1a;
+      --primary-card: #0f172a;
+      --card-bg: #ffffff;
+      --bg: #f8fafc;
+      --border: #e2e8f0;
+      --border-subtle: #f1f5f9;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --green: #059669;
+      --green-bg: #ecfdf5;
+      --green-border: #a7f3d0;
+      --red: #e11d48;
+      --red-bg: #fff1f2;
+      --red-border: #fecdd3;
+      --blue: #2563eb;
+      --blue-bg: #eff6ff;
+      --blue-border: #bfdbfe;
+      --amber: #d97706;
+      --amber-bg: #fffbeb;
+      --amber-border: #fde68a;
+      --accent: #0ea5e9;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Cairo', sans-serif;
+      padding-bottom: 40px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body.lang-en {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* أرقام لاتينية غربية إلزامية وبدون انعكاس الإشارات */
+    .num-ltr {
+      direction: ltr !important;
+      unicode-bidi: isolate;
+      font-variant-numeric: tabular-nums;
+      font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, sans-serif !important;
+      font-weight: 700;
+    }
+    span.num-ltr {
+      display: inline-block;
+    }
+
+    /* ==========================================
+       شريط الملاحة العلوي الفاخر
+       ========================================== */
+    .nav-bar {
+      background: linear-gradient(135deg, #090e1a 0%, #111827 50%, #1e293b 100%);
+      color: #fff;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1rem;
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
+    }
+
+    .brand-text {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill-group {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 3px;
+      border-radius: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      gap: 3px;
+    }
+
+    .pill-btn {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .pill-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .pill-btn.active {
+      background: #38bdf8;
+      color: #090e1a;
+      box-shadow: 0 2px 8px rgba(56, 189, 248, 0.35);
+    }
+
+    .live-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 5px 12px;
+      border-radius: 9px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #22c55e;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      animation: pulseGreen 2s infinite;
+    }
+    @keyframes pulseGreen {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+
+    /* ==========================================
+       حاوية المحتوى والبطاقات
+       ========================================== */
+    .container {
+      max-width: 1440px;
+      margin: 20px auto;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .section-box {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+    }
+    .section-box:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .section-head {
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      background: #fafcff;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #0f172a;
+    }
+
+    .btn-action {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-blue {
+      background: #2563eb;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    }
+    .btn-blue:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .btn-amber {
+      background: #d97706;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+    }
+    .btn-amber:hover {
+      background: #b45309;
+      transform: translateY(-1px);
+    }
+
+    /* ==========================================
+       كروت الإحصائيات التنفيذية (3 كروت للمؤسسات)
+       ========================================== */
+    .kpi-row-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      padding: 18px 20px;
+    }
+
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: #cbd5e1;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+    .kpi-eg::before  { background: linear-gradient(90deg, #10b981, #059669); }
+    .kpi-ar::before  { background: linear-gradient(90deg, #06b6d4, #0284c7); }
+    .kpi-fo::before  { background: linear-gradient(90deg, #f43f5e, #e11d48); }
+
+    .kpi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .kpi-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--text-muted);
+    }
+    .kpi-icon-wrap {
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+    .kpi-eg .kpi-icon-wrap  { background: #d1fae5; color: #065f46; }
+    .kpi-ar .kpi-icon-wrap  { background: #cffafe; color: #155e75; }
+    .kpi-fo .kpi-icon-wrap  { background: #ffe4e6; color: #9f1239; }
+
+    .kpi-val {
+      font-size: 1.55rem;
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 8px;
+      letter-spacing: -0.4px;
+    }
+    .val-pos { color: var(--green); }
+    .val-neg { color: var(--red); }
+
+    .kpi-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .formula-banner {
+      background: #f8fafc;
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* ==========================================
+       جداول البيانات
+       ========================================== */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      padding: 0 20px 20px;
+    }
+
+    .table-title-bar {
+      font-weight: 800;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: #334155;
+    }
+
+    .archive-filters-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #475569;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .filter-btn.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.88rem;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      overflow: hidden;
+    }
+
+    th {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 11px 14px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      text-align: center;
+      border-bottom: 2px solid #1e293b;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 11px 14px;
+      text-align: center;
+      border-bottom: 1px solid #f1f5f9;
+      background: #ffffff;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    tbody tr:nth-child(even) td {
+      background: #fafcff;
+    }
+    tbody tr:hover td {
+      background: #f1f5f9;
+    }
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .badge-flow {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 16px;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+    .badge-buyer {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid var(--green-border);
+    }
+    .badge-seller {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid var(--red-border);
+    }
+    .badge-neutral {
+      background: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* ==========================================
+       كروت الأسواق الحية المدمجة (No Duplication)
+       ========================================== */
+    .asset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      padding: 16px 20px;
+    }
+
+    .asset-card {
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .asset-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: #94a3b8;
+    }
+
+    .asset-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .asset-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #334155;
+    }
+    .asset-symbol {
+      font-size: 0.72rem;
+      font-weight: 800;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 5px;
+      color: #0f172a;
+    }
+
+    .asset-price-main {
+      display: block;
+      font-size: 1.3rem;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+      color: #0f172a;
+      margin-top: 4px;
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+    .asset-price-sub {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #475569;
+      background: #f8fafc;
+      padding: 2px 7px;
+      border-radius: 5px;
+      border: 1px solid #f1f5f9;
+      margin-bottom: 6px;
+      width: fit-content;
+    }
+
+    .trend-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 5px;
+      margin-top: auto;
+      width: fit-content;
+    }
+    .trend-up { background: #dcfce7; color: #15803d; }
+    .trend-down { background: #fee2e2; color: #b91c1c; }
+    .trend-flat { background: #f1f5f9; color: #64748b; }
+
+    /* ==========================================
+       تقرير البنوك المدمج (4 بطاقات + محدد سريع + أكورديون)
+       ========================================== */
+    .bank-hero-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      padding: 16px 20px;
+      background: #fcfdfe;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero-bank-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s;
+    }
+    .hero-bank-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .hero-bank-buy-top {
+      border-color: #86efac;
+      background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    }
+    .hero-bank-buy-low {
+      border-color: #e2e8f0;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    }
+    .hero-bank-sell-low {
+      border-color: #93c5fd;
+      background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+    }
+    .hero-bank-sell-top {
+      border-color: #fed7aa;
+      background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+    }
+
+    .hero-bank-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .hero-bank-label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .hero-bank-name {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .hero-bank-rate {
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+    }
+    .hero-bank-buy-top .hero-bank-rate { color: #15803d; }
+    .hero-bank-buy-low .hero-bank-rate { color: #64748b; }
+    .hero-bank-sell-low .hero-bank-rate { color: #2563eb; }
+    .hero-bank-sell-top .hero-bank-rate { color: #d97706; }
+
+    .market-spread-bar {
+      padding: 10px 20px;
+      background: #fafcff;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    /* محدد البنك السريع وزر فتح الجدول */
+    .bank-drawer-toolbar {
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: #ffffff;
+    }
+
+    .bank-quick-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .select-bank {
+      padding: 7px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      font-family: inherit;
+      outline: none;
+      background: #ffffff;
+      color: #0f172a;
+      cursor: pointer;
+    }
+    .select-bank:focus {
+      border-color: #2563eb;
+    }
+
+    /* بطاقة تفاصيل البنك المختار السريعة */
+    .selected-bank-details {
+      display: none;
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      padding: 10px 16px;
+      border-radius: 9px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #166534;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .footer-bar {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body id="main-body">
+
+  <!-- 1. شريط الملاحة العلوي -->
+  <div class="nav-bar">
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="fa-solid fa-chart-line"></i>
+      </div>
+      <div class="brand-text" id="nav-title">منظومة البورصة المصرية وأسواق الصرف الحية</div>
+    </div>
+
+    <div class="nav-controls">
+      <div class="pill-group">
+        <button class="pill-btn active" id="btn-curr-egp" onclick="setCurrencyMode('EGP')">ج.م (EGP)</button>
+        <button class="pill-btn" id="btn-curr-usd" onclick="setCurrencyMode('USD')">$ (USD)</button>
+        <button class="pill-btn" id="btn-curr-mix" onclick="setCurrencyMode('MIX')">ميكس (مزدوج)</button>
+      </div>
+
+      <div class="pill-group">
+        <button class="pill-btn active" id="btn-lang-ar" onclick="setLanguage('ar')">عربي</button>
+        <button class="pill-btn" id="btn-lang-en" onclick="setLanguage('en')">English</button>
+      </div>
+
+      <!-- سعر البنك المركزي الفعلي المعلن بدون متوسط -->
+      <div class="live-chip">
+        <span class="pulse-dot"></span>
+        <span id="nav-usd-label">المركزي (CBE):</span>
+        <span style="color:#86efac; font-size:0.76rem;" id="nav-buy-tag">شراء</span>
+        <span id="nav-usd-buy" class="num-ltr">51.94</span>
+        <span style="color:#fcd34d; font-size:0.76rem; margin-inline-start:3px;" id="nav-sell-tag">بيع</span>
+        <span id="nav-usd-sell" class="num-ltr">52.04</span>
+        <span id="nav-usd-curr">ج.م</span>
+      </div>
+
+      <!-- الساعة اللحظية -->
+      <div class="live-chip">
+        <i class="fa-regular fa-clock" style="color:#38bdf8;"></i>
+        <span id="nav-clock" class="num-ltr">--:--:--</span>
+      </div>
+
+      <!-- زر لوحة تحكم وتخصيص بوت تلجرام -->
+      <a href="?page=tg_control" class="pill-btn" style="background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.4); color:#38bdf8; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+        <i class="fa-brands fa-telegram"></i>
+        <span>تحكم البوت</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- 2. تعاملات المؤسسات في البورصة المصرية (الأساس الأول) -->
+    <div class="section-box">
+      <div class="section-head">
+        <div class="section-title">
+          <i class="fa-solid fa-landmark" style="color: #2563eb;"></i>
+          <span id="txt-egx-title">تعاملات المؤسسات في البورصة المصرية (EGX)</span>
+          <span class="badge-flow badge-buyer" id="txt-egx-tag">جلسة رسمية موثقة</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);" id="egx-update-status">تحديث سحابي مباشر</span>
+          <button class="btn-action btn-blue" onclick="requestDataUpdate(true)">
+            <i class="fa-solid fa-rotate"></i>
+            <span id="txt-egx-refresh-btn">تحديث البورصة</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- كروت الـ KPI الثلاثة الرئيسية للمؤسسات -->
+      <div class="kpi-row-3">
+        <div class="kpi-card kpi-eg">
+          <div class="kpi-header">
+            <span class="kpi-title" id="txt-kpi-eg">صافي المؤسسات المصرية</span>
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-flag"></i></div>
+          </div>
+          <div class="kpi-val num-ltr" id="kpi-eg-net">--</div>
+          <div class="kpi-chip num-ltr" id="kpi-eg-sub">--</div>
+        </div>
+
+        <div class="kpi-card kpi-ar">
+          <div class="kpi-header">
+            <span class="kpi-title" id="txt-kpi-ar">صافي المؤسسات العربية</span>
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-earth-africa"></i></div>
+          </div>
+          <div class="kpi-val num-ltr" id="kpi-ar-net">--</div>
+          <div class="kpi-chip num-ltr" id="kpi-ar-sub">--</div>
+        </div>
+
+        <div class="kpi-card kpi-fo">
+          <div class="kpi-header">
+            <span class="kpi-title" id="txt-kpi-fo">صافي المؤسسات الأجنبية</span>
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-globe"></i></div>
+          </div>
+          <div class="kpi-val num-ltr" id="kpi-fo-net">--</div>
+          <div class="kpi-chip num-ltr" id="kpi-fo-sub">--</div>
+        </div>
+      </div>
+
+      <!-- شريط توضيح صافي السيولة -->
+      <div class="formula-banner">
+        <span id="txt-formula-explain"><i class="fa-solid fa-calculator" style="color:#0284c7;"></i> صافي تدفقات المؤسسات = (شراء المؤسسات - بيع المؤسسات) لكل فئة موثقة رسمياً</span>
+        <span id="txt-base-note" style="color:#059669;"><i class="fa-solid fa-circle-check"></i> البيانات مطابقة لشاشة البورصة المصرية الرسمية</span>
+      </div>
+
+      <!-- جدول تفاصيل تدفقات المؤسسات لليوم -->
+      <div class="table-wrap">
+        <div class="table-title-bar" id="txt-inst-table-title">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-layer-group" style="color:#2563eb;"></i>
+            <span>تفاصيل تدفقات المؤسسات (شراء / بيع / صافي السيولة):</span>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th id="th-inst-type">فئة المؤسسة</th>
+              <th id="th-inst-buy">قيمة الشراء</th>
+              <th id="th-inst-sell">قيمة البيع</th>
+              <th id="th-inst-net">صافي السيولة</th>
+              <th id="th-inst-dual">المعادل بالعملة البديلة</th>
+              <th id="th-inst-trend">اتجاه السيولة</th>
+              <th id="th-inst-updated">آخر تحديث</th>
+            </tr>
+          </thead>
+          <tbody id="egx-institutions-tbody">
+            <tr><td colspan="7">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- جدول الأرشيف التاريخي لجلسات البورصة -->
+      <div class="table-wrap" style="border-top: 1px dashed var(--border); padding-top: 16px;">
+        <div class="table-title-bar">
+          <div style="display:flex; align-items:center; gap:6px;" id="txt-archive-table-title">
+            <i class="fa-solid fa-clock-rotate-left" style="color:#0ea5e9;"></i>
+            <span>أرشيف الجلسات السابقة للمؤسسات:</span>
+          </div>
+          <div class="archive-filters-row">
+            <button class="filter-btn active" id="btn-filter-all" onclick="filterArchiveByPeriod('all')">الكل (All)</button>
+            <button class="filter-btn" id="btn-filter-daily" onclick="filterArchiveByPeriod('daily')">يومي (Daily)</button>
+            <button class="filter-btn" id="btn-filter-weekly" onclick="filterArchiveByPeriod('weekly')">أسبوعي (Weekly)</button>
+            <button class="filter-btn" id="btn-filter-monthly" onclick="filterArchiveByPeriod('monthly')">شهري (Monthly)</button>
+            <button class="filter-btn" id="btn-filter-yearly" onclick="filterArchiveByPeriod('yearly')">سنوي (YTD)</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th id="th-arch-date">التاريخ</th>
+              <th id="th-arch-segment">القطاع</th>
+              <th id="th-arch-usd">سعر الدولار</th>
+              <th id="th-arch-eg-net">صافي مصريين</th>
+              <th id="th-arch-ar-net">صافي عرب</th>
+              <th id="th-arch-fo-net">صافي أجانب</th>
+            </tr>
+          </thead>
+          <tbody id="egx-archive-tbody">
+            <tr><td colspan="6">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. بطاقة الأسواق الحية المدمجة (بدون أي تكرار) -->
+    <div class="section-box">
+      <div class="section-head">
+        <div class="section-title">
+          <i class="fa-solid fa-coins" style="color: #d97706;"></i>
+          <span id="txt-markets-title">الأسواق الحية (الذهب، النفط، العملات، الكريبتو)</span>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div class="pill-group" style="background:#f1f5f9; border-color:#e2e8f0;">
+            <button class="filter-btn active" style="border:none;" id="cat-btn-all" onclick="filterMarketCategory('all')">الكل</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-gold" onclick="filterMarketCategory('gold')">معادن وذهب</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-oil" onclick="filterMarketCategory('oil')">طاقة ونفط</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-curr" onclick="filterMarketCategory('curr')">عملات رئيسية</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-crypto" onclick="filterMarketCategory('crypto')">كريبتو</button>
+          </div>
+          <button class="btn-action btn-amber" onclick="requestDataUpdate(false)">
+            <i class="fa-solid fa-bolt"></i>
+            <span id="txt-markets-refresh-btn">تحديث</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- شبكة بطاقات الأصول المدمجة الشاملة -->
+      <div class="asset-grid" id="market-cards-grid"></div>
+    </div>
+
+    <!-- 4. تقرير البنوك المصرية (4 بطاقات تنفيذية + محدد سريع + جدول قابل للطي) -->
+    <div class="section-box">
+      <div class="section-head">
+        <div class="section-title">
+          <i class="fa-solid fa-building-columns" style="color: #059669;"></i>
+          <span id="txt-banks-title">تقرير أسعار صرف الدولار في 25 بنكاً مصرياً</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="btn-action btn-blue" id="btn-toggle-banks" onclick="toggleBanksDrawer()">
+            <i class="fa-solid fa-table-list"></i>
+            <span id="txt-toggle-banks-label">عرض كافة الـ 25 بنكاً ▾</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- بطاقات الصدارة الـ 4 للبنوك -->
+      <div class="bank-hero-grid">
+        <div class="hero-bank-card hero-bank-buy-top">
+          <div class="hero-bank-info">
+            <div class="hero-bank-label">
+              <i class="fa-solid fa-trophy" style="color:#15803d;"></i>
+              <span id="top-buy-bank-label">أعلى شراء (أفضل بنك للبيع):</span>
+            </div>
+            <div class="hero-bank-name" id="top-buy-bank-name">--</div>
+          </div>
+          <div class="hero-bank-rate num-ltr">
+            <span id="top-buy-val">--</span>
+            <span style="font-size: 0.8rem; font-weight: 700;" class="curr-unit">ج.م</span>
+          </div>
+        </div>
+
+        <div class="hero-bank-card hero-bank-buy-low">
+          <div class="hero-bank-info">
+            <div class="hero-bank-label">
+              <i class="fa-solid fa-arrow-down-wide-short" style="color:#64748b;"></i>
+              <span id="low-buy-bank-label">أقل سعر شراء للدولار:</span>
+            </div>
+            <div class="hero-bank-name" id="low-buy-bank-name">--</div>
+          </div>
+          <div class="hero-bank-rate num-ltr">
+            <span id="low-buy-val">--</span>
+            <span style="font-size: 0.8rem; font-weight: 700;" class="curr-unit">ج.م</span>
+          </div>
+        </div>
+
+        <div class="hero-bank-card hero-bank-sell-low">
+          <div class="hero-bank-info">
+            <div class="hero-bank-label">
+              <i class="fa-solid fa-gem" style="color:#2563eb;"></i>
+              <span id="low-sell-bank-label">أقل بيع (أفضل بنك للشراء):</span>
+            </div>
+            <div class="hero-bank-name" id="low-sell-bank-name">--</div>
+          </div>
+          <div class="hero-bank-rate num-ltr">
+            <span id="low-sell-val">--</span>
+            <span style="font-size: 0.8rem; font-weight: 700;" class="curr-unit">ج.م</span>
+          </div>
+        </div>
+
+        <div class="hero-bank-card hero-bank-sell-top">
+          <div class="hero-bank-info">
+            <div class="hero-bank-label">
+              <i class="fa-solid fa-arrow-up-wide-short" style="color:#d97706;"></i>
+              <span id="top-sell-bank-label">أعلى سعر بيع للدولار:</span>
+            </div>
+            <div class="hero-bank-name" id="top-sell-bank-name">--</div>
+          </div>
+          <div class="hero-bank-rate num-ltr">
+            <span id="top-sell-val">--</span>
+            <span style="font-size: 0.8rem; font-weight: 700;" class="curr-unit">ج.م</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- شريط فوارق السوق ومحدد البنك السريع -->
+      <div class="bank-drawer-toolbar">
+        <div class="bank-quick-box">
+          <span style="font-size:0.84rem; font-weight:700; color:#475569;" id="txt-quick-label">اختر بنكاً للمعاينة الفورية:</span>
+          <select id="bank-quick-select" class="select-bank" onchange="onBankQuickSelect(this.value)">
+            <option value="">-- اختر من قائمة الـ 25 بنكاً --</option>
+          </select>
+        </div>
+        <div class="selected-bank-details" id="selected-bank-card"></div>
+      </div>
+
+      <!-- جدول البنوك الـ 25 القابل للطي (مغلق افتراضياً لتقليل حجم الصفحة) -->
+      <div class="table-wrap" id="banks-full-drawer" style="display: none; padding-top: 10px; border-top: 1px solid var(--border);">
+        <table>
+          <thead>
+            <tr>
+              <th id="th-bank-rank">الترتيب</th>
+              <th id="th-bank-name">اسم البنك</th>
+              <th id="th-bank-buy">سعر الشراء للبنك (ج.م)</th>
+              <th id="th-bank-sell">سعر البيع من البنك (ج.م)</th>
+              <th id="th-bank-spread">الفارق / الهامش (ج.م)</th>
+              <th id="th-bank-updated">آخر تحديث للبنك</th>
+              <th id="th-bank-status">الحالة</th>
+            </tr>
+          </thead>
+          <tbody id="banks-table-tbody">
+            <tr><td colspan="7">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-bar" id="txt-footer">
+    منظومة تتبع البورصة المصرية ومؤشرات الأسواق الحية | متصلة بسيرفرات جوجل وتعمل 24 ساعة ذاتياً
+  </div>
+
+  <script>
+    // ==========================================
+    // قاموس الترجمة الشامل (i18n)
+    // ==========================================
+    var i18n = {
+      ar: {
+        page_title: "منظومة البورصة المصرية وأسواق الصرف والسلع الحية",
+        nav_title: "منظومة البورصة المصرية وأسواق الصرف الحية",
+        btn_curr_egp: "ج.م (EGP)",
+        btn_curr_usd: "$ (USD)",
+        btn_curr_mix: "ميكس (مزدوج)",
+        btn_lang_ar: "عربي",
+        btn_lang_en: "English",
+        official_cbe_label: "المركزي (CBE):",
+        curr_egp_symbol: "ج.م",
+        curr_usd_symbol: "$",
+        egx_title: "تعاملات المؤسسات في البورصة المصرية (EGX)",
+        egx_tag: "جلسة رسمية موثقة",
+        egx_refresh_btn: "تحديث البورصة",
+        live_status: "تحديث سحابي مباشر",
+        kpi_eg: "صافي المؤسسات المصرية",
+        kpi_ar: "صافي المؤسسات العربية",
+        kpi_fo: "صافي المؤسسات الأجنبية",
+        formula_explain: "صافي تدفقات المؤسسات = (شراء المؤسسات - بيع المؤسسات) لكل فئة موثقة رسمياً",
+        base_note: "البيانات مطابقة لشاشة البورصة المصرية الرسمية",
+        inst_table_title: "تفاصيل تدفقات المؤسسات (شراء / بيع / صافي السيولة):",
+        th_inst_type: "فئة المؤسسة",
+        th_inst_buy: "قيمة الشراء",
+        th_inst_sell: "قيمة البيع",
+        th_inst_net: "صافي السيولة",
+        th_inst_dual: "المعادل بالعملة البديلة",
+        th_inst_trend: "اتجاه السيولة",
+        th_inst_updated: "آخر تحديث",
+        inst_egypt: "مؤسسات مصرية",
+        inst_arab: "مؤسسات عربية",
+        inst_foreign: "مؤسسات أجنبية",
+        badge_net_buy: "شراء صافي",
+        badge_net_sell: "بيع صافي",
+        archive_table_title: "أرشيف الجلسات السابقة للمؤسسات:",
+        filter_all: "الكل (All)",
+        filter_daily: "يومي (Daily)",
+        filter_weekly: "أسبوعي (Weekly)",
+        filter_monthly: "شهري (Monthly)",
+        filter_yearly: "سنوي (YTD)",
+        th_arch_date: "التاريخ",
+        th_arch_segment: "القطاع",
+        th_arch_usd: "سعر الدولار",
+        th_arch_eg_net: "صافي مصريين",
+        th_arch_ar_net: "صافي عرب",
+        th_arch_fo_net: "صافي أجانب",
+        markets_title: "الأسواق الحية (الذهب، النفط، العملات، الكريبتو)",
+        markets_refresh_btn: "تحديث الأسعار",
+        banks_title: "تقرير أسعار صرف الدولار في 25 بنكاً مصرياً",
+        top_buy_label: "أعلى شراء (أفضل بنك للبيع):",
+        low_buy_label: "أقل سعر شراء للدولار:",
+        low_sell_label: "أقل بيع (أفضل بنك للشراء):",
+        top_sell_label: "أعلى سعر بيع للدولار:",
+        quick_select_label: "اختر بنكاً للمعاينة الفورية:",
+        quick_select_default: "-- اختر من قائمة الـ 25 بنكاً --",
+        toggle_banks_show: "عرض كافة الـ 25 بنكاً ▾",
+        toggle_banks_hide: "طي جدول البنوك ▴",
+        th_bank_rank: "الترتيب",
+        th_bank_name: "اسم البنك",
+        th_bank_buy: "سعر الشراء للبنك (ج.م)",
+        th_bank_sell: "سعر البيع من البنك (ج.م)",
+        th_bank_spread: "الفارق / الهامش (ج.م)",
+        th_bank_updated: "آخر تحديث للبنك",
+        th_bank_status: "الحالة",
+        badge_top_buy: "أعلى شراء",
+        badge_active: "نشط",
+        footer_text: "منظومة تتبع البورصة المصرية ومؤشرات الأسواق الحية | متصلة بسيرفرات جوجل وتعمل 24 ساعة ذاتياً",
+        session_today: "جلسة اليوم",
+        loading: "جاري التحميل..."
+      },
+      en: {
+        page_title: "Egyptian Stock Exchange (EGX) & Live Global Markets",
+        nav_title: "Egyptian Stock Exchange (EGX) & Live Global Markets",
+        btn_curr_egp: "EGP",
+        btn_curr_usd: "USD ($)",
+        btn_curr_mix: "Dual (MIX)",
+        btn_lang_ar: "عربي",
+        btn_lang_en: "English",
+        official_cbe_label: "Official CBE:",
+        curr_egp_symbol: "EGP",
+        curr_usd_symbol: "$",
+        egx_title: "Institutional Trading in Egyptian Stock Exchange (EGX)",
+        egx_tag: "Verified Official Session",
+        egx_refresh_btn: "Refresh EGX",
+        live_status: "Cloud Real-Time Sync",
+        kpi_eg: "Egyptian Institutions Net",
+        kpi_ar: "Arab Institutions Net",
+        kpi_fo: "Foreign Institutions Net",
+        formula_explain: "Institutional Net = (Institutions Buy - Institutions Sell) for each verified group",
+        base_note: "Data matches the official Egyptian Stock Exchange (EGX) terminal",
+        inst_table_title: "Institutional Flows Breakdown (Buy / Sell / Net Liquidity):",
+        th_inst_type: "Institution Category",
+        th_inst_buy: "Buy Value",
+        th_inst_sell: "Sell Value",
+        th_inst_net: "Net Liquidity",
+        th_inst_dual: "Dual Currency Equiv.",
+        th_inst_trend: "Flow Direction",
+        th_inst_updated: "Last Updated",
+        inst_egypt: "Egyptian Institutions",
+        inst_arab: "Arab Institutions",
+        inst_foreign: "Foreign Institutions",
+        badge_net_buy: "Net Buyer",
+        badge_net_sell: "Net Seller",
+        archive_table_title: "Institutional Historical Archive:",
+        filter_all: "All Records",
+        filter_daily: "Daily",
+        filter_weekly: "Weekly",
+        filter_monthly: "Monthly",
+        filter_yearly: "YTD (Yearly)",
+        th_arch_date: "Date",
+        th_arch_segment: "Market Segment",
+        th_arch_usd: "USD Rate",
+        th_arch_eg_net: "Egyptian Net",
+        th_arch_ar_net: "Arab Net",
+        th_arch_fo_net: "Foreign Net",
+        markets_title: "Live Global Markets (Gold, Oil, Currencies, Crypto)",
+        markets_refresh_btn: "Refresh",
+        banks_title: "USD Exchange Rates Across 25 Egyptian Banks",
+        top_buy_label: "Highest Buy (Best to Sell USD):",
+        low_buy_label: "Lowest USD Buy Rate:",
+        low_sell_label: "Lowest Sell (Best to Buy USD):",
+        top_sell_label: "Highest USD Sell Rate:",
+        quick_select_label: "Quick Bank Lookup:",
+        quick_select_default: "-- Select from 25 Banks --",
+        toggle_banks_show: "Show All 25 Banks ▾",
+        toggle_banks_hide: "Collapse Banks Directory ▴",
+        th_bank_rank: "Rank",
+        th_bank_name: "Bank Name",
+        th_bank_buy: "Bank Buy Rate",
+        th_bank_sell: "Bank Sell Rate",
+        th_bank_spread: "Spread / Margin",
+        th_bank_updated: "Last Updated",
+        th_bank_status: "Status",
+        badge_top_buy: "Top Buy",
+        badge_active: "Active",
+        footer_text: "EGX Institutional Flow & Global Markets Intelligence | Cloud-powered 24/7 on Google Cloud",
+        session_today: "Today's Session",
+        loading: "Loading data..."
+      }
+    };
+
+    // قاموس البنوك الموحد
+    var bankNamesMap = {
+      "بنك نكست (NXT)": { ar: "بنك نكست (NXT)", en: "Bank NXT" },
+      "بنك مصر (BM)": { ar: "بنك مصر (BM)", en: "Banque Misr (BM)" },
+      "بنك الإسكندرية (ALEXBANK)": { ar: "بنك الإسكندرية (AlexBank)", en: "Bank of Alexandria (AlexBank)" },
+      "المصري الخليجي (EG Bank)": { ar: "المصري الخليجي (EG Bank)", en: "Egyptian Gulf Bank (EG Bank)" },
+      "بنك فيصل (Faisal)": { ar: "بنك فيصل الإسلامي (Faisal)", en: "Faisal Islamic Bank" },
+      "التعمير والإسكان (HDB)": { ar: "التعمير والإسكان (HDB)", en: "Housing & Development Bank (HDB)" },
+      "التنمية الصناعية (IDB)": { ar: "التنمية الصناعية (IDB)", en: "Industrial Development Bank (IDB)" },
+      "الكويت الوطني (NBK)": { ar: "الكويت الوطني (NBK)", en: "National Bank of Kuwait (NBK)" },
+      "بنك الشركة المصرفية (SAIB)": { ar: "بنك الشركة المصرفية (saib)", en: "Société Arabe Internationale de Banque (saib)" },
+      "قناة السويس (SCB)": { ar: "قناة السويس (SCB)", en: "Suez Canal Bank (SCB)" },
+      "المصرف المتحد (UB)": { ar: "المصرف المتحد (UB)", en: "The United Bank (UB)" },
+      "اتش اس بي سي (HSBC)": { ar: "اتش اس بي سي (HSBC)", en: "HSBC Bank Egypt" },
+      "بنك بيت التمويل الكويتي (KFH)": { ar: "بيت التمويل الكويتي (KFH)", en: "Kuwait Finance House (KFH)" },
+      "العقاري المصري العربي (EALB)": { ar: "العقاري المصري العربي (EALB)", en: "Egyptian Arab Land Bank (EALB)" },
+      "الأهلي المصري (NBE)": { ar: "الأهلي المصري (NBE)", en: "National Bank of Egypt (NBE)" },
+      "التجاري الدولي (CIB)": { ar: "التجاري الدولي (CIB)", en: "Commercial International Bank (CIB)" },
+      "بنك القاهرة (BDC)": { ar: "بنك القاهرة (BDC)", en: "Banque du Caire (BDC)" },
+      "قطر الوطني (QNB)": { ar: "قطر الوطني (QNB)", en: "Qatar National Bank (QNB)" },
+      "قطر الوطني (QNB Alahli)": { ar: "قطر الوطني (QNB Alahli)", en: "Qatar National Bank (QNB Alahli)" },
+      "أبوظبي الإسلامي (ADIB)": { ar: "أبوظبي الإسلامي (ADIB)", en: "Abu Dhabi Islamic Bank (ADIB)" },
+      "كريدي أجريكول (CAE)": { ar: "كريدي أجريكول (CAE)", en: "Crédit Agricole Egypt" },
+      "كريدي أجريكول (CA)": { ar: "كريدي أجريكول (CAE)", en: "Crédit Agricole Egypt" },
+      "البركة (Al Baraka)": { ar: "البركة (Al Baraka)", en: "Al Baraka Bank Egypt" },
+      "العربي الأفريقي (AAIB)": { ar: "العربي الأفريقي (AAIB)", en: "Arab African International Bank (AAIB)" },
+      "المصرف العربي (AIB)": { ar: "المصرف العربي الدولي (AIB)", en: "Arab International Bank (AIB)" },
+      "أبوظبي التجاري (ADCB)": { ar: "أبوظبي التجاري (ADCB)", en: "Abu Dhabi Commercial Bank (ADCB)" },
+      "ميد بنك (MIDBank)": { ar: "ميد بنك (MIDBank)", en: "MIDBank" },
+      "التجاري وفا (Attijariwafa)": { ar: "التجاري وفا (Attijariwafa)", en: "Attijariwafa Bank Egypt" },
+      "المصري لتنمية الصادرات (EBank)": { ar: "المصري لتنمية الصادرات (EBank)", en: "Export Development Bank of Egypt (EBank)" },
+      "الأهلي المتحد (AUB)": { ar: "الأهلي المتحد (AUB)", en: "Ahli United Bank (AUB)" },
+      "الأهلي الكويتي (ABK)": { ar: "الأهلي الكويتي (ABK)", en: "Al Ahli Bank of Kuwait (ABK)" },
+      "الإمارات دبي الوطني (ENBD)": { ar: "الإمارات دبي الوطني (ENBD)", en: "Emirates NBD Egypt" },
+      "أبوظبي الأول (FABMISR)": { ar: "أبوظبي الأول (FABMISR)", en: "First Abu Dhabi Bank (FABMISR)" },
+      "بنك أبوظبي الأول (FABMISR)": { ar: "بنك أبوظبي الأول (FABMISR)", en: "First Abu Dhabi Bank (FABMISR)" },
+      "FABMISR": { ar: "أبوظبي الأول (FABMISR)", en: "First Abu Dhabi Bank (FABMISR)" },
+      "البنك المركزي المصري (CBE)": { ar: "البنك المركزي المصري (CBE)", en: "Central Bank of Egypt (CBE)" },
+      "الزراعي المصري (ABE)": { ar: "البنك الزراعي المصري (ABE)", en: "Agricultural Bank of Egypt (ABE)" }
+    };
+
+    var assetTranslations = {
+      "GOLD24": { ar: "جرام ذهب عيار 24", en: "Gold 24K (Gram)", cat_ar: "معادن ثمينة", cat_en: "Precious Metals", cat: "gold" },
+      "GOLD21": { ar: "جرام ذهب عيار 21", en: "Gold 21K (Gram)", cat_ar: "معادن ثمينة", cat_en: "Precious Metals", cat: "gold" },
+      "GOLD18": { ar: "جرام ذهب عيار 18", en: "Gold 18K (Gram)", cat_ar: "معادن ثمينة", cat_en: "Precious Metals", cat: "gold" },
+      "GOLDC":  { ar: "جنيه الذهب", en: "Gold Pound Coin", cat_ar: "معادن ثمينة", cat_en: "Precious Metals", cat: "gold" },
+      "GOLD":   { ar: "أونصة الذهب", en: "Gold Ounce (XAU)", cat_ar: "معادن ثمينة", cat_en: "Precious Metals", cat: "gold" },
+      "SILVER": { ar: "أونصة الفضة", en: "Silver Ounce (XAG)", cat_ar: "معادن ثمينة", cat_en: "Precious Metals", cat: "gold" },
+      "BRENT":  { ar: "نفط خام برنت", en: "Brent Crude Oil", cat_ar: "طاقة وبترول", cat_en: "Energy & Commodities", cat: "oil" },
+      "WTI":    { ar: "خام تكساس (WTI)", en: "WTI Crude Oil", cat_ar: "طاقة وبترول", cat_en: "Energy & Commodities", cat: "oil" },
+      "GAS":    { ar: "الغاز الطبيعي", en: "Natural Gas", cat_ar: "طاقة وبترول", cat_en: "Energy & Commodities", cat: "oil" },
+      "BTC":    { ar: "بتكوين", en: "Bitcoin", cat_ar: "عملات رقمية", cat_en: "Cryptocurrency", cat: "crypto" },
+      "ETH":    { ar: "إيثريوم", en: "Ethereum", cat_ar: "عملات رقمية", cat_en: "Cryptocurrency", cat: "crypto" },
+      "USD":    { ar: "دولار أمريكي", en: "US Dollar", cat_ar: "عملات رئيسية", cat_en: "Major Currencies", cat: "curr" },
+      "EUR":    { ar: "يورو أوروبي", en: "Euro", cat_ar: "عملات رئيسية", cat_en: "Major Currencies", cat: "curr" },
+      "SAR":    { ar: "ريال سعودي", en: "Saudi Riyal", cat_ar: "عملات رئيسية", cat_en: "Major Currencies", cat: "curr" },
+      "AED":    { ar: "درهم إماراتي", en: "UAE Dirham", cat_ar: "عملات رئيسية", cat_en: "Major Currencies", cat: "curr" },
+      "KWD":    { ar: "دينار كويتي", en: "Kuwaiti Dinar", cat_ar: "عملات رئيسية", cat_en: "Major Currencies", cat: "curr" },
+      "GBP":    { ar: "جنيه إسترليني", en: "British Pound", cat_ar: "عملات رئيسية", cat_en: "Major Currencies", cat: "curr" },
+      "QAR":    { ar: "ريال قطري", en: "Qatari Riyal", cat_ar: "عملات رئيسية", cat_en: "Major Currencies", cat: "curr" },
+      "CNY":    { ar: "يوان صيني", en: "Chinese Yuan", cat_ar: "عملات رئيسية", cat_en: "Major Currencies", cat: "curr" }
+    };
+
+    var currentCurrency = localStorage.getItem("market_currency") || "EGP";
+    var currentLang = localStorage.getItem("market_lang") || "ar";
+    var globalData = null;
+    var allBanksData = [];
+    var currentArchiveFilter = "all";
+    var currentMarketCategory = "all";
+    var isBanksDrawerOpen = false;
+
+    function formatNum(n, decimals) {
+      if (n === null || n === undefined || isNaN(n)) return "--";
+      var dec = (decimals !== undefined) ? decimals : 2;
+      return Number(n).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    }
+
+    function formatSignNum(n, curr, decimals) {
+      if (n === null || n === undefined || isNaN(n)) return "--";
+      var dec = (decimals !== undefined) ? decimals : 0;
+      var num = Number(n);
+      var formatted = Math.abs(num).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+      var sign = num < 0 ? "-" : (num > 0 ? "+" : "");
+      var colorClass = num < 0 ? "val-neg" : (num > 0 ? "val-pos" : "");
+      
+      var text = "";
+      if (curr === "$") {
+        text = (sign === "-" ? "-$" : (sign === "+" ? "+$" : "$")) + formatted;
+      } else if (curr) {
+        text = sign + formatted + " " + curr;
+      } else {
+        text = sign + formatted;
+      }
+      
+      return '<span class="num-ltr ' + colorClass + '">' + text + '</span>';
+    }
+
+    function formatArchiveDate(dStr) {
+      if (!dStr) return "--";
+      var s = String(dStr).trim();
+      if (s.match(/^\d{4}-\d{2}-\d{2}/)) return s.substring(0, 10);
+      var d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return y + "-" + m + "-" + day;
+      }
+      return s.split("T")[0].split(" ")[0];
+    }
+
+    function extractTime(ts) {
+      if (!ts) return "--";
+      if (ts instanceof Date) return ts.toLocaleTimeString('en-US');
+      var s = String(ts).trim();
+      var m = s.match(/(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?)/i);
+      if (m) return m[1];
+      if (s.indexOf("T") >= 0) return s.split("T")[1].substring(0, 8);
+      return "--";
+    }
+
+    function formatPercentChange(rawChange) {
+      if (!rawChange) return { text: "0.00%", isPos: true };
+      var s = String(rawChange).trim().replace("%", "");
+      var val = parseFloat(s);
+      if (isNaN(val)) return { text: "0.00%", isPos: true };
+      if (Math.abs(val) > 0 && Math.abs(val) < 0.01) val = val * 100;
+      var isPos = val >= 0;
+      return { text: (isPos ? "+" : "") + val.toFixed(2) + "%", isPos: isPos };
+    }
+
+    function getAssetPrices(item, usdRate) {
+      var code = item.code || "";
+      var uPrice = Number(item.usd_price || 0);
+      var ePrice = Number(item.egp_price || 0);
+      if (code === "USD") return { uPrice: 1.0, ePrice: usdRate };
+      if (ePrice <= 0 && uPrice > 0) ePrice = uPrice * usdRate;
+      else if (uPrice <= 0 && ePrice > 0) uPrice = ePrice / usdRate;
+      else if (uPrice <= 0 && ePrice <= 0) {
+        var rawBuy = Number(item.buy || 0);
+        var rawRate = Number(item.rate_egp || 0);
+        if (code.indexOf("GOLD") >= 0 || ["SAR", "AED", "EUR", "KWD", "GBP", "QAR"].indexOf(code) >= 0) {
+          ePrice = rawRate || rawBuy;
+          uPrice = ePrice / usdRate;
+        } else {
+          uPrice = rawBuy || rawRate;
+          ePrice = uPrice * usdRate;
+        }
+      }
+      return { uPrice: uPrice, ePrice: ePrice };
+    }
+
+    function updateClock() {
+      var d = new Date();
+      var hours = d.getHours();
+      var mins = String(d.getMinutes()).padStart(2, '0');
+      var secs = String(d.getSeconds()).padStart(2, '0');
+      var ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      var el = document.getElementById("nav-clock");
+      if (el) el.innerText = String(hours).padStart(2, '0') + ':' + mins + ':' + secs + ' ' + ampm;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem("market_lang", lang);
+      document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
+      document.documentElement.lang = lang;
+      var body = document.getElementById("main-body");
+      if (lang === "en") body.classList.add("lang-en");
+      else body.classList.remove("lang-en");
+
+      document.getElementById("btn-lang-ar").classList.toggle("active", lang === "ar");
+      document.getElementById("btn-lang-en").classList.toggle("active", lang === "en");
+
+      applyStaticTranslations();
+      if (globalData) renderDashboard(globalData);
+    }
+
+    function setTxt(id, val) {
+      var el = document.getElementById(id);
+      if (el && val !== undefined && val !== null) el.innerText = val;
+    }
+
+    function applyStaticTranslations() {
+      var t = i18n[currentLang];
+      if (!t) return;
+      setTxt("page-title", t.page_title);
+      setTxt("nav-title", t.nav_title);
+      setTxt("btn-curr-egp", t.btn_curr_egp);
+      setTxt("btn-curr-usd", t.btn_curr_usd);
+      setTxt("btn-curr-mix", t.btn_curr_mix);
+      setTxt("nav-usd-label", t.official_cbe_label);
+      setTxt("nav-buy-tag", (currentLang === "en") ? "Buy" : "شراء");
+      setTxt("nav-sell-tag", (currentLang === "en") ? "Sell" : "بيع");
+      setTxt("nav-usd-curr", (currentLang === "en") ? "EGP" : "ج.م");
+
+      // EGX
+      setTxt("txt-egx-title", t.egx_title);
+      setTxt("txt-egx-tag", t.egx_tag);
+      setTxt("txt-egx-refresh-btn", t.egx_refresh_btn);
+      setTxt("egx-update-status", t.live_status);
+      setTxt("txt-kpi-eg", t.kpi_eg);
+      setTxt("txt-kpi-ar", t.kpi_ar);
+      setTxt("txt-kpi-fo", t.kpi_fo);
+      setTxt("txt-formula-explain", t.formula_explain);
+      setTxt("txt-base-note", t.base_note);
+
+      setTxt("txt-inst-table-title", t.inst_table_title);
+      setTxt("th-inst-type", t.th_inst_type);
+      setTxt("th-inst-buy", t.th_inst_buy);
+      setTxt("th-inst-sell", t.th_inst_sell);
+      setTxt("th-inst-net", t.th_inst_net);
+      setTxt("th-inst-dual", t.th_inst_dual);
+      setTxt("th-inst-trend", t.th_inst_trend);
+      setTxt("th-inst-updated", t.th_inst_updated);
+
+      // Archive
+      setTxt("txt-archive-table-title", t.archive_table_title);
+      setTxt("btn-filter-all", t.filter_all);
+      setTxt("btn-filter-daily", t.filter_daily);
+      setTxt("btn-filter-weekly", t.filter_weekly);
+      setTxt("btn-filter-monthly", t.filter_monthly);
+      setTxt("btn-filter-yearly", t.filter_yearly);
+      setTxt("th-arch-date", t.th_arch_date);
+      setTxt("th-arch-segment", t.th_arch_segment);
+      setTxt("th-arch-usd", t.th_arch_usd);
+      setTxt("th-arch-eg-net", t.th_arch_eg_net);
+      setTxt("th-arch-ar-net", t.th_arch_ar_net);
+      setTxt("th-arch-fo-net", t.th_arch_fo_net);
+
+      // Markets
+      setTxt("txt-markets-title", t.markets_title);
+      setTxt("txt-markets-refresh-btn", t.markets_refresh_btn);
+
+      // Banks
+      setTxt("txt-banks-title", t.banks_title);
+      setTxt("top-buy-bank-label", t.top_buy_label);
+      setTxt("low-buy-bank-label", t.low_buy_label);
+      setTxt("low-sell-bank-label", t.low_sell_label);
+      setTxt("top-sell-bank-label", t.top_sell_label);
+      setTxt("txt-quick-label", t.quick_select_label);
+      setTxt("txt-toggle-banks-label", isBanksDrawerOpen ? t.toggle_banks_hide : t.toggle_banks_show);
+
+      document.querySelectorAll(".curr-unit").forEach(function(el) {
+        el.innerText = (currentLang === "en") ? "EGP" : "ج.م";
+      });
+
+      setTxt("th-bank-rank", t.th_bank_rank);
+      setTxt("th-bank-name", t.th_bank_name);
+      setTxt("th-bank-buy", t.th_bank_buy);
+      setTxt("th-bank-sell", t.th_bank_sell);
+      setTxt("th-bank-spread", t.th_bank_spread);
+      setTxt("th-bank-updated", t.th_bank_updated);
+      setTxt("th-bank-status", t.th_bank_status);
+
+      setTxt("txt-footer", t.footer_text);
+    }
+
+    function setCurrencyMode(mode) {
+      currentCurrency = mode;
+      localStorage.setItem("market_currency", mode);
+      document.getElementById("btn-curr-egp").classList.toggle("active", mode === "EGP");
+      document.getElementById("btn-curr-usd").classList.toggle("active", mode === "USD");
+      document.getElementById("btn-curr-mix").classList.toggle("active", mode === "MIX");
+      if (globalData) renderDashboard(globalData);
+    }
+
+    function filterArchiveByPeriod(period) {
+      currentArchiveFilter = period;
+      document.querySelectorAll(".archive-filters-row .filter-btn").forEach(function(b) { b.classList.remove("active"); });
+      var activeBtn = document.getElementById("btn-filter-" + period);
+      if (activeBtn) activeBtn.classList.add("active");
+      if (globalData) renderArchiveTable(globalData);
+    }
+
+    function filterMarketCategory(cat) {
+      currentMarketCategory = cat;
+      document.querySelectorAll(".section-head .filter-btn").forEach(function(b) { b.classList.remove("active"); });
+      var b = document.getElementById("cat-btn-" + cat);
+      if (b) b.classList.add("active");
+      if (globalData && globalData.rates) renderMarketCards(globalData.rates);
+    }
+
+    function toggleBanksDrawer() {
+      isBanksDrawerOpen = !isBanksDrawerOpen;
+      var drawer = document.getElementById("banks-full-drawer");
+      var t = i18n[currentLang];
+      if (drawer) {
+        drawer.style.display = isBanksDrawerOpen ? "block" : "none";
+      }
+      setTxt("txt-toggle-banks-label", isBanksDrawerOpen ? t.toggle_banks_hide : t.toggle_banks_show);
+    }
+
+    function requestDataUpdate(showStatus) {
+      var t = i18n[currentLang];
+      if (showStatus) document.getElementById("egx-update-status").innerText = (currentLang === "en") ? "Fetching cloud data..." : "جاري استرداد البيانات السحابية...";
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(data) {
+            document.getElementById("egx-update-status").innerText = (currentLang === "en" ? "Cloud Sync: " : "تحديث سحابي: ") + new Date().toLocaleTimeString("en-US");
+            globalData = data;
+            renderDashboard(data);
+          })
+          .getLiveDashboardData();
+      }
+    }
+
+    // ==========================================
+    // بناء الواجهة كاملة
+    // ==========================================
+    function renderDashboard(data) {
+      if (!data) return;
+      globalData = data;
+      var t = i18n[currentLang];
+      var usdRate = Number(data.usd_rate || 51.94);
+      var usdBuy = Number(data.cbe_usd_buy || data.usd_buy || 51.94);
+      var usdSell = Number(data.cbe_usd_sell || data.usd_sell || 52.04);
+      
+      var elBuy = document.getElementById("nav-usd-buy");
+      var elSell = document.getElementById("nav-usd-sell");
+      if (elBuy) elBuy.innerText = usdBuy.toFixed(2);
+      if (elSell) elSell.innerText = usdSell.toFixed(2);
+
+      var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
+
+      // 1. تعاملات المؤسسات (3 فئات رئيسية فقط)
+      var instData = (data.egx_institutions && data.egx_institutions.tables) ? data.egx_institutions.tables.institutions : null;
+      var egNet = 0, arNet = 0, foNet = 0;
+      var tbodyHtml = "";
+      var timeTag = (data.timestamp ? extractTime(data.timestamp) : "") || t.session_today;
+
+      if (instData && instData.length > 0) {
+        instData.forEach(function(item) {
+          var type = item.type || "";
+          var buyEgp = Number(item.buy_egp || 0);
+          var sellEgp = Number(item.sell_egp || 0);
+          var netEgp = Number(item.net_egp || 0);
+          var netUsd = Number(item.net_usd || (netEgp / usdRate));
+
+          var typeName = type;
+          if (type.indexOf("مصر") >= 0) {
+            egNet = netEgp; typeName = t.inst_egypt;
+          } else if (type.indexOf("عرب") >= 0) {
+            arNet = netEgp; typeName = t.inst_arab;
+          } else if (type.indexOf("أجانب") >= 0 || type.indexOf("اجانب") >= 0) {
+            foNet = netEgp; typeName = t.inst_foreign;
+          }
+
+          var flowBadge = (netEgp >= 0)
+            ? '<span class="badge-flow badge-buyer"><i class="fa-solid fa-arrow-trend-up"></i> ' + t.badge_net_buy + '</span>'
+            : '<span class="badge-flow badge-seller"><i class="fa-solid fa-arrow-trend-down"></i> ' + t.badge_net_sell + '</span>';
+
+          var dispBuy = (currentCurrency === "USD") ? ("$" + formatNum(buyEgp / usdRate, 0)) : (formatNum(buyEgp, 0) + " " + currEgpLabel);
+          var dispSell = (currentCurrency === "USD") ? ("$" + formatNum(sellEgp / usdRate, 0)) : (formatNum(sellEgp, 0) + " " + currEgpLabel);
+          var dispNet = (currentCurrency === "USD") ? formatSignNum(netUsd, "$", 0) : formatSignNum(netEgp, currEgpLabel, 0);
+          var dispAlt = (currentCurrency === "USD") ? formatSignNum(netEgp, currEgpLabel, 0) : formatSignNum(netUsd, "$", 0);
+
+          if (currentCurrency === "MIX") {
+            dispBuy = formatNum(buyEgp, 0) + " " + currEgpLabel + " ($" + formatNum(buyEgp / usdRate, 0) + ")";
+            dispSell = formatNum(sellEgp, 0) + " " + currEgpLabel + " ($" + formatNum(sellEgp / usdRate, 0) + ")";
+          }
+
+          tbodyHtml += '<tr>'
+            + '<td style="font-weight: 800; color: #0f172a;">' + typeName + '</td>'
+            + '<td class="num-ltr">' + dispBuy + '</td>'
+            + '<td class="num-ltr">' + dispSell + '</td>'
+            + '<td>' + dispNet + '</td>'
+            + '<td>' + dispAlt + '</td>'
+            + '<td>' + flowBadge + '</td>'
+            + '<td class="num-ltr" style="color: #64748b;">' + timeTag + '</td>'
+            + '</tr>';
+        });
+        document.getElementById("egx-institutions-tbody").innerHTML = tbodyHtml;
+      } else if (data.archive && data.archive.length > 0) {
+        var r0 = data.archive[0];
+        egNet = Number(r0.egypt_net || 0);
+        arNet = Number(r0.arab_net || 0);
+        foNet = Number(r0.foreign_net || 0);
+
+        tbodyHtml += '<tr><td style="font-weight: 800;">' + t.inst_egypt + '</td><td class="num-ltr">' + formatNum(r0.egypt_buy, 0) + ' ' + currEgpLabel + '</td><td class="num-ltr">' + formatNum(r0.egypt_sell, 0) + ' ' + currEgpLabel + '</td><td>' + formatSignNum(egNet, currEgpLabel, 0) + '</td><td>' + formatSignNum(egNet / usdRate, "$", 0) + '</td><td>' + (egNet >= 0 ? '<span class="badge-flow badge-buyer"><i class="fa-solid fa-arrow-trend-up"></i> ' + t.badge_net_buy + '</span>' : '<span class="badge-flow badge-seller"><i class="fa-solid fa-arrow-trend-down"></i> ' + t.badge_net_sell + '</span>') + '</td><td class="num-ltr">' + timeTag + '</td></tr>';
+        tbodyHtml += '<tr><td style="font-weight: 800;">' + t.inst_arab + '</td><td class="num-ltr">' + formatNum(r0.arab_buy, 0) + ' ' + currEgpLabel + '</td><td class="num-ltr">' + formatNum(r0.arab_sell, 0) + ' ' + currEgpLabel + '</td><td>' + formatSignNum(arNet, currEgpLabel, 0) + '</td><td>' + formatSignNum(arNet / usdRate, "$", 0) + '</td><td>' + (arNet >= 0 ? '<span class="badge-flow badge-buyer"><i class="fa-solid fa-arrow-trend-up"></i> ' + t.badge_net_buy + '</span>' : '<span class="badge-flow badge-seller"><i class="fa-solid fa-arrow-trend-down"></i> ' + t.badge_net_sell + '</span>') + '</td><td class="num-ltr">' + timeTag + '</td></tr>';
+        tbodyHtml += '<tr><td style="font-weight: 800;">' + t.inst_foreign + '</td><td class="num-ltr">' + formatNum(r0.foreign_buy, 0) + ' ' + currEgpLabel + '</td><td class="num-ltr">' + formatNum(r0.foreign_sell, 0) + ' ' + currEgpLabel + '</td><td>' + formatSignNum(foNet, currEgpLabel, 0) + '</td><td>' + formatSignNum(foNet / usdRate, "$", 0) + '</td><td>' + (foNet >= 0 ? '<span class="badge-flow badge-buyer"><i class="fa-solid fa-arrow-trend-up"></i> ' + t.badge_net_buy + '</span>' : '<span class="badge-flow badge-seller"><i class="fa-solid fa-arrow-trend-down"></i> ' + t.badge_net_sell + '</span>') + '</td><td class="num-ltr">' + timeTag + '</td></tr>';
+        document.getElementById("egx-institutions-tbody").innerHTML = tbodyHtml;
+      }
+
+      // تحديث كروت الـ KPI الثلاثة (الرقم الأساسي ونقيض العملة تحته مباشرة)
+      if (currentCurrency === "USD") {
+        document.getElementById("kpi-eg-net").innerHTML = formatSignNum(egNet / usdRate, "$", 0);
+        document.getElementById("kpi-eg-sub").innerHTML = formatSignNum(egNet, currEgpLabel, 0);
+        document.getElementById("kpi-ar-net").innerHTML = formatSignNum(arNet / usdRate, "$", 0);
+        document.getElementById("kpi-ar-sub").innerHTML = formatSignNum(arNet, currEgpLabel, 0);
+        document.getElementById("kpi-fo-net").innerHTML = formatSignNum(foNet / usdRate, "$", 0);
+        document.getElementById("kpi-fo-sub").innerHTML = formatSignNum(foNet, currEgpLabel, 0);
+      } else {
+        document.getElementById("kpi-eg-net").innerHTML = formatSignNum(egNet, currEgpLabel, 0);
+        document.getElementById("kpi-eg-sub").innerHTML = formatSignNum(egNet / usdRate, "$", 0);
+        document.getElementById("kpi-ar-net").innerHTML = formatSignNum(arNet, currEgpLabel, 0);
+        document.getElementById("kpi-ar-sub").innerHTML = formatSignNum(arNet / usdRate, "$", 0);
+        document.getElementById("kpi-fo-net").innerHTML = formatSignNum(foNet, currEgpLabel, 0);
+        document.getElementById("kpi-fo-sub").innerHTML = formatSignNum(foNet / usdRate, "$", 0);
+      }
+
+      // أرشيف البورصة
+      renderArchiveTable(data);
+
+      // 2. الأسواق الحية المدمجة
+      if (data.rates && data.rates.length > 0) {
+        renderMarketCards(data.rates);
+      }
+
+      // 3. البنوك
+      if (data.banks && data.banks.length > 0) {
+        allBanksData = data.banks;
+        allBanksData.sort(function(a, b) { return Number(b.buy || 0) - Number(a.buy || 0); });
+        populateBankQuickSelect(allBanksData);
+        renderBanksTable(allBanksData);
+      }
+    }
+
+    // بطاقات الأسواق الحية المدمجة الشاملة (بدون أي تكرار)
+    function renderMarketCards(rates) {
+      var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
+      var usdRate = Number((globalData && globalData.usd_rate) || 51.94);
+      var cardsHtml = "";
+
+      var filtered = rates.filter(function(item) {
+        if (currentMarketCategory === "all") return true;
+        var meta = assetTranslations[item.code] || {};
+        return meta.cat === currentMarketCategory;
+      });
+
+      filtered.forEach(function(item) {
+        var prices = getAssetPrices(item, usdRate);
+        var uPrice = prices.uPrice;
+        var ePrice = prices.ePrice;
+        var chgInfo = formatPercentChange(item.change);
+
+        var assetMeta = assetTranslations[item.code] || { ar: item.name, en: item.name, cat_ar: item.category, cat_en: item.category };
+        var displayName = (currentLang === "en") ? assetMeta.en : assetMeta.ar;
+        var cleanName = cleanAssetDisplayName(displayName, item.code);
+
+        var trendClass = chgInfo.isPos ? "trend-up" : "trend-down";
+        var trendIcon = chgInfo.isPos ? "fa-arrow-up" : "fa-arrow-down";
+
+        var pEgp = formatNum(ePrice, 2) + " " + currEgpLabel;
+        var pUsd = "$" + formatNum(uPrice, uPrice < 10 ? (uPrice < 1 ? 4 : 3) : 2);
+
+        var mainVal = (currentCurrency === "USD") ? pUsd : pEgp;
+        var subVal = (currentCurrency === "USD") ? pEgp : pUsd;
+
+        cardsHtml += '<div class="asset-card">'
+          + '<div class="asset-head">'
+          + '<span class="asset-name">' + cleanName + '</span>'
+          + '<span class="asset-symbol">' + item.code + '</span>'
+          + '</div>'
+          + '<div class="asset-price-main num-ltr">' + mainVal + '</div>'
+          + '<div class="asset-price-sub num-ltr">' + subVal + '</div>'
+          + '<div class="trend-pill ' + trendClass + ' num-ltr"><i class="fa-solid ' + trendIcon + '"></i> ' + chgInfo.text + '</div>'
+          + '</div>';
+      });
+
+      document.getElementById("market-cards-grid").innerHTML = cardsHtml || '<div style="padding:20px; color:#64748b;">لا توجد عناصر في هذا التصنيف.</div>';
+    }
+
+    function renderArchiveTable(data) {
+      if (!data || !data.archive) return;
+      var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
+      var usdRate = Number(data.usd_rate || 51.94);
+      var rows = data.archive.slice();
+
+      if (currentArchiveFilter === "daily") rows = rows.slice(0, 1);
+      else if (currentArchiveFilter === "weekly") rows = rows.slice(0, 7);
+      else if (currentArchiveFilter === "monthly") rows = rows.slice(0, 30);
+      else if (currentArchiveFilter === "yearly") {
+        var currYear = new Date().getFullYear();
+        rows = rows.filter(function(r) { return String(r.date).indexOf(String(currYear)) >= 0; });
+      }
+      if (rows.length === 0) rows = data.archive.slice(0, 1);
+
+      var archHtml = "";
+      rows.forEach(function(row) {
+        var segmentText = (currentLang === "en") ? "Equities, Bonds & T-Bills" : (row.segment || "الأسهم والسندات والأذون");
+        var cleanDate = formatArchiveDate(row.date);
+        var eg = Number(row.egypt_net || 0);
+        var ar = Number(row.arab_net || 0);
+        var fo = Number(row.foreign_net || 0);
+
+        var dEg = (currentCurrency === "USD") ? formatSignNum(eg / usdRate, "$", 0) : formatSignNum(eg, currEgpLabel, 0);
+        var dAr = (currentCurrency === "USD") ? formatSignNum(ar / usdRate, "$", 0) : formatSignNum(ar, currEgpLabel, 0);
+        var dFo = (currentCurrency === "USD") ? formatSignNum(fo / usdRate, "$", 0) : formatSignNum(fo, currEgpLabel, 0);
+
+        archHtml += '<tr>'
+          + '<td class="num-ltr" style="font-weight: 800;">' + cleanDate + '</td>'
+          + '<td>' + segmentText + '</td>'
+          + '<td class="num-ltr">' + Number(row.usd_rate || usdRate).toFixed(2) + '</td>'
+          + '<td>' + dEg + '</td>'
+          + '<td>' + dAr + '</td>'
+          + '<td>' + dFo + '</td>'
+          + '</tr>';
+      });
+
+      document.getElementById("egx-archive-tbody").innerHTML = archHtml;
+    }
+
+    function populateBankQuickSelect(banks) {
+      var select = document.getElementById("bank-quick-select");
+      if (!select) return;
+      var optHtml = '<option value="">' + (currentLang === "en" ? "-- Select from 25 Banks --" : "-- اختر من قائمة الـ 25 بنكاً --") + '</option>';
+      banks.forEach(function(b) {
+        var bName = getBankDisplayName(b.bank);
+        optHtml += '<option value="' + b.bank + '">' + bName + '</option>';
+      });
+      select.innerHTML = optHtml;
+    }
+
+    function onBankQuickSelect(rawBankName) {
+      var detailsBox = document.getElementById("selected-bank-card");
+      if (!rawBankName || !detailsBox) {
+        if (detailsBox) detailsBox.style.display = "none";
+        return;
+      }
+      var b = allBanksData.find(function(item) { return item.bank === rawBankName; });
+      if (b) {
+        var bName = getBankDisplayName(b.bank);
+        var bBuy = Number(b.buy || 0);
+        var bSell = Number(b.sell || 0);
+        var spread = (bSell > 0 && bBuy > 0) ? (bSell - bBuy).toFixed(2) : "0.10";
+        var cleanTime = extractTime(b.updated_at);
+        var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
+
+        detailsBox.innerHTML = '<i class="fa-solid fa-building-columns"></i> '
+          + '<strong>' + bName + '</strong> | '
+          + (currentLang === "en" ? "Buy: " : "شراء: ") + '<span class="num-ltr" style="color:#15803d; font-weight:900;">' + bBuy.toFixed(2) + ' ' + currEgpLabel + '</span> | '
+          + (currentLang === "en" ? "Sell: " : "بيع: ") + '<span class="num-ltr" style="color:#d97706; font-weight:900;">' + bSell.toFixed(2) + ' ' + currEgpLabel + '</span> | '
+          + (currentLang === "en" ? "Margin: " : "الفارق: ") + '<span class="num-ltr" style="color:#2563eb; font-weight:800;">' + spread + ' ' + currEgpLabel + '</span> | '
+          + (cleanTime !== "--" ? ('<span style="color:#64748b;">' + cleanTime + '</span>') : '');
+        detailsBox.style.display = "inline-flex";
+      }
+    }
+
+    function renderBanksTable(banks) {
+      var t = i18n[currentLang];
+      var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
+      var bHtml = "";
+      
+      var topBuy = banks.length > 0 ? banks[0] : null;
+      var lowBuy = null;
+      var lowSell = null;
+      var topSell = null;
+      var minBuy = 999999, maxBuy = 0, minSell = 999999, maxSell = 0;
+
+      banks.forEach(function(b) {
+        var buyVal = Number(b.buy || 0);
+        var sellVal = Number(b.sell || 0);
+        if (buyVal > maxBuy) { maxBuy = buyVal; topBuy = b; }
+        if (buyVal > 0 && buyVal < minBuy) { minBuy = buyVal; lowBuy = b; }
+        if (sellVal > maxSell) { maxSell = sellVal; topSell = b; }
+        if (sellVal > 0 && sellVal < minSell) { minSell = sellVal; lowSell = b; }
+      });
+
+      if (topBuy) {
+        document.getElementById("top-buy-bank-name").innerText = getBankDisplayName(topBuy.bank);
+        document.getElementById("top-buy-val").innerText = Number(topBuy.buy).toFixed(2);
+      }
+      if (lowBuy) {
+        document.getElementById("low-buy-bank-name").innerText = getBankDisplayName(lowBuy.bank);
+        document.getElementById("low-buy-val").innerText = Number(lowBuy.buy).toFixed(2);
+      }
+      if (lowSell) {
+        document.getElementById("low-sell-bank-name").innerText = getBankDisplayName(lowSell.bank);
+        document.getElementById("low-sell-val").innerText = Number(lowSell.sell).toFixed(2);
+      }
+      if (topSell) {
+        document.getElementById("top-sell-bank-name").innerText = getBankDisplayName(topSell.bank);
+        document.getElementById("top-sell-val").innerText = Number(topSell.sell).toFixed(2);
+      }
+
+      banks.forEach(function(b, idx) {
+        var isTop = (idx === 0);
+        var bName = getBankDisplayName(b.bank);
+        var bBuy = Number(b.buy || 0);
+        var bSell = Number(b.sell || 0);
+        var spread = (bSell > 0 && bBuy > 0) ? (bSell - bBuy).toFixed(2) : "0.10";
+
+        var statusBadge = isTop 
+          ? '<span class="badge-flow badge-buyer"><i class="fa-solid fa-star"></i> ' + t.badge_top_buy + '</span>' 
+          : '<span class="badge-flow badge-neutral">' + t.badge_active + '</span>';
+
+        var cleanTime = extractTime(b.updated_at);
+
+        bHtml += '<tr>'
+          + '<td class="num-ltr" style="font-weight:800; color: #64748b;">#' + (idx + 1) + '</td>'
+          + '<td style="font-weight: 800; color: #0f172a;">' + bName + '</td>'
+          + '<td class="num-ltr" style="' + (isTop ? 'font-weight:900;color:#059669;' : 'font-weight:700;') + '">' + bBuy.toFixed(2) + ' ' + currEgpLabel + '</td>'
+          + '<td class="num-ltr" style="font-weight:700;">' + bSell.toFixed(2) + ' ' + currEgpLabel + '</td>'
+          + '<td class="num-ltr" style="color:#2563eb; font-weight:700;">' + spread + ' ' + currEgpLabel + '</td>'
+          + '<td class="num-ltr" style="color:#64748b;">' + cleanTime + '</td>'
+          + '<td>' + statusBadge + '</td>'
+          + '</tr>';
+      });
+      document.getElementById("banks-table-tbody").innerHTML = bHtml;
+    }
+
+    function cleanAssetDisplayName(name, code) {
+      if (!name || !code) return name || code || "--";
+      var cleaned = name.replace(new RegExp("\\s*\\(" + code + "\\)\\s*", "gi"), "").trim();
+      return cleaned || name;
+    }
+
+    function getBankDisplayName(rawBankName) {
+      if (!rawBankName) return "--";
+      var mapping = bankNamesMap[rawBankName];
+      var name;
+      if (mapping) name = (currentLang === "en") ? mapping.en : mapping.ar;
+      else {
+        for (var key in bankNamesMap) {
+          if (rawBankName.indexOf(key) >= 0 || key.indexOf(rawBankName) >= 0) {
+            name = (currentLang === "en") ? bankNamesMap[key].en : bankNamesMap[key].ar;
+            break;
+          }
+        }
+      }
+      if (!name) name = rawBankName;
+      return name.replace(/\(([A-Za-z\s\.]+)\)/g, '\u2066($1)\u2069');
+    }
+
+    function connectBinanceWs() {
+      try {
+        var ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@ticker/ethusdt@ticker");
+        ws.onmessage = function(event) {
+          var d = JSON.parse(event.data);
+          var code = d.s === "BTCUSDT" ? "BTC" : (d.s === "ETHUSDT" ? "ETH" : null);
+          if (code && globalData && globalData.rates) {
+            var item = globalData.rates.find(function(r) { return r.code === code; });
+            if (item) {
+              item.usd_price = parseFloat(d.c);
+              item.egp_price = item.usd_price * Number(globalData.usd_rate || 51.94);
+              item.change = parseFloat(d.P).toFixed(2) + "%";
+              item.updated_at = new Date().toLocaleTimeString("en-US");
+              renderMarketCards(globalData.rates);
+            }
+          }
+        };
+        ws.onerror = function() {};
+      } catch(e) {}
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      setLanguage(currentLang);
+      setCurrencyMode(currentCurrency);
+      requestDataUpdate(false);
+      connectBinanceWs();
+      setInterval(function() {
+        requestDataUpdate(false);
+      }, 30000);
+    });
+  </script>
+</body>
+</html>
