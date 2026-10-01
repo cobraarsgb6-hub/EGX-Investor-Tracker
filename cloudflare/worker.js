@@ -649,9 +649,12 @@ function formatEgxReport(data, lang) {
     sessionDate = r.date || sessionDate;
   }
 
-  const fmt = fmtSigned;
-  const fmtUsd = (v) => fmtSignedUsd(v, usdRate);
+  const fmtUsd = (v) => "$" + Number(Math.round(Math.abs(v) / usdRate)).toLocaleString("en-US");
   const updatedTime = getCairoTimeStr();
+
+  const egStatus = egNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const arStatus = arNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const foStatus = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
 
   if (lang === "en") {
     return `🏛️ <b>Institutional Trading - Egyptian Stock Exchange (EGX)</b>\n`
@@ -659,21 +662,27 @@ function formatEgxReport(data, lang) {
       + `📅 Session: <b>${sessionDate}</b> • CBE USD: <b>$1.00</b> (${usdRate.toFixed(2)} EGP)\n`
       + `🕒 Audited: <b>[${updatedTime}]</b> (Cairo Time)\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
-      + `▫️ <b>Egyptian Institutions:</b> <b>${fmtUsd(egNet)}</b> • (${fmt(egNet)} EGP)\n\n`
-      + `▫️ <b>Arab Institutions:</b> <b>${fmtUsd(arNet)}</b> • (${fmt(arNet)} EGP)\n\n`
-      + `▫️ <b>Foreign Institutions:</b> <b>${fmtUsd(foNet)}</b> • (${fmt(foNet)} EGP)\n\n`
+      + `▫️ <b>Egyptian Institutions:</b> ${egNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴"}\n`
+      + `   ${fmtSigned(egNet)} EGP • (${fmtUsd(egNet)})\n\n`
+      + `▫️ <b>Arab Institutions:</b> ${arNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴"}\n`
+      + `   ${fmtSigned(arNet)} EGP • (${fmtUsd(arNet)})\n\n`
+      + `▫️ <b>Foreign Institutions:</b> ${foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴"}\n`
+      + `   ${fmtSigned(foNet)} EGP • (${fmtUsd(foNet)})\n\n`
       + `🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
 
   return `🏛️ <b>تعاملات المؤسسات - البورصة المصرية (EGX)</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `${RLM}📅 تاريخ الجلسة: <b>${sessionDate}</b> • دولار المركزي: <b>1.00$</b> (${usdRate.toFixed(2)} ج.م)\n`
-    + `${RLM}🕒 وقت الفحص: <b>[${updatedTime}]</b> بتوقيت مصر\n`
+    + `📅 تاريخ الجلسة: <b>${sessionDate}</b> • دولار المركزي: <b>52.26 ج.م</b>\n`
+    + `🕒 وقت الفحص: <b>[${updatedTime}]</b> بتوقيت مصر\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `${RLM}▫️ المؤسسات المصرية 🇪🇬: <b>${fmtUsd(egNet)}</b> • (${fmt(egNet)} ج.م)\n\n`
-    + `${RLM}▫️ المؤسسات العربية 🇸🇦: <b>${fmtUsd(arNet)}</b> • (${fmt(arNet)} ج.م)\n\n`
-    + `${RLM}▫️ المؤسسات الأجنبية 🌐: <b>${fmtUsd(foNet)}</b> • (${fmt(foNet)} ج.م)\n\n`
-    + `${RLM}🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
+    + `▫️ <b>المؤسسات المصرية:</b> ${egStatus}\n`
+    + `   ${fmtSigned(egNet)} ج.م • (${fmtUsd(egNet)})\n\n`
+    + `▫️ <b>المؤسسات العربية:</b> ${arStatus}\n`
+    + `   ${fmtSigned(arNet)} ج.م • (${fmtUsd(arNet)})\n\n`
+    + `▫️ <b>المؤسسات الأجنبية:</b> ${foStatus}\n`
+    + `   ${fmtSigned(foNet)} ج.م • (${fmtUsd(foNet)})\n\n`
+    + `🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
 
 /**
@@ -681,41 +690,42 @@ function formatEgxReport(data, lang) {
  */
 function formatCommoditiesReport(data, lang) {
   let items = data.live_commodities || [];
-  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 51.92);
+  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.2571);
   const fmt = (v, d) => Number(v).toLocaleString("en-US", {
     minimumFractionDigits: d !== undefined ? d : 2,
     maximumFractionDigits: d !== undefined ? d : 2
   });
+  const updatedTime = getCairoTimeStr();
 
   if (lang === "en") {
     let txt = `🪙 <b>Gold, Oil & Crypto Live Market</b>\n`
+      + `━━━━━━━━━━━━━━━━━━\n`
+      + `🕒 Updated: <b>[${updatedTime}]</b> (Cairo Time)\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`;
 
     items.forEach(item => {
       const uP = Number(item.usd_price || 0);
       const eP = Number(item.egp_price || (uP * usdRate));
       const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
-      const trend = getTrendIcon(item.change);
-      const timeTag = item.updated_at ? ` [${item.updated_at}]` : "";
-      txt += `▫️ <b>${item.name_en || item.name}:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, eP >= 1000 ? 0 : 2)} EGP)${trend}${timeTag}\n`;
+      txt += `▫️ <b>${item.name_en || item.name}:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, eP >= 1000 ? 0 : 2)} EGP)\n`;
     });
 
-    return txt + `\n⚡ <i>Cairo Time • Live feed via Binance & Global Markets.</i>`;
+    return txt + `\n⚡ <i>Live feed via Binance & Global Markets.</i>`;
   }
 
   let txtAr = `🪙 <b>أسواق الذهب والفضة والنفط والكريبتو</b>\n`
+    + `━━━━━━━━━━━━━━━━━━\n`
+    + `🕒 وقت التحديث: <b>[${updatedTime}]</b> بتوقيت مصر\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`;
 
   items.forEach(item => {
     const uP = Number(item.usd_price || 0);
     const eP = Number(item.egp_price || (uP * usdRate));
     const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
-    const trend = getTrendIcon(item.change);
-    const timeTag = item.updated_at ? ` [${item.updated_at}]` : "";
-    txtAr += `▫️ <b>${item.name}:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, eP >= 1000 ? 0 : 2)} ج.م)${trend}${timeTag}\n`;
+    txtAr += `▫️ <b>${item.name}:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, eP >= 1000 ? 0 : 2)} ج.م)\n`;
   });
 
-  return txtAr + `\n⚡ <i>بتوقيت مصر • أسعار حية مباشرة من بينانس والأسواق العالمية.</i>`;
+  return txtAr + `\n⚡ <i>أسعار حية مباشرة من بينانس والأسواق العالمية.</i>`;
 }
 
 /**
@@ -723,11 +733,12 @@ function formatCommoditiesReport(data, lang) {
  */
 function formatCurrenciesReport(data, lang) {
   const rates = data.rates || [];
-  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 51.92);
+  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.2571);
   const fmt = (v, d) => Number(v).toLocaleString("en-US", {
     minimumFractionDigits: d !== undefined ? d : 2,
     maximumFractionDigits: d !== undefined ? d : 2
   });
+  const updatedTime = getCairoTimeStr();
 
   const excludeCodes = ["GOLD24", "GOLD21", "GOLD18", "SILVER", "BRENT", "WTI", "BTC", "ETH", "OIL", "GOLDC", "USD"];
   const currItems = rates.filter(r => {
@@ -737,37 +748,35 @@ function formatCurrenciesReport(data, lang) {
 
   if (lang === "en") {
     let txt = `💵 <b>Foreign Currency Exchange Rates</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n\n`;
-
-    txt += `▫️ <b>US Dollar [USD]:</b> <b>$1.00</b> • (${fmt(usdRate, 2)} EGP) [${data.cbe_updated_at || "Live"}]\n`;
+      + `━━━━━━━━━━━━━━━━━━\n`
+      + `🕒 Updated: <b>[${updatedTime}]</b> (Cairo Time)\n`
+      + `━━━━━━━━━━━━━━━━━━\n\n`
+      + `▫️ <b>US Dollar [USD]:</b> <b>$1.00</b> • (${fmt(usdRate, 2)} EGP)\n`;
 
     currItems.forEach(item => {
       const uP = Number(item.usd_price || 0);
       const eP = Number(item.egp_price || (uP * usdRate));
       const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : 2;
-      const trend = getTrendIcon(item.change);
-      const timeTag = item.updated_at ? ` [${item.updated_at}]` : "";
-      txt += `▫️ <b>${item.name} [${item.code}]:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, 2)} EGP)${trend}${timeTag}\n`;
+      txt += `▫️ <b>${item.name} [${item.code}]:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, 2)} EGP)\n`;
     });
 
-    return txt + `\n🏛️ <i>Cairo Time • Official CBE baseline rates.</i>`;
+    return txt + `\n🏛️ <i>Official Central Bank of Egypt rates.</i>`;
   }
 
   let txtAr = `💵 <b>أسعار العملات الأجنبية والعربية الرسمية</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n\n`;
-
-  txtAr += `▫️ <b>الدولار الأمريكي [USD]:</b> <b>$1.00</b> • (${fmt(usdRate, 2)} ج.م) [${data.cbe_updated_at || "معتمد"}]\n`;
+    + `━━━━━━━━━━━━━━━━━━\n`
+    + `🕒 وقت التحديث: <b>[${updatedTime}]</b> بتوقيت مصر\n`
+    + `━━━━━━━━━━━━━━━━━━\n\n`
+    + `▫️ <b>الدولار الأمريكي [USD]:</b> <b>1.00$</b> • (${fmt(usdRate, 2)} ج.م)\n`;
 
   currItems.forEach(item => {
     const uP = Number(item.usd_price || 0);
     const eP = Number(item.egp_price || (uP * usdRate));
     const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : 2;
-    const trend = getTrendIcon(item.change);
-    const timeTag = item.updated_at ? ` [${item.updated_at}]` : "";
-    txtAr += `▫️ <b>${item.name} [${item.code}]:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, 2)} ج.م)${trend}${timeTag}\n`;
+    txtAr += `▫️ <b>${item.name} [${item.code}]:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, 2)} ج.م)\n`;
   });
 
-  return txtAr + `\n🏛️ <i>بتوقيت مصر • أسعار موثقة معتمدة من البنك المركزي المصري.</i>`;
+  return txtAr + `\n🏛️ <i>أسعار موثقة معتمدة من البنك المركزي المصري.</i>`;
 }
 
 /**
@@ -781,10 +790,10 @@ function formatBanksReport(data, lang, cfg) {
 
   const usdBuy = Number(data.cbe_usd_buy || 52.2571);
   const usdSell = Number(data.cbe_usd_sell || 52.3971);
-  const cbeTime = formatCleanTime(data.cbe_updated_at);
+  const updatedTime = getCairoTimeStr();
 
-  let topBuy = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.40, sell: 52.50, updated_at: "15:45" };
-  let lowSell = banks[0] || { bank: "أبوظبي التجاري", buy: 51.85, sell: 51.95, updated_at: "15:45" };
+  let topBuy = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.40, sell: 52.50 };
+  let lowSell = banks[0] || { bank: "أبوظبي التجاري", buy: 51.85, sell: 51.95 };
 
   let maxB = -1, minS = 999;
   banks.forEach(b => {
@@ -797,32 +806,39 @@ function formatBanksReport(data, lang, cfg) {
   if (lang === "en") {
     return `🏦 <b>USD Exchange Rates - Egyptian Banks</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + (showCbe ? `🏛️ <b>Central Bank (CBE):</b> Buy <b>${usdBuy.toFixed(4)}</b> - Sell <b>${usdSell.toFixed(4)}</b> [${cbeTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
-      + (showBest ? `🟢 <b>Top Buy:</b> ${topBuy.bank} (<b>${Number(topBuy.buy).toFixed(2)}</b>) [${formatCleanTime(topBuy.updated_at)}]\n🔵 <b>Lowest Sell:</b> ${lowSell.bank} (<b>${Number(lowSell.sell).toFixed(2)}</b>) [${formatCleanTime(lowSell.updated_at)}]\n━━━━━━━━━━━━━━━━━━\n` : "")
-      + `📊 <b>Top ${Math.min(limit, banks.length)} Banks:</b>\n\n`
-      + banks.slice(0, limit).map(b => `▫️ <b>${b.bank}:</b> Buy <b>${Number(b.buy).toFixed(2)}</b> - Sell <b>${Number(b.sell).toFixed(2)}</b> [${formatCleanTime(b.updated_at)}]`).join("\n")
-      + `\n\n⚡ <i>Cairo Time • Real-time rates via Ta3weem.</i>`;
+      + (showCbe ? `🏛️ <b>Central Bank (CBE):</b> Buy <b>${usdBuy.toFixed(4)}</b> - Sell <b>${usdSell.toFixed(4)}</b>\n━━━━━━━━━━━━━━━━━━\n` : "")
+      + (showBest ? `🟢 <b>Top Buy:</b> ${topBuy.bank} (<b>${Number(topBuy.buy).toFixed(2)}</b>)\n🔵 <b>Lowest Sell:</b> ${lowSell.bank} (<b>${Number(lowSell.sell).toFixed(2)}</b>)\n━━━━━━━━━━━━━━━━━━\n` : "")
+      + `📊 <b>Top ${Math.min(limit, banks.length)} Banks (Buy - Sell):</b>\n\n`
+      + banks.slice(0, limit).map(b => `▫️ <b>${b.bank}:</b> ${Number(b.buy).toFixed(2)} - ${Number(b.sell).toFixed(2)}`).join("\n")
+      + `\n\n⚡ <i>Cairo Time [${updatedTime}] • Live feed via Ta3weem.</i>`;
   }
 
   return `🏦 <b>أسعار صرف الدولار في البنوك المصرية</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + (showCbe ? `${RLM}🏛️ <b>البنك المركزي المصري:</b> شراء <b>${usdBuy.toFixed(4)}</b> - بيع <b>${usdSell.toFixed(4)}</b> [${cbeTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
-    + (showBest ? `${RLM}🟢 <b>أعلى شراء:</b> ${topBuy.bank} (<b>${Number(topBuy.buy).toFixed(2)}</b>) [${formatCleanTime(topBuy.updated_at)}]\n${RLM}🔵 <b>أقل بيع:</b> ${lowSell.bank} (<b>${Number(lowSell.sell).toFixed(2)}</b>) [${formatCleanTime(lowSell.updated_at)}]\n━━━━━━━━━━━━━━━━━━\n` : "")
-    + `${RLM}📊 <b>أبرز البنوك المصرية:</b>\n\n`
-    + banks.slice(0, limit).map(b => `${RLM}▫️ <b>${b.bank}:</b> شراء <b>${Number(b.buy).toFixed(2)}</b> - بيع <b>${Number(b.sell).toFixed(2)}</b> [${formatCleanTime(b.updated_at)}]`).join("\n")
-    + `\n\n⚡ <i>بتوقيت مصر • أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
+    + `🕒 وقت الفحص: <b>[${updatedTime}]</b> بتوقيت مصر\n`
+    + `━━━━━━━━━━━━━━━━━━\n`
+    + (showCbe ? `🏛️ <b>البنك المركزي المصري:</b> شراء <b>${usdBuy.toFixed(4)}</b> - بيع <b>${usdSell.toFixed(4)}</b>\n━━━━━━━━━━━━━━━━━━\n` : "")
+    + (showBest ? `🟢 <b>أعلى شراء:</b> ${topBuy.bank} (<b>${Number(topBuy.buy).toFixed(2)}</b>)\n🔵 <b>أقل بيع:</b> ${lowSell.bank} (<b>${Number(lowSell.sell).toFixed(2)}</b>)\n━━━━━━━━━━━━━━━━━━\n` : "")
+    + `📊 <b>أبرز البنوك المصرية (شراء - بيع):</b>\n\n`
+    + banks.slice(0, limit).map(b => `▫️ <b>${b.bank}:</b> شراء <b>${Number(b.buy).toFixed(2)}</b> - بيع <b>${Number(b.sell).toFixed(2)}</b>`).join("\n")
+    + `\n\n⚡ <i>أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
 }
 
 function formatAllBanksReport(data, lang) {
   const banks = data.banks || [];
+  const updatedTime = getCairoTimeStr();
   if (lang === "en") {
-    return `🏦 <b>All 25 Egyptian Banks - USD Rates</b>\n━━━━━━━━━━━━━━━━━━\n\n`
-      + banks.map((b, idx) => `${idx + 1}. <b>${b.bank}:</b> Buy <b>${Number(b.buy).toFixed(2)}</b> - Sell <b>${Number(b.sell).toFixed(2)}</b> [${formatCleanTime(b.updated_at)}]`).join("\n")
-      + `\n\n⚡ <i>Cairo Time • Live feed via Ta3weem.</i>`;
+    return `🏦 <b>All 25 Egyptian Banks - USD Rates</b>\n`
+      + `🕒 Updated: <b>[${updatedTime}]</b> (Cairo Time)\n`
+      + `━━━━━━━━━━━━━━━━━━\n\n`
+      + banks.map((b, idx) => `${idx + 1}. <b>${b.bank}:</b> Buy <b>${Number(b.buy).toFixed(2)}</b> - Sell <b>${Number(b.sell).toFixed(2)}</b>`).join("\n")
+      + `\n\n⚡ <i>Live feed via Ta3weem.</i>`;
   }
-  return `🏦 <b>قائمة الـ 25 بنكاً مصرياً بالكامل - أسعار الدولار</b>\n━━━━━━━━━━━━━━━━━━\n\n`
-    + banks.map((b, idx) => `${RLM}${idx + 1}. <b>${b.bank}:</b> شراء <b>${Number(b.buy).toFixed(2)}</b> - بيع <b>${Number(b.sell).toFixed(2)}</b> [${formatCleanTime(b.updated_at)}]`).join("\n")
-    + `\n\n⚡ <i>بتوقيت مصر • أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
+  return `🏦 <b>قائمة الـ 25 بنكاً مصرياً بالكامل - أسعار الدولار</b>\n`
+    + `🕒 وقت التحديث: <b>[${updatedTime}]</b> بتوقيت مصر\n`
+    + `━━━━━━━━━━━━━━━━━━\n\n`
+    + banks.map((b, idx) => `${idx + 1}. <b>${b.bank}:</b> شراء <b>${Number(b.buy).toFixed(2)}</b> - بيع <b>${Number(b.sell).toFixed(2)}</b>`).join("\n")
+    + `\n\n⚡ <i>أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
 }
 
 /**
@@ -844,40 +860,52 @@ function formatExecutiveReport(data, lang) {
     sessionDate = r.date || sessionDate;
   }
   const fmt = (v) => Number(v).toLocaleString("en-US");
-  const fmtUsd = (v) => "$" + Number(Math.round(v / usdRate)).toLocaleString("en-US");
+  const fmtUsd = (v) => "$" + Number(Math.round(Math.abs(v) / usdRate)).toLocaleString("en-US");
+  const updatedTime = getCairoTimeStr();
 
   const comms = data.live_commodities || [];
-  const btcItem = comms.find(c => c.code === "BTC") || { usd_price: 83486, updated_at: "لحظي" };
-  const brentItem = comms.find(c => c.code === "BRENT") || { usd_price: 100.49, updated_at: "لحظي" };
-  const gold21Item = comms.find(c => c.code === "GOLD21") || { usd_price: 112.00, updated_at: "لحظي" };
+  const btcItem = comms.find(c => c.code === "BTC") || { usd_price: 84400 };
+  const brentItem = comms.find(c => c.code === "BRENT") || { usd_price: 100.20 };
+  const gold21Item = comms.find(c => c.code === "GOLD21") || { usd_price: 117.01 };
+
+  const egStatus = egNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const arStatus = arNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const foStatus = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
 
   if (lang === "en") {
     return `📊 <b>Executive Financial Summary</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
+      + `🕒 Audited: <b>[${updatedTime}]</b> (Cairo Time)\n`
+      + `━━━━━━━━━━━━━━━━━━\n\n`
       + `🏛️ <b>EGX Flows (${sessionDate}):</b>\n`
-      + `  ▫️ Egyptian: <b>${fmtUsd(egNet)}</b> • (${fmtSigned(egNet)} EGP)\n`
-      + `  ▫️ Arab: <b>${fmtUsd(arNet)}</b> • (${fmtSigned(arNet)} EGP)\n`
-      + `  ▫️ Foreign: <b>${fmtUsd(foNet)}</b> • (${fmtSigned(foNet)} EGP)\n`
+      + `  ▫️ Egyptian: ${egStatus} (${fmtSigned(egNet)} EGP)\n`
+      + `  ▫️ Arab: ${arStatus} (${fmtSigned(arNet)} EGP)\n`
+      + `  ▫️ Foreign: ${foStatus} (${fmtSigned(foNet)} EGP)\n\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `💵 <b>CBE USD:</b> <b>$1.00</b> • (${usdRate.toFixed(2)} EGP) [${data.cbe_updated_at || "Today"}]\n`
-      + `🪙 <b>Gold 21K:</b> <b>$${Number(gold21Item.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(gold21Item.usd_price) * usdRate))} EGP) [${gold21Item.updated_at || "Live"}]\n`
-      + `🛢️ <b>Brent Crude:</b> <b>$${Number(brentItem.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(brentItem.usd_price) * usdRate))} EGP) [${brentItem.updated_at || "Live"}]\n`
-      + `🪙 <b>Bitcoin:</b> <b>$${fmt(Number(btcItem.usd_price))}</b> • (${fmt(Math.round(Number(btcItem.usd_price) * usdRate))} EGP) [${btcItem.updated_at || "Live"}]\n`
-      + `\n⚡ <i>Cairo Time • Live Executive Summary.</i>`;
+      + `💵 <b>CBE USD:</b> <b>$1.00</b> • (${usdRate.toFixed(2)} EGP)\n`
+      + `🪙 <b>Gold 21K:</b> <b>$${Number(gold21Item.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(gold21Item.usd_price) * usdRate))} EGP)\n`
+      + `🛢️ <b>Brent Crude:</b> <b>$${Number(brentItem.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(brentItem.usd_price) * usdRate))} EGP)\n`
+      + `🪙 <b>Bitcoin:</b> <b>$${fmt(Number(btcItem.usd_price))}</b> • (${fmt(Math.round(Number(btcItem.usd_price) * usdRate))} EGP)\n`
+      + `\n⚡ <i>Live Executive Summary.</i>`;
   }
 
   return `📊 <b>التقرير المالي التنفيذي الشامل (EGX & Markets)</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
+    + `🕒 وقت الفحص: <b>[${updatedTime}]</b> بتوقيت مصر\n`
+    + `━━━━━━━━━━━━━━━━━━\n\n`
     + `🏛️ <b>صافي تدفقات البورصة (جلسة ${sessionDate}):</b>\n`
-    + `${RLM}  ▫️ مصرية: <b>${fmtUsd(egNet)}</b> • (${fmtSigned(egNet)} ج.م)\n`
-    + `${RLM}  ▫️ عربية: <b>${fmtUsd(arNet)}</b> • (${fmtSigned(arNet)} ج.م)\n`
-    + `${RLM}  ▫️ أجنبية: <b>${fmtUsd(foNet)}</b> • (${fmtSigned(foNet)} ج.م)\n`
+    + `▫️ مصرية: ${egStatus}\n`
+    + `   ${fmtSigned(egNet)} ج.م • (${fmtUsd(egNet)})\n`
+    + `▫️ عربية: ${arStatus}\n`
+    + `   ${fmtSigned(arNet)} ج.م • (${fmtUsd(arNet)})\n`
+    + `▫️ أجنبية: ${foStatus}\n`
+    + `   ${fmtSigned(foNet)} ج.م • (${fmtUsd(foNet)})\n\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `${RLM}💵 <b>دولار المركزي:</b> <b>1.00$</b> • (${usdRate.toFixed(2)} ج.م) [${formatCleanTime(data.cbe_updated_at)}]\n`
-    + `${RLM}🪙 <b>ذهب عيار 21:</b> <b>$${Number(gold21Item.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(gold21Item.usd_price) * usdRate))} ج.م) [${formatCleanTime(gold21Item.updated_at)}]\n`
-    + `${RLM}🛢️ <b>نفط برنت:</b> <b>$${Number(brentItem.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(brentItem.usd_price) * usdRate))} ج.م) [${formatCleanTime(brentItem.updated_at)}]\n`
-    + `${RLM}🪙 <b>بيتكوين (BTC):</b> <b>$${fmt(Number(btcItem.usd_price))}</b> • (${fmt(Math.round(Number(btcItem.usd_price) * usdRate))} ج.م) [${formatCleanTime(btcItem.updated_at)}]\n`
-    + `\n⚡ <i>بتوقيت مصر • تقرير تنفيذي موحد وشامل.</i>`;
+    + `💵 <b>دولار المركزي:</b> <b>52.26 ج.م</b> (شراء 52.2571 - بيع 52.3971)\n`
+    + `🪙 <b>ذهب عيار 21:</b> <b>$${Number(gold21Item.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(gold21Item.usd_price) * usdRate))} ج.م)\n`
+    + `🛢️ <b>نفط برنت:</b> <b>$${Number(brentItem.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(brentItem.usd_price) * usdRate))} ج.م)\n`
+    + `🪙 <b>بيتكوين (BTC):</b> <b>$${fmt(Number(btcItem.usd_price))}</b> • (${fmt(Math.round(Number(btcItem.usd_price) * usdRate))} ج.م)\n`
+    + `\n⚡ <i>تقرير تنفيذي موحد وشامل.</i>`;
 }
 
 // ==========================================
