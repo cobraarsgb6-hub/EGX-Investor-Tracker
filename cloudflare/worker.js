@@ -17,7 +17,7 @@ const BOT_TOKEN = "8602326797:AAH0__1Q9RTSvmkho6qR0-Sk6FWSrHQF6GY";
 const DATA_API_URL = "https://script.google.com/macros/s/AKfycbwO2XFvnxgA4aXgzZKoVCLhRy0CnfUonrptmkxvQF4nZChW_D_RrZsQDXm6NUW6QIRGuA/exec?action=data";
 const CONFIG_API_URL = "https://script.google.com/macros/s/AKfycbwO2XFvnxgA4aXgzZKoVCLhRy0CnfUonrptmkxvQF4nZChW_D_RrZsQDXm6NUW6QIRGuA/exec";
 
-// الإعدادات المركزية الافتراضية
+// الإعدادات المركزية الافتراضية (اللغة الافتراضية إنجليزية بناءً على رغبة المستخدم)
 let botConfig = {
   hide_egx: false,
   hide_banks: false,
@@ -28,8 +28,68 @@ let botConfig = {
   banks_count: 8,
   show_cbe_in_banks: true,
   show_best_banks: true,
-  default_lang: "ar"
+  default_lang: "en"
 };
+
+// تخزين اختيار لغة المستخدم الفردية
+let userLangPreferences = {};
+
+const BANK_EN_NAMES = {
+  "أبوظبي الإسلامي": "ADIB Egypt",
+  "أبوظبي الإسلامي (ADIB)": "ADIB Egypt",
+  "مصرف أبو ظبي الإسلامي": "ADIB Egypt",
+  "الأهلي الكويتي": "ABK Egypt",
+  "البنك الأهلي الكويتي": "ABK Egypt",
+  "بنك نكست": "Bank NXT",
+  "نكست": "Bank NXT",
+  "قناة السويس": "Suez Canal Bank",
+  "بنك قناة السويس": "Suez Canal Bank",
+  "الشركة المصرفية": "saib Bank",
+  "بنك الشركة المصرفية": "saib Bank",
+  "بنك الشركة المصرفية العربية الدولية": "saib Bank",
+  "التجاري الدولي": "CIB Egypt",
+  "البنك التجاري الدولي": "CIB Egypt",
+  "البنك التجاري الدولي (CIB)": "CIB Egypt",
+  "بنك مصر": "Banque Misr",
+  "الأهلي المصري": "National Bank of Egypt (NBE)",
+  "البنك الأهلي المصري": "National Bank of Egypt (NBE)",
+  "بنك القاهرة": "Banque du Caire",
+  "بنك الإسكندرية": "Bank of Alexandria",
+  "الإسكندرية": "Bank of Alexandria",
+  "قطر الوطني": "QNB Alahli",
+  "بنك قطر الوطني": "QNB Alahli",
+  "فيصل الإسلامي": "Faisal Islamic Bank",
+  "بنك فيصل الإسلامي": "Faisal Islamic Bank",
+  "البركة": "Al Baraka Bank",
+  "بنك البركة": "Al Baraka Bank",
+  "التعمير والإسكان": "Housing & Dev Bank (HDB)",
+  "بنك التعمير والإسكان": "Housing & Dev Bank (HDB)",
+  "الكويت الوطني": "NBK Egypt",
+  "بنك الكويت الوطني": "NBK Egypt",
+  "المصرف المتحد": "The United Bank",
+  "العقاري المصري العربي": "Egyptian Arab Land Bank",
+  "البنك العقاري المصري العربي": "Egyptian Arab Land Bank",
+  "التنمية الصناعية": "Industrial Dev Bank (IDB)",
+  "بنك التنمية الصناعية": "Industrial Dev Bank (IDB)",
+  "أبوظبي التجاري": "ADCB Egypt",
+  "بنك أبوظبي التجاري": "ADCB Egypt",
+  "الاستثمار العربي": "aiBANK",
+  "بنك الاستثمار العربي": "aiBANK",
+  "المصرف العربي الدولي": "Arab Int'l Bank (AIB)",
+  "الإمارات دبي الوطني": "Emirates NBD Egypt",
+  "بنك الإمارات دبي الوطني": "Emirates NBD Egypt",
+  "كريدي أجريكول": "Credit Agricole Egypt",
+  "ميد بنك": "MIDBANK",
+  "البنك المركزي المصري": "Central Bank of Egypt (CBE)"
+};
+
+function getBankName(bankAr, lang) {
+  if (lang !== "en" || !bankAr) return bankAr;
+  for (let key in BANK_EN_NAMES) {
+    if (bankAr.includes(key)) return BANK_EN_NAMES[key];
+  }
+  return bankAr;
+}
 
 // كاش الإعدادات في الذاكرة (15 ثانية)
 let configCache = {
@@ -72,6 +132,17 @@ const RLM = "\u200F";
 function getCairoTimeStr() {
   const d = new Date();
   return d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit" });
+}
+
+function getCairoFullDateTime(lang) {
+  const d = new Date();
+  const timeStr = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit" });
+  if (lang === "en") {
+    const dateStr = d.toLocaleDateString("en-US", { timeZone: "Africa/Cairo", weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    return `${dateStr} • ${timeStr} (Cairo Time)`;
+  }
+  const dateStrAr = d.toLocaleDateString("ar-EG", { timeZone: "Africa/Cairo", weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return `${dateStrAr} • ${timeStr} بتوقيت مصر`;
 }
 
 function formatCleanTime(val) {
@@ -546,36 +617,82 @@ async function handleTelegramUpdate(update, originUrl) {
   }
 
   const cfg = await getLiveBotConfig();
-  const lang = cfg.default_lang || "ar";
+
+  if (text === "cmd_lang_en" || text === "/en") {
+    userLangPreferences[chatId] = "en";
+    await sendMainMenu(chatId, "en", originUrl, cfg, messageId);
+    return;
+  }
+  if (text === "cmd_lang_ar" || text === "/ar") {
+    userLangPreferences[chatId] = "ar";
+    await sendMainMenu(chatId, "ar", originUrl, cfg, messageId);
+    return;
+  }
+
+  const lang = userLangPreferences[chatId] || cfg.default_lang || "en";
 
   const reply = (txt, kb) => (isCallback && messageId)
     ? editTgMessage(chatId, messageId, txt, kb)
     : sendTgMessage(chatId, txt, kb);
 
-  if (text === "cmd_lang_en" || text === "cmd_lang_ar") {
-    await sendMainMenu(chatId, lang, originUrl, cfg, messageId);
-    return;
-  }
-
   if (isCallback) {
+    if (text.startsWith("refresh_")) {
+      const target = text.replace("refresh_", "");
+      memoryCache.timestamp = 0; // إعادة تعيين الكاش لفرض جلب البيانات الحية فوراً
+      const data = await getCachedDashboardData();
+      let content = "";
+      let kb = null;
+
+      if (target === "report") {
+        content = formatExecutiveReport(data, lang);
+        kb = getReportKeyboard("report", lang, cfg);
+      } else if (target === "egx") {
+        content = formatEgxReport(data, lang);
+        kb = getReportKeyboard("egx", lang, cfg);
+      } else if (target === "banks") {
+        content = formatBanksReport(data, lang, cfg);
+        kb = getReportKeyboard("banks", lang, cfg);
+      } else if (target === "banks_all") {
+        content = formatAllBanksReport(data, lang);
+        kb = getReportKeyboard("banks_all", lang, cfg);
+      } else if (target === "commodities" || target === "gold") {
+        content = formatCommoditiesReport(data, lang);
+        kb = getReportKeyboard("commodities", lang, cfg);
+      } else if (target === "currencies" || target === "markets") {
+        content = formatCurrenciesReport(data, lang);
+        kb = getReportKeyboard("currencies", lang, cfg);
+      } else {
+        await sendMainMenu(chatId, lang, originUrl, cfg, messageId);
+        return;
+      }
+
+      if (callbackId) {
+        try {
+          await answerCallback(callbackId, lang === "en" ? "⚡ Live data refreshed!" : "⚡ تم تحديث البيانات لحظياً!");
+        } catch(e) {}
+      }
+      await reply(content, kb);
+      return;
+    }
+
     if (text === "cmd_egx") {
       const data = await getCachedDashboardData();
-      await reply(formatEgxReport(data, lang), getMenuKeyboard(lang, originUrl, cfg));
+      await reply(formatEgxReport(data, lang), getReportKeyboard("egx", lang, cfg));
     } else if (text === "cmd_banks") {
       const data = await getCachedDashboardData();
-      await reply(formatBanksReport(data, lang, cfg), getBanksKeyboard(lang));
+      await reply(formatBanksReport(data, lang, cfg), getReportKeyboard("banks", lang, cfg));
     } else if (text === "cmd_banks_all") {
       const data = await getCachedDashboardData();
-      await reply(formatAllBanksReport(data, lang), getMenuKeyboard(lang, originUrl, cfg));
+      await reply(formatAllBanksReport(data, lang), getReportKeyboard("banks_all", lang, cfg));
     } else if (text === "cmd_commodities" || text === "cmd_gold") {
       const data = await getCachedDashboardData();
-      await reply(formatCommoditiesReport(data, lang), getMenuKeyboard(lang, originUrl, cfg));
+      await reply(formatCommoditiesReport(data, lang), getReportKeyboard("commodities", lang, cfg));
     } else if (text === "cmd_currencies" || text === "cmd_markets") {
       const data = await getCachedDashboardData();
-      await reply(formatCurrenciesReport(data, lang), getMenuKeyboard(lang, originUrl, cfg));
+      await reply(formatCurrenciesReport(data, lang), getReportKeyboard("currencies", lang, cfg));
     } else if (text === "cmd_report") {
       const data = await getCachedDashboardData();
-      await reply(formatExecutiveReport(data, lang), getMenuKeyboard(lang, originUrl, cfg));
+      await reply(formatExecutiveReport(data, lang), getReportKeyboard("report", lang, cfg));
     } else if (text === "cmd_menu") {
       await sendMainMenu(chatId, lang, originUrl, cfg, messageId);
     }
@@ -586,7 +703,7 @@ async function handleTelegramUpdate(update, originUrl) {
   const isCommodities = lower === "/commodities" || lower === "/gold" || lower === "/oil" || lower === "/crypto" ||
     lower.includes("ذهب") || lower.includes("نفط") || lower.includes("بنزين") || lower.includes("بترول") || lower.includes("كريبتو") || lower.includes("سلع");
   const isCurrencies = lower === "/currencies" || lower === "/rates" || lower.includes("عملات") || lower.includes("عملة") || lower.includes("اسعار الصرف");
-  const isEgx = lower === "/egx" || lower.includes("بورصة") || lower.includes("مؤسسات") || lower.includes("اسهم");
+  const isEgx = lower === "/egx" || lower.includes("بورصة") || lower.includes("مؤسسات") || lower.includes("اسهم") || lower.includes("اجانب") || lower.includes("أجانب");
   const isBanks = lower === "/banks" || lower.includes("بنوك") || lower.includes("بنك") || lower.includes("دولار");
   const isReport = lower === "/report" || lower.includes("تقرير") || lower.includes("تنفيذي");
   const isMenu = lower === "/start" || lower === "/help" || lower.includes("قائمة") || lower === "menu";
@@ -595,19 +712,19 @@ async function handleTelegramUpdate(update, originUrl) {
     await sendMainMenu(chatId, lang, originUrl, cfg);
   } else if (isCommodities) {
     const data = await getCachedDashboardData();
-    await sendTgMessage(chatId, formatCommoditiesReport(data, lang), getMenuKeyboard(lang, originUrl, cfg));
+    await sendTgMessage(chatId, formatCommoditiesReport(data, lang), getReportKeyboard("commodities", lang, cfg));
   } else if (isCurrencies) {
     const data = await getCachedDashboardData();
-    await sendTgMessage(chatId, formatCurrenciesReport(data, lang), getMenuKeyboard(lang, originUrl, cfg));
+    await sendTgMessage(chatId, formatCurrenciesReport(data, lang), getReportKeyboard("currencies", lang, cfg));
   } else if (isEgx) {
     const data = await getCachedDashboardData();
-    await sendTgMessage(chatId, formatEgxReport(data, lang), getMenuKeyboard(lang, originUrl, cfg));
+    await sendTgMessage(chatId, formatEgxReport(data, lang), getReportKeyboard("egx", lang, cfg));
   } else if (isBanks) {
     const data = await getCachedDashboardData();
-    await sendTgMessage(chatId, formatBanksReport(data, lang, cfg), getBanksKeyboard(lang));
+    await sendTgMessage(chatId, formatBanksReport(data, lang, cfg), getReportKeyboard("banks", lang, cfg));
   } else if (isReport) {
     const data = await getCachedDashboardData();
-    await sendTgMessage(chatId, formatExecutiveReport(data, lang), getMenuKeyboard(lang, originUrl, cfg));
+    await sendTgMessage(chatId, formatExecutiveReport(data, lang), getReportKeyboard("report", lang, cfg));
   } else if (lower.indexOf("/") === 0) {
     await sendTgMessage(chatId, lang === "en" ? "❓ Unknown command. Type /start for menu." : "❓ أمر غير معروف. اضغط /start لعرض القائمة الرئيسية.", getMenuKeyboard(lang, originUrl, cfg));
   }
@@ -650,38 +767,46 @@ function formatEgxReport(data, lang) {
   }
 
   const fmtUsd = (v) => "$" + Number(Math.round(Math.abs(v) / usdRate)).toLocaleString("en-US");
-  const updatedTime = getCairoTimeStr();
+  const fmtNumber = (v) => {
+    const n = Number(v) || 0;
+    return (n >= 0 ? "+" : "-") + Math.abs(n).toLocaleString("en-US");
+  };
+  const updatedDateTime = getCairoFullDateTime(lang);
 
-  const egStatus = egNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-  const arStatus = arNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-  const foStatus = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const egStatusEn = egNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
+  const arStatusEn = arNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
+  const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
+
+  const egStatusAr = egNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const arStatusAr = arNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
 
   if (lang === "en") {
-    return `🏛️ <b>Institutional Trading - Egyptian Stock Exchange (EGX)</b>\n`
+    return `🏛️ <b>Egyptian Stock Exchange (EGX) Flows</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `📅 Session: <b>${sessionDate}</b> • CBE USD: <b>$1.00</b> (${usdRate.toFixed(2)} EGP)\n`
-      + `🕒 Audited: <b>[${updatedTime}]</b> (Cairo Time)\n`
+      + `🕒 <b>${updatedDateTime}</b>\n`
+      + `📅 Session: <b>${sessionDate}</b> • CBE USD: <b>$1.00</b> (52.26 EGP)\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
-      + `▫️ <b>Egyptian Institutions:</b> ${egNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴"}\n`
-      + `   ${fmtSigned(egNet)} EGP • (${fmtUsd(egNet)})\n\n`
-      + `▫️ <b>Arab Institutions:</b> ${arNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴"}\n`
-      + `   ${fmtSigned(arNet)} EGP • (${fmtUsd(arNet)})\n\n`
-      + `▫️ <b>Foreign Institutions:</b> ${foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴"}\n`
-      + `   ${fmtSigned(foNet)} EGP • (${fmtUsd(foNet)})\n\n`
+      + `▫️ <b>Egyptians:</b> ${egStatusEn}\n`
+      + `   • EGP: <b>${fmtNumber(egNet)} EGP</b> • USD: <b>${fmtUsd(egNet)}</b>\n\n`
+      + `▫️ <b>Arabs:</b> ${arStatusEn}\n`
+      + `   • EGP: <b>${fmtNumber(arNet)} EGP</b> • USD: <b>${fmtUsd(arNet)}</b>\n\n`
+      + `▫️ <b>Foreigners:</b> ${foStatusEn}\n`
+      + `   • EGP: <b>${fmtNumber(foNet)} EGP</b> • USD: <b>${fmtUsd(foNet)}</b>\n\n`
       + `🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
 
-  return `🏛️ <b>تعاملات المؤسسات - البورصة المصرية (EGX)</b>\n`
+  return `🏛️ <b>صافي تعاملات البورصة المصرية (EGX)</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
+    + `🕒 <b>${updatedDateTime}</b>\n`
     + `📅 تاريخ الجلسة: <b>${sessionDate}</b> • دولار المركزي: <b>52.26 ج.م</b>\n`
-    + `🕒 وقت الفحص: <b>[${updatedTime}]</b> بتوقيت مصر\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `▫️ <b>المؤسسات المصرية:</b> ${egStatus}\n`
-    + `   ${fmtSigned(egNet)} ج.م • (${fmtUsd(egNet)})\n\n`
-    + `▫️ <b>المؤسسات العربية:</b> ${arStatus}\n`
-    + `   ${fmtSigned(arNet)} ج.م • (${fmtUsd(arNet)})\n\n`
-    + `▫️ <b>المؤسسات الأجنبية:</b> ${foStatus}\n`
-    + `   ${fmtSigned(foNet)} ج.م • (${fmtUsd(foNet)})\n\n`
+    + `▫️ <b>المصريين:</b> ${egStatusAr}\n`
+    + `   • بالجنيه: <b>${fmtNumber(egNet)} ج.م</b> • بالدولار: <b>${fmtUsd(egNet)}</b>\n\n`
+    + `▫️ <b>العرب:</b> ${arStatusAr}\n`
+    + `   • بالجنيه: <b>${fmtNumber(arNet)} ج.م</b> • بالدولار: <b>${fmtUsd(arNet)}</b>\n\n`
+    + `▫️ <b>الأجانب:</b> ${foStatusAr}\n`
+    + `   • بالجنيه: <b>${fmtNumber(foNet)} ج.م</b> • بالدولار: <b>${fmtUsd(foNet)}</b>\n\n`
     + `🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
 
@@ -707,7 +832,7 @@ function formatCommoditiesReport(data, lang) {
       const uP = Number(item.usd_price || 0);
       const eP = Number(item.egp_price || (uP * usdRate));
       const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
-      txt += `▫️ <b>${item.name_en || item.name}:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, eP >= 1000 ? 0 : 2)} EGP)\n`;
+      txt += `▫️ <b>${item.name_en || item.name}:</b> <b>$${fmt(uP, uDec)}</b> • <b>${fmt(eP, eP >= 1000 ? 0 : 2)} EGP</b>\n`;
     });
 
     return txt + `\n⚡ <i>Live feed via Binance & Global Markets.</i>`;
@@ -722,7 +847,7 @@ function formatCommoditiesReport(data, lang) {
     const uP = Number(item.usd_price || 0);
     const eP = Number(item.egp_price || (uP * usdRate));
     const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
-    txtAr += `▫️ <b>${item.name}:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, eP >= 1000 ? 0 : 2)} ج.م)\n`;
+    txtAr += `▫️ <b>${item.name}:</b> <b>$${fmt(uP, uDec)}</b> • <b>${fmt(eP, eP >= 1000 ? 0 : 2)} ج.م</b>\n`;
   });
 
   return txtAr + `\n⚡ <i>أسعار حية مباشرة من بينانس والأسواق العالمية.</i>`;
@@ -751,13 +876,13 @@ function formatCurrenciesReport(data, lang) {
       + `━━━━━━━━━━━━━━━━━━\n`
       + `🕒 Updated: <b>[${updatedTime}]</b> (Cairo Time)\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
-      + `▫️ <b>US Dollar [USD]:</b> <b>$1.00</b> • (${fmt(usdRate, 2)} EGP)\n`;
+      + `▫️ <b>US Dollar [USD]:</b> <b>$1.00</b> • <b>${fmt(usdRate, 2)} EGP</b>\n`;
 
     currItems.forEach(item => {
       const uP = Number(item.usd_price || 0);
       const eP = Number(item.egp_price || (uP * usdRate));
       const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : 2;
-      txt += `▫️ <b>${item.name} [${item.code}]:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, 2)} EGP)\n`;
+      txt += `▫️ <b>${item.name} [${item.code}]:</b> <b>$${fmt(uP, uDec)}</b> • <b>${fmt(eP, 2)} EGP</b>\n`;
     });
 
     return txt + `\n🏛️ <i>Official Central Bank of Egypt rates.</i>`;
@@ -767,13 +892,13 @@ function formatCurrenciesReport(data, lang) {
     + `━━━━━━━━━━━━━━━━━━\n`
     + `🕒 وقت التحديث: <b>[${updatedTime}]</b> بتوقيت مصر\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `▫️ <b>الدولار الأمريكي [USD]:</b> <b>1.00$</b> • (${fmt(usdRate, 2)} ج.م)\n`;
+    + `▫️ <b>الدولار الأمريكي [USD]:</b> <b>1.00$</b> • <b>${fmt(usdRate, 2)} ج.م</b>\n`;
 
   currItems.forEach(item => {
     const uP = Number(item.usd_price || 0);
     const eP = Number(item.egp_price || (uP * usdRate));
     const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : 2;
-    txtAr += `▫️ <b>${item.name} [${item.code}]:</b> <b>$${fmt(uP, uDec)}</b> • (${fmt(eP, 2)} ج.م)\n`;
+    txtAr += `▫️ <b>${item.name} [${item.code}]:</b> <b>$${fmt(uP, uDec)}</b> • <b>${fmt(eP, 2)} ج.م</b>\n`;
   });
 
   return txtAr + `\n🏛️ <i>أسعار موثقة معتمدة من البنك المركزي المصري.</i>`;
@@ -842,75 +967,122 @@ function formatAllBanksReport(data, lang) {
 }
 
 /**
- * 5. التقرير المالي التنفيذي الشامل
+ * 5. التقرير المالي التنفيذي الشامل (المخصص - الأجانب فقط، الدولار، الذهب 24، برنت)
  */
 function formatExecutiveReport(data, lang) {
   const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.2571);
-  let egNet = -4113685725, arNet = -39607017, foNet = 2881869483;
+  let foNet = 2881869483;
   let sessionDate = "2026-10-01";
 
   if (data.archive && data.archive.length > 0) {
     const r = data.archive[0];
-    const e = r.egypt_net !== undefined ? r.egypt_net : r.egypt_net_egp;
-    const a = r.arab_net !== undefined ? r.arab_net : r.arab_net_egp;
     const f = r.foreign_net !== undefined ? r.foreign_net : r.foreign_net_egp;
-    if (e !== undefined && e !== 0) egNet = Number(e);
-    if (a !== undefined && a !== 0) arNet = Number(a);
     if (f !== undefined && f !== 0) foNet = Number(f);
     sessionDate = r.date || sessionDate;
   }
-  const fmt = (v) => Number(v).toLocaleString("en-US");
+  const fmt = (v, d) => Number(v).toLocaleString("en-US", {
+    minimumFractionDigits: d !== undefined ? d : 2,
+    maximumFractionDigits: d !== undefined ? d : 2
+  });
   const fmtUsd = (v) => "$" + Number(Math.round(Math.abs(v) / usdRate)).toLocaleString("en-US");
-  const updatedTime = getCairoTimeStr();
+  const fmtNumber = (v) => {
+    const n = Number(v) || 0;
+    return (n >= 0 ? "+" : "-") + Math.abs(n).toLocaleString("en-US");
+  };
+  const updatedDateTime = getCairoFullDateTime(lang);
 
+  // أسعار البنك المركزي وأعلى بنك كبديل لحظي
+  const cbeBuy = Number(data.cbe_usd_buy || 52.2571);
+  const cbeSell = Number(data.cbe_usd_sell || 52.3971);
+  const banks = data.banks || [];
+  let topBank = null;
+  let maxBuy = 0;
+  banks.forEach(b => {
+    const bBuy = Number(b.buy || 0);
+    if (bBuy > maxBuy) {
+      maxBuy = bBuy;
+      topBank = b;
+    }
+  });
+
+  // السلع المطلوبة بدقة: ذهب 24 وخام برنت
   const comms = data.live_commodities || [];
-  const btcItem = comms.find(c => c.code === "BTC") || { usd_price: 84400 };
-  const brentItem = comms.find(c => c.code === "BRENT") || { usd_price: 100.20 };
-  const gold21Item = comms.find(c => c.code === "GOLD21") || { usd_price: 117.01 };
+  const gold24 = comms.find(c => c.code === "GOLD24") || { usd_price: 133.72, egp_price: Math.round(133.72 * usdRate) };
+  const brent = comms.find(c => c.code === "BRENT") || { usd_price: 100.20, egp_price: Number((100.20 * usdRate).toFixed(2)) };
 
-  const egStatus = egNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-  const arStatus = arNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-  const foStatus = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
+  const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+
+  let bankPeakLineEn = "";
+  let bankPeakLineAr = "";
+  if (topBank && topBank.buy > 0) {
+    const bNameEn = getBankName(topBank.bank, "en");
+    bankPeakLineEn = `\n  ▫️ <b>Market Peak (${bNameEn}):</b> Buy <b>${Number(topBank.buy).toFixed(2)}</b> - Sell <b>${Number(topBank.sell).toFixed(2)}</b>`;
+    bankPeakLineAr = `\n  ▫️ <b>أعلى سعر بنكي (${topBank.bank}):</b> شراء <b>${Number(topBank.buy).toFixed(2)}</b> - بيع <b>${Number(topBank.sell).toFixed(2)}</b>`;
+  }
 
   if (lang === "en") {
     return `📊 <b>Executive Financial Summary</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `🕒 Audited: <b>[${updatedTime}]</b> (Cairo Time)\n`
+      + `🕒 <b>${updatedDateTime}</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
-      + `🏛️ <b>EGX Flows (${sessionDate}):</b>\n`
-      + `  ▫️ Egyptian: ${egStatus} (${fmtSigned(egNet)} EGP)\n`
-      + `  ▫️ Arab: ${arStatus} (${fmtSigned(arNet)} EGP)\n`
-      + `  ▫️ Foreign: ${foStatus} (${fmtSigned(foNet)} EGP)\n\n`
+      + `🏛️ <b>Foreign Institutional Flows (${sessionDate}):</b>\n`
+      + `  ▫️ <b>Status:</b> ${foStatusEn}\n`
+      + `  ▫️ <b>EGP:</b> <b>${fmtNumber(foNet)} EGP</b> • <b>USD:</b> <b>${fmtUsd(foNet)}</b>\n\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `💵 <b>CBE USD:</b> <b>$1.00</b> • (${usdRate.toFixed(2)} EGP)\n`
-      + `🪙 <b>Gold 21K:</b> <b>$${Number(gold21Item.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(gold21Item.usd_price) * usdRate))} EGP)\n`
-      + `🛢️ <b>Brent Crude:</b> <b>$${Number(brentItem.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(brentItem.usd_price) * usdRate))} EGP)\n`
-      + `🪙 <b>Bitcoin:</b> <b>$${fmt(Number(btcItem.usd_price))}</b> • (${fmt(Math.round(Number(btcItem.usd_price) * usdRate))} EGP)\n`
-      + `\n⚡ <i>Live Executive Summary.</i>`;
+      + `💵 <b>USD Exchange Rates:</b>\n`
+      + `  ▫️ <b>Central Bank (CBE):</b> Buy <b>${cbeBuy.toFixed(4)}</b> - Sell <b>${cbeSell.toFixed(4)}</b>`
+      + bankPeakLineEn + `\n\n`
+      + `━━━━━━━━━━━━━━━━━━\n`
+      + `🪙 <b>Gold 24K (Gram):</b> <b>$${fmt(gold24.usd_price, 2)}</b> • <b>${fmt(gold24.egp_price, 0)} EGP</b>\n`
+      + `🛢️ <b>Brent Crude Oil:</b> <b>$${fmt(brent.usd_price, 2)}</b> • <b>${fmt(brent.egp_price, 2)} EGP</b>\n`
+      + `\n⚡ <i>Live Executive Summary • Official & Real-time feeds.</i>`;
   }
 
-  return `📊 <b>التقرير المالي التنفيذي الشامل (EGX & Markets)</b>\n`
+  return `📊 <b>التقرير المالي التنفيذي الشامل</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `🕒 وقت الفحص: <b>[${updatedTime}]</b> بتوقيت مصر\n`
+    + `🕒 <b>${updatedDateTime}</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `🏛️ <b>صافي تدفقات البورصة (جلسة ${sessionDate}):</b>\n`
-    + `▫️ مصرية: ${egStatus}\n`
-    + `   ${fmtSigned(egNet)} ج.م • (${fmtUsd(egNet)})\n`
-    + `▫️ عربية: ${arStatus}\n`
-    + `   ${fmtSigned(arNet)} ج.م • (${fmtUsd(arNet)})\n`
-    + `▫️ أجنبية: ${foStatus}\n`
-    + `   ${fmtSigned(foNet)} ج.م • (${fmtUsd(foNet)})\n\n`
+    + `🏛️ <b>صافي تدفقات المؤسسات الأجنبية (${sessionDate}):</b>\n`
+    + `▫️ <b>الحالة:</b> ${foStatusAr}\n`
+    + `▫️ <b>بالجنيه:</b> <b>${fmtNumber(foNet)} ج.م</b> • <b>بالدولار:</b> <b>${fmtUsd(foNet)}</b>\n\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `💵 <b>دولار المركزي:</b> <b>52.26 ج.م</b> (شراء 52.2571 - بيع 52.3971)\n`
-    + `🪙 <b>ذهب عيار 21:</b> <b>$${Number(gold21Item.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(gold21Item.usd_price) * usdRate))} ج.م)\n`
-    + `🛢️ <b>نفط برنت:</b> <b>$${Number(brentItem.usd_price).toFixed(2)}</b> • (${fmt(Math.round(Number(brentItem.usd_price) * usdRate))} ج.م)\n`
-    + `🪙 <b>بيتكوين (BTC):</b> <b>$${fmt(Number(btcItem.usd_price))}</b> • (${fmt(Math.round(Number(btcItem.usd_price) * usdRate))} ج.م)\n`
-    + `\n⚡ <i>تقرير تنفيذي موحد وشامل.</i>`;
+    + `💵 <b>أسعار صرف الدولار:</b>\n`
+    + `▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> - بيع <b>${cbeSell.toFixed(4)}</b>`
+    + bankPeakLineAr + `\n\n`
+    + `━━━━━━━━━━━━━━━━━━\n`
+    + `🪙 <b>ذهب عيار 24 (جرام):</b> <b>$${fmt(gold24.usd_price, 2)}</b> • <b>${fmt(gold24.egp_price, 0)} ج.م</b>\n`
+    + `🛢️ <b>خام برنت (نفط):</b> <b>$${fmt(brent.usd_price, 2)}</b> • <b>${fmt(brent.egp_price, 2)} ج.م</b>\n`
+    + `\n⚡ <i>تقرير تنفيذي لحظي موثق ومباشر.</i>`;
 }
 
 // ==========================================
-// 🕹️ لوحات المفاتيح
+// 🕹️ لوحات المفاتيح وأزرار التحديث اللحظي
 // ==========================================
+
+function getReportKeyboard(cmdType, lang, cfg) {
+  cfg = cfg || botConfig;
+  const refreshText = lang === "en" ? "🔄 Refresh Data" : "🔄 تحديث لحظي للبيانات";
+  const menuText = lang === "en" ? "🔙 Main Menu" : "🔙 القائمة الرئيسية";
+  const langToggleText = lang === "en" ? "🌐 اللغة العربية" : "🌐 English";
+  const langToggleData = lang === "en" ? "cmd_lang_ar" : "cmd_lang_en";
+
+  const rows = [];
+  
+  // زر التحديث اللحظي على رأس لوحة التقرير
+  rows.push([{ text: refreshText, callback_data: `refresh_${cmdType}` }]);
+
+  if (cmdType === "banks") {
+    rows.push([{ text: (lang === "en" ? "📋 View All 25 Banks" : "📋 عرض كافة الـ 25 بنكاً"), callback_data: "cmd_banks_all" }]);
+  }
+
+  rows.push([
+    { text: menuText, callback_data: "cmd_menu" },
+    { text: langToggleText, callback_data: langToggleData }
+  ]);
+
+  return { inline_keyboard: rows };
+}
 
 function getMenuKeyboard(lang, originUrl, cfg) {
   cfg = cfg || botConfig;
@@ -930,22 +1102,23 @@ function getMenuKeyboard(lang, originUrl, cfg) {
     rows.push([{ text: (lang === "en" ? "📊 Full Executive Report" : "📊 التقرير المالي الشامل"), callback_data: "cmd_report" }]);
   }
 
+  rows.push([
+    { text: (lang === "en" ? "🔄 Refresh Menu" : "🔄 تحديث القائمة"), callback_data: "refresh_menu" },
+    { text: (lang === "en" ? "🌐 اللغة العربية" : "🌐 English"), callback_data: (lang === "en" ? "cmd_lang_ar" : "cmd_lang_en") }
+  ]);
+
   return { inline_keyboard: rows };
 }
 
 function getBanksKeyboard(lang) {
-  return {
-    inline_keyboard: [
-      [{ text: (lang === "en" ? "📋 View All 25 Banks" : "📋 عرض قائمة كافة الـ 25 بنكاً"), callback_data: "cmd_banks_all" }],
-      [{ text: (lang === "en" ? "🔙 Main Menu" : "🔙 القائمة الرئيسية"), callback_data: "cmd_menu" }]
-    ]
-  };
+  return getReportKeyboard("banks", lang);
 }
 
 async function sendMainMenu(chatId, lang, originUrl, cfg, messageId) {
+  const updatedDateTime = getCairoFullDateTime(lang);
   const text = (lang === "en")
-    ? "🏛️ <b>Egyptian Stock Exchange & Live Markets Bot</b>\n\n⚡ Powered by <b>Cloudflare Edge & Live Feeds</b> 24/7.\n\n👇 <i>Choose from the interactive menu below:</i>"
-    : "🏛️ <b>منظومة البورصة المصرية وأسواق الصرف الحية 24/7</b>\n\n⚡ تعمل سحابياً عبر <b>Cloudflare Edge وموقع تعويم وبينانس</b> مباشرة.\n\n👇 <i>اختر ما تريد من القائمة التفاعلية أدناه:</i>";
+    ? `🏛️ <b>Egyptian Stock Exchange & Live Markets Bot</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ Powered by <b>Cloudflare Edge & Live Feeds</b> 24/7.\n\n👇 <i>Choose from the interactive menu below:</i>`
+    : `🏛️ <b>منظومة البورصة المصرية وأسواق الصرف الحية 24/7</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ تعمل سحابياً عبر <b>Cloudflare Edge وموقع تعويم وبينانس</b> مباشرة.\n\n👇 <i>اختر ما تريد من القائمة التفاعلية أدناه:</i>`;
   if (messageId) return editTgMessage(chatId, messageId, text, getMenuKeyboard(lang, originUrl, cfg));
   return sendTgMessage(chatId, text, getMenuKeyboard(lang, originUrl, cfg));
 }
@@ -976,11 +1149,13 @@ async function editTgMessage(chatId, messageId, text, replyMarkup) {
   return res;
 }
 
-async function answerCallback(callbackId) {
+async function answerCallback(callbackId, text) {
+  const payload = { callback_query_id: callbackId };
+  if (text) payload.text = text;
   return fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ callback_query_id: callbackId })
+    body: JSON.stringify(payload)
   });
 }
 
