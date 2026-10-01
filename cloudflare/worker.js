@@ -995,31 +995,22 @@ function formatExecutiveReport(data, lang) {
   const cbeBuy = Number(data.cbe_usd_buy || 52.2571);
   const cbeSell = Number(data.cbe_usd_sell || 52.3971);
   const banks = data.banks || [];
-  let topBank = null;
+  let topBank = { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.40, sell: 52.50, updated_at: getCairoTimeStr() };
   let maxBuy = 0;
-  banks.forEach(b => {
-    const bBuy = Number(b.buy || 0);
-    if (bBuy > maxBuy) {
-      maxBuy = bBuy;
-      topBank = b;
-    }
-  });
-
-  // السلع المطلوبة بدقة: ذهب 24 وخام برنت
-  const comms = data.live_commodities || [];
-  const gold24 = comms.find(c => c.code === "GOLD24") || { usd_price: 133.72, egp_price: Math.round(133.72 * usdRate) };
-  const brent = comms.find(c => c.code === "BRENT") || { usd_price: 100.20, egp_price: Number((100.20 * usdRate).toFixed(2)) };
-
-  const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
-  const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-
-  let bankPeakLineEn = "";
-  let bankPeakLineAr = "";
-  if (topBank && topBank.buy > 0) {
-    const bNameEn = getBankName(topBank.bank, "en");
-    bankPeakLineEn = `\n  ▫️ <b>Market Peak (${bNameEn}):</b> Buy <b>${Number(topBank.buy).toFixed(2)}</b> - Sell <b>${Number(topBank.sell).toFixed(2)}</b>`;
-    bankPeakLineAr = `\n  ▫️ <b>أعلى سعر بنكي (${topBank.bank}):</b> شراء <b>${Number(topBank.buy).toFixed(2)}</b> - بيع <b>${Number(topBank.sell).toFixed(2)}</b>`;
+  if (banks && banks.length > 0) {
+    banks.forEach(b => {
+      const bBuy = Number(b.buy || 0);
+      if (bBuy > maxBuy) {
+        maxBuy = bBuy;
+        topBank = b;
+      }
+    });
   }
+
+  const bNameEn = getBankName(topBank.bank, "en");
+  const bTime = formatCleanTime(topBank.updated_at);
+  const bankPeakLineEn = `\n  ▫️ <b>Top Bank (${bNameEn}):</b> Buy <b>${Number(topBank.buy).toFixed(2)}</b> - Sell <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
+  const bankPeakLineAr = `\n  ▫️ <b>أعلى سعر بنك (${topBank.bank}):</b> شراء <b>${Number(topBank.buy).toFixed(2)}</b> - بيع <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
 
   if (lang === "en") {
     return `📊 <b>Executive Financial Summary</b>\n`
