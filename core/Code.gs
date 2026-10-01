@@ -162,7 +162,7 @@ function doPost(e) {
 // ==========================================
 
 function setCbeRateManual() {
-  var BUY = 51.9189, SELL = 52.0586; // عدّلهم من صفحة المركزي
+  var BUY = 52.2571, SELL = 52.3971; // البنك المركزي المصري الفعلي
   var sp = PropertiesService.getScriptProperties();
   sp.setProperty("CBE_USD_BUY", String(BUY));
   sp.setProperty("CBE_USD_SELL", String(SELL));
@@ -707,6 +707,15 @@ function getLiveDashboardData(forceRefresh) {
           if (sell > 0) result.cbe_usd_sell = sell;
           if (buy > 0) result.usd_rate = buy;
         }
+        var cleanTime = "";
+        if (row[5]) {
+          if (row[5] instanceof Date) {
+            cleanTime = ("0" + row[5].getHours()).slice(-2) + ":" + ("0" + row[5].getMinutes()).slice(-2);
+          } else {
+            var m = String(row[5]).match(/(\d{1,2}:\d{2})/);
+            cleanTime = m ? m[1] : String(row[5]);
+          }
+        }
         if (lastCol3 >= 6) {
           result.banks.push({
             rank: Number(row[0] || (idx + 1)),
@@ -714,7 +723,7 @@ function getLiveDashboardData(forceRefresh) {
             buy: buy,
             sell: sell,
             avg: Number(row[4] || 0),
-            updated_at: String(row[5] || "")
+            updated_at: cleanTime
           });
         } else {
           result.banks.push({
@@ -723,7 +732,7 @@ function getLiveDashboardData(forceRefresh) {
             buy: Number(row[1] || 0),
             sell: Number(row[2] || 0),
             avg: Number(row[3] || 0),
-            updated_at: ""
+            updated_at: cleanTime
           });
         }
       });
