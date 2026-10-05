@@ -864,12 +864,25 @@ function getTrendIcon(change) {
 
 /**
  * ثوابت الشهور وأدوات حساب المجاميع التراكمية (أسبوعياً وشهرياً)
- * الأسبوع يبدأ من الاثنين كما طلب المستخدم
+ * أسبوع البورصة والبنوك المصرية يبدأ من الأحد (Sunday)
+ * بينما أسبوع البورصات والأسواق العالمية يبدأ من الاثنين (Monday)
  * والشهر يُحسب من بداية شهر أكتوبر 2026 فصاعداً
  */
 const MONTH_NAMES_AR = { "01": "يناير", "02": "فبراير", "03": "مارس", "04": "أبريل", "05": "مايو", "06": "يونيو", "07": "يوليو", "08": "أغسطس", "09": "سبتمبر", "10": "أكتوبر", "11": "نوفمبر", "12": "ديسمبر" };
 const MONTH_NAMES_EN = { "01": "January", "02": "February", "03": "March", "04": "April", "05": "May", "06": "June", "07": "July", "08": "August", "09": "September", "10": "October", "11": "November", "12": "December" };
 
+// بداية الأسبوع للبورصة والبنوك المصرية: الأحد (Sunday)
+function getWeekSunday(dateStr) {
+  if (!dateStr) return new Date().toISOString().split("T")[0];
+  const d = new Date(dateStr + "T12:00:00Z");
+  if (isNaN(d.getTime())) return dateStr;
+  const day = d.getUTCDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+  const sunday = new Date(d);
+  sunday.setUTCDate(d.getUTCDate() - day);
+  return sunday.toISOString().split("T")[0];
+}
+
+// بداية الأسبوع للأسواق والبورصات العالمية: الاثنين (Monday)
 function getWeekMonday(dateStr) {
   if (!dateStr) return new Date().toISOString().split("T")[0];
   const d = new Date(dateStr + "T12:00:00Z");
@@ -883,7 +896,7 @@ function getWeekMonday(dateStr) {
 
 function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
   const sessionDate = currentSessionDate || new Date().toISOString().split("T")[0];
-  const weekStart = getWeekMonday(sessionDate);
+  const weekStart = getWeekSunday(sessionDate); // أسبوع البورصة المصرية والبنوك يبدأ من الأحد
   const monthPrefix = sessionDate.slice(0, 7); // e.g. "2026-10"
 
   const weekly = { count: 0, egNet: 0, arNet: 0, foNet: 0, totNet: 0, egUsd: 0, arUsd: 0, foUsd: 0, totUsd: 0, weekStart };
@@ -1054,7 +1067,7 @@ function formatEgxReport(data, lang, curr) {
 
     txt += `\n━━━━━━━━━━━━━━━━━━\n`
       + `📈 <b>Cumulative Performance:</b>\n\n`
-      + `🗓️ <b>Weekly Total (from Mon):</b> [${weeklyCountEn}]\n`
+      + `🗓️ <b>Weekly Total (from Sun):</b> [${weeklyCountEn}]\n`
       + `   ▫️ Foreigners Net: ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b>\n`
       + `   ▪️ Total Inst. Net: ${getDot(periodic.weekly.totNet)} <b>${fmtPeriodVal(periodic.weekly.totNet, periodic.weekly.totUsd)}</b>\n\n`
       + `🗓️ <b>Monthly Total (${monthNameEn}):</b> [${monthlyCountEn}]\n`
@@ -1081,7 +1094,7 @@ function formatEgxReport(data, lang, curr) {
 
   txtAr += `\n━━━━━━━━━━━━━━━━━━\n`
     + `📈 <b>الأداء التراكمي (أسبوعي وشهري):</b>\n\n`
-    + `🗓️ <b>إجمالي الأسبوع (بدءاً من الاثنين):</b> [${weeklyCountAr}]\n`
+    + `🗓️ <b>إجمالي الأسبوع (بدءاً من الأحد):</b> [${weeklyCountAr}]\n`
     + `   ▫️ صافي الأجانب: ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b>\n`
     + `   ▪️ صافي المؤسسات: ${getDot(periodic.weekly.totNet)} <b>${fmtPeriodVal(periodic.weekly.totNet, periodic.weekly.totUsd)}</b>\n\n`
     + `🗓️ <b>إجمالي شهر ${monthNameAr}:</b> [${monthlyCountAr}]\n`
@@ -1550,7 +1563,7 @@ function formatExecutiveReport(data, lang, curr) {
       + `  ▫️ <b>Today's Net Flow:</b> <b>${foAmountEn}</b>\n`
       + breakdownEn
       + `  ▪️ <b>Total Inst. Net (Today):</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n`
-      + `  ▫️ <b>Weekly Total (from Mon):</b> ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b> [${weeklyCountEn}]\n`
+      + `  ▫️ <b>Weekly Total (from Sun):</b> ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b> [${weeklyCountEn}]\n`
       + `  ▫️ <b>Monthly Total (${monthNameEn}):</b> ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b> [${monthlyCountEn}]\n`
       + `  ▪️ <b>Total Inst. Monthly Net:</b> ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n\n`
       + `━━━━━━━━━━━━━━━━━━\n`
@@ -1574,7 +1587,7 @@ function formatExecutiveReport(data, lang, curr) {
     + `  ▫️ <b>صافي سيولة الأجانب (اليوم):</b> <b>${foAmountAr}</b>\n`
     + breakdownAr
     + `  ▪️ <b>إجمالي صافي المؤسسات (اليوم):</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n`
-    + `  ▫️ <b>إجمالي الأسبوع (بدءاً من الاثنين):</b> ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b> [${weeklyCountAr}]\n`
+    + `  ▫️ <b>إجمالي الأسبوع (بدءاً من الأحد):</b> ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b> [${weeklyCountAr}]\n`
     + `  ▫️ <b>إجمالي شهر ${monthNameAr} التراكمي:</b> ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b> [${monthlyCountAr}]\n`
     + `  ▪️ <b>صافي المؤسسات لشهر ${monthNameAr}:</b> ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n\n`
     + `━━━━━━━━━━━━━━━━━━\n`
