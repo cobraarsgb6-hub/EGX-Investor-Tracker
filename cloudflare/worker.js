@@ -863,6 +863,77 @@ function getTrendIcon(change) {
 }
 
 /**
+ * ثوابت الشهور وأدوات حساب المجاميع التراكمية (أسبوعياً وشهرياً)
+ * الأسبوع يبدأ من الاثنين كما طلب المستخدم
+ * والشهر يُحسب من بداية شهر أكتوبر 2026 فصاعداً
+ */
+const MONTH_NAMES_AR = { "01": "يناير", "02": "فبراير", "03": "مارس", "04": "أبريل", "05": "مايو", "06": "يونيو", "07": "يوليو", "08": "أغسطس", "09": "سبتمبر", "10": "أكتوبر", "11": "نوفمبر", "12": "ديسمبر" };
+const MONTH_NAMES_EN = { "01": "January", "02": "February", "03": "March", "04": "April", "05": "May", "06": "June", "07": "July", "08": "August", "09": "September", "10": "October", "11": "November", "12": "December" };
+
+function getWeekMonday(dateStr) {
+  if (!dateStr) return new Date().toISOString().split("T")[0];
+  const d = new Date(dateStr + "T12:00:00Z");
+  if (isNaN(d.getTime())) return dateStr;
+  const day = d.getUTCDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+  const diff = (day === 0 ? 6 : day - 1);
+  const monday = new Date(d);
+  monday.setUTCDate(d.getUTCDate() - diff);
+  return monday.toISOString().split("T")[0];
+}
+
+function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
+  const sessionDate = currentSessionDate || new Date().toISOString().split("T")[0];
+  const weekStart = getWeekMonday(sessionDate);
+  const monthPrefix = sessionDate.slice(0, 7); // e.g. "2026-10"
+
+  const weekly = { count: 0, egNet: 0, arNet: 0, foNet: 0, totNet: 0, egUsd: 0, arUsd: 0, foUsd: 0, totUsd: 0, weekStart };
+  const monthly = { count: 0, egNet: 0, arNet: 0, foNet: 0, totNet: 0, egUsd: 0, arUsd: 0, foUsd: 0, totUsd: 0, monthPrefix };
+
+  const list = (archive && Array.isArray(archive)) ? archive : [];
+  list.forEach(s => {
+    if (!s || !s.date) return;
+    const rate = Number(s.usd_rate || defaultUsdRate || 52.29);
+    const eg = Number(s.egypt_net !== undefined ? s.egypt_net : (s.egypt_net_egp || 0));
+    const ar = Number(s.arab_net !== undefined ? s.arab_net : (s.arab_net_egp || 0));
+    const fo = Number(s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0));
+    const tot = Number(s.total_net !== undefined ? s.total_net : (s.total_net_egp || (eg + ar + fo)));
+
+    const egU = Math.round(eg / rate);
+    const arU = Math.round(ar / rate);
+    const foU = Math.round(fo / rate);
+    const totU = Math.round(tot / rate);
+
+    // الأسبوع: من يوم الاثنين للأسبوع الحالي وحتى تاريخ الجلسة
+    if (s.date >= weekStart && s.date <= sessionDate) {
+      weekly.count++;
+      weekly.egNet += eg;
+      weekly.arNet += ar;
+      weekly.foNet += fo;
+      weekly.totNet += tot;
+      weekly.egUsd += egU;
+      weekly.arUsd += arU;
+      weekly.foUsd += foU;
+      weekly.totUsd += totU;
+    }
+
+    // الشهر: كافة جلسات الشهر الحالي (بدءاً من 01 أكتوبر)
+    if (s.date.startsWith(monthPrefix) && s.date <= sessionDate) {
+      monthly.count++;
+      monthly.egNet += eg;
+      monthly.arNet += ar;
+      monthly.foNet += fo;
+      monthly.totNet += tot;
+      monthly.egUsd += egU;
+      monthly.arUsd += arU;
+      monthly.foUsd += foU;
+      monthly.totUsd += totU;
+    }
+  });
+
+  return { weekly, monthly };
+}
+
+/**
  * 1. تقرير البورصة المصرية (EGX)
  */
 function formatEgxReport(data, lang, curr) {
@@ -950,6 +1021,30 @@ function formatEgxReport(data, lang, curr) {
 
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
+  // حساب المجاميع التراكمية (الأسبوعية والشهرية)
+  const periodic = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
+
+  const fmtPeriodVal = (egpVal, usdVal) => {
+    if (curr === "usd") {
+      const uSign = usdVal >= 0 ? "+" : "-";
+      return `${LRM}${uSign}$${Math.abs(usdVal).toLocaleString("en-US")}${LRM}`;
+    }
+    const sign = egpVal >= 0 ? "+" : "-";
+    const unit = lang === "en" ? " EGP" : " ج.م";
+    return `${LRM}${sign}${Math.abs(egpVal).toLocaleString("en-US")}${LRM}${unit}`;
+  };
+
+  const getDot = (v) => v >= 0 ? "🟢" : "🔴";
+  const mParts = sessionDate.split("-");
+  const mCode = mParts[1] || "10";
+  const monthNameAr = MONTH_NAMES_AR[mCode] || "أكتوبر";
+  const monthNameEn = MONTH_NAMES_EN[mCode] || "October";
+
+  const weeklyCountAr = periodic.weekly.count === 1 ? "جلسة واحدة" : (periodic.weekly.count === 2 ? "جلستان" : `${periodic.weekly.count} جلسات`);
+  const monthlyCountAr = periodic.monthly.count === 1 ? "جلسة واحدة" : (periodic.monthly.count === 2 ? "جلستان" : `${periodic.monthly.count} جلسات`);
+  const weeklyCountEn = periodic.weekly.count === 1 ? "1 Session" : `${periodic.weekly.count} Sessions`;
+  const monthlyCountEn = periodic.monthly.count === 1 ? "1 Session" : `${periodic.monthly.count} Sessions`;
+
   if (lang === "en") {
     let txt = `🏛️ <b>Egyptian Stock Exchange (EGX) Flows</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
@@ -972,6 +1067,20 @@ function formatEgxReport(data, lang, curr) {
     if (foBuy > 0 || foSell > 0) {
       txt += `   • Buy: ${fmtVal(foBuy)} • Sell: ${fmtVal(foSell)}\n`;
     }
+
+    txt += `\n━━━━━━━━━━━━━━━━━━\n`
+      + `📈 <b>Cumulative Flow Performance:</b>\n\n`
+      + `🗓️ <b>Weekly Total (from Mon):</b> [${weeklyCountEn}]\n`
+      + `   ▫️ Foreigners: ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b>\n`
+      + `   ▫️ Arabs: ${getDot(periodic.weekly.arNet)} <b>${fmtPeriodVal(periodic.weekly.arNet, periodic.weekly.arUsd)}</b>\n`
+      + `   ▫️ Egyptians: ${getDot(periodic.weekly.egNet)} <b>${fmtPeriodVal(periodic.weekly.egNet, periodic.weekly.egUsd)}</b>\n`
+      + `   ▪️ <b>Total Net:</b> ${getDot(periodic.weekly.totNet)} <b>${fmtPeriodVal(periodic.weekly.totNet, periodic.weekly.totUsd)}</b>\n\n`
+      + `🗓️ <b>Monthly Total (${monthNameEn}):</b> [${monthlyCountEn}]\n`
+      + `   ▫️ Foreigners: ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b>\n`
+      + `   ▫️ Arabs: ${getDot(periodic.monthly.arNet)} <b>${fmtPeriodVal(periodic.monthly.arNet, periodic.monthly.arUsd)}</b>\n`
+      + `   ▫️ Egyptians: ${getDot(periodic.monthly.egNet)} <b>${fmtPeriodVal(periodic.monthly.egNet, periodic.monthly.egUsd)}</b>\n`
+      + `   ▪️ <b>Total Net:</b> ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n`;
+
     return txt + `\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
 
@@ -996,6 +1105,20 @@ function formatEgxReport(data, lang, curr) {
   if (foBuy > 0 || foSell > 0) {
     txtAr += `   • مشتريات: ${fmtVal(foBuy)} • مبيعات: ${fmtVal(foSell)}\n`;
   }
+
+  txtAr += `\n━━━━━━━━━━━━━━━━━━\n`
+    + `📈 <b>الأداء التراكمي (أسبوعي وشهري):</b>\n\n`
+    + `🗓️ <b>إجمالي الأسبوع (بدءاً من الاثنين):</b> [${weeklyCountAr}]\n`
+    + `   ▫️ الأجانب: ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b>\n`
+    + `   ▫️ العرب: ${getDot(periodic.weekly.arNet)} <b>${fmtPeriodVal(periodic.weekly.arNet, periodic.weekly.arUsd)}</b>\n`
+    + `   ▫️ المصريين: ${getDot(periodic.weekly.egNet)} <b>${fmtPeriodVal(periodic.weekly.egNet, periodic.weekly.egUsd)}</b>\n`
+    + `   ▪️ <b>صافي المؤسسات:</b> ${getDot(periodic.weekly.totNet)} <b>${fmtPeriodVal(periodic.weekly.totNet, periodic.weekly.totUsd)}</b>\n\n`
+    + `🗓️ <b>إجمالي شهر ${monthNameAr}:</b> [${monthlyCountAr}]\n`
+    + `   ▫️ الأجانب: ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b>\n`
+    + `   ▫️ العرب: ${getDot(periodic.monthly.arNet)} <b>${fmtPeriodVal(periodic.monthly.arNet, periodic.monthly.arUsd)}</b>\n`
+    + `   ▫️ المصريين: ${getDot(periodic.monthly.egNet)} <b>${fmtPeriodVal(periodic.monthly.egNet, periodic.monthly.egUsd)}</b>\n`
+    + `   ▪️ <b>صافي المؤسسات:</b> ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n`;
+
   return txtAr + `\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
 
@@ -1409,6 +1532,30 @@ function formatExecutiveReport(data, lang, curr) {
 
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
+  // حساب المجاميع التراكمية الأسبوعية والشهرية
+  const periodic = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
+
+  const fmtPeriodVal = (egpVal, usdVal) => {
+    if (curr === "usd") {
+      const uSign = usdVal >= 0 ? "+" : "-";
+      return `${LRM}${uSign}$${Math.abs(usdVal).toLocaleString("en-US")}${LRM}`;
+    }
+    const sign = egpVal >= 0 ? "+" : "-";
+    const unit = lang === "en" ? " EGP" : " ج.م";
+    return `${LRM}${sign}${Math.abs(egpVal).toLocaleString("en-US")}${LRM}${unit}`;
+  };
+
+  const getDot = (v) => v >= 0 ? "🟢" : "🔴";
+  const mParts = sessionDate.split("-");
+  const mCode = mParts[1] || "10";
+  const monthNameAr = MONTH_NAMES_AR[mCode] || "أكتوبر";
+  const monthNameEn = MONTH_NAMES_EN[mCode] || "October";
+
+  const weeklyCountAr = periodic.weekly.count === 1 ? "جلسة واحدة" : (periodic.weekly.count === 2 ? "جلستان" : `${periodic.weekly.count} جلسات`);
+  const monthlyCountAr = periodic.monthly.count === 1 ? "جلسة واحدة" : (periodic.monthly.count === 2 ? "جلستان" : `${periodic.monthly.count} جلسات`);
+  const weeklyCountEn = periodic.weekly.count === 1 ? "1 Session" : `${periodic.weekly.count} Sessions`;
+  const monthlyCountEn = periodic.monthly.count === 1 ? "1 Session" : `${periodic.monthly.count} Sessions`;
+
   if (lang === "en") {
     return `📊 <b>Executive Financial Summary</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
@@ -1417,9 +1564,11 @@ function formatExecutiveReport(data, lang, curr) {
       + `📅 Session: <b>${sessionDate}</b> • Currency: <b>${currBadge}</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
       + `🏛️ <b>Foreign Institutional Flows:</b>\n`
-      + `  ▫️ <b>Status:</b> ${foStatusEn}\n`
-      + `  ▫️ <b>Net Flow:</b> <b>${foAmountEn}</b>\n`
-      + breakdownEn + `\n`
+      + `  ▫️ <b>Status (Today):</b> ${foStatusEn}\n`
+      + `  ▫️ <b>Today's Net Flow:</b> <b>${foAmountEn}</b>\n`
+      + breakdownEn
+      + `  ▫️ <b>Weekly Total (from Mon):</b> ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b> [${weeklyCountEn}]\n`
+      + `  ▫️ <b>Monthly Total (${monthNameEn}):</b> ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b> [${monthlyCountEn}]\n\n`
       + `━━━━━━━━━━━━━━━━━━\n`
       + `💵 <b>USD Exchange Rates:</b>\n`
       + `  ▫️ <b>Central Bank (CBE):</b> Buy <b>${cbeBuy.toFixed(4)}</b> • Sell <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
@@ -1437,9 +1586,11 @@ function formatExecutiveReport(data, lang, curr) {
     + `📅 تاريخ الجلسة: <b>${sessionDate}</b> • العملة: <b>${currBadge}</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
     + `🏛️ <b>صافي تدفقات المؤسسات الأجنبية:</b>\n`
-    + `  ▫️ <b>الحالة:</b> ${foStatusAr}\n`
-    + `  ▫️ <b>صافي السيولة:</b> <b>${foAmountAr}</b>\n`
-    + breakdownAr + `\n`
+    + `  ▫️ <b>حالة اليوم:</b> ${foStatusAr}\n`
+    + `  ▫️ <b>صافي سيولة اليوم:</b> <b>${foAmountAr}</b>\n`
+    + breakdownAr
+    + `  ▫️ <b>إجمالي الأسبوع (بدءاً من الاثنين):</b> ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b> [${weeklyCountAr}]\n`
+    + `  ▫️ <b>إجمالي شهر ${monthNameAr} التراكمي:</b> ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b> [${monthlyCountAr}]\n\n`
     + `━━━━━━━━━━━━━━━━━━\n`
     + `💵 <b>أسعار صرف الدولار:</b>\n`
     + `  ▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> • بيع <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
