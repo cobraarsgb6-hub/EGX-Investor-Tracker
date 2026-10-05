@@ -935,47 +935,41 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
 
 /**
  * 1. تقرير البورصة المصرية (EGX)
+ * تركيز حصري على صافي الأجانب وصافي المؤسسات الإجمالي (يومي وأسبوعي وشهري)
  */
 function formatEgxReport(data, lang, curr) {
   curr = curr || "usd";
   const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
-  let egNet = 0, arNet = 0, foNet = 0;
-  let egBuy = 0, egSell = 0, arBuy = 0, arSell = 0, foBuy = 0, foSell = 0;
+  let foNet = 0, totNet = 0;
+  let foBuy = 0, foSell = 0;
   let sessionDate = new Date().toISOString().split("T")[0];
 
   if (data.archive && data.archive.length > 0) {
     const r = data.archive[0];
-    const e = r.egypt_net !== undefined ? r.egypt_net : r.egypt_net_egp;
-    const a = r.arab_net !== undefined ? r.arab_net : r.arab_net_egp;
     const f = r.foreign_net !== undefined ? r.foreign_net : r.foreign_net_egp;
-    if (e !== undefined && e !== null && e !== "") egNet = Number(e);
-    if (a !== undefined && a !== null && a !== "") arNet = Number(a);
     if (f !== undefined && f !== null && f !== "") foNet = Number(f);
 
-    egBuy = Number(r.egypt_buy !== undefined ? r.egypt_buy : (r.egypt_buy_egp || 0));
-    egSell = Number(r.egypt_sell !== undefined ? r.egypt_sell : (r.egypt_sell_egp || 0));
-    arBuy = Number(r.arab_buy !== undefined ? r.arab_buy : (r.arab_buy_egp || 0));
-    arSell = Number(r.arab_sell !== undefined ? r.arab_sell : (r.arab_sell_egp || 0));
     foBuy = Number(r.foreign_buy !== undefined ? r.foreign_buy : (r.foreign_buy_egp || 0));
     foSell = Number(r.foreign_sell !== undefined ? r.foreign_sell : (r.foreign_sell_egp || 0));
+
+    const t = r.total_net !== undefined ? r.total_net : r.total_net_egp;
+    if (t !== undefined && t !== null && t !== "") {
+      totNet = Number(t);
+    } else {
+      const e = Number(r.egypt_net !== undefined ? r.egypt_net : (r.egypt_net_egp || 0));
+      const a = Number(r.arab_net !== undefined ? r.arab_net : (r.arab_net_egp || 0));
+      totNet = e + a + foNet;
+    }
 
     sessionDate = r.date || sessionDate;
   }
 
-  // Backup extraction from egx_institutions if archive buy/sell were 0
+  // مسار احتياطي من egx_institutions إذا كانت المشتريات/المبيعات صفر
   if (foBuy === 0 && data.egx_institutions?.tables?.institutions) {
     const inst = data.egx_institutions.tables.institutions;
     inst.forEach(item => {
       const t = item.type || "";
-      if (t.includes("مصر") || t.toLowerCase().includes("egypt")) {
-        egBuy = Number(item.buy_egp || 0);
-        egSell = Number(item.sell_egp || 0);
-        egNet = Number(item.net_egp || egNet);
-      } else if (t.includes("عرب") || t.toLowerCase().includes("arab")) {
-        arBuy = Number(item.buy_egp || 0);
-        arSell = Number(item.sell_egp || 0);
-        arNet = Number(item.net_egp || arNet);
-      } else if (t.includes("أجانب") || t.includes("اجانب") || t.toLowerCase().includes("foreign")) {
+      if (t.includes("أجانب") || t.includes("اجانب") || t.toLowerCase().includes("foreign")) {
         foBuy = Number(item.buy_egp || 0);
         foSell = Number(item.sell_egp || 0);
         foNet = Number(item.net_egp || foNet);
@@ -1011,13 +1005,10 @@ function formatEgxReport(data, lang, curr) {
   const snapshotLineEn = snapshotTime ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
   const snapshotLineAr = snapshotTime ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
 
-  const egStatusEn = egNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
-  const arStatusEn = arNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
   const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
-
-  const egStatusAr = egNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-  const arStatusAr = arNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
   const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const totStatusEn = totNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
+  const totStatusAr = totNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
 
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
@@ -1052,34 +1043,23 @@ function formatEgxReport(data, lang, curr) {
       + snapshotLineEn + `\n`
       + `📅 Session: <b>${sessionDate}</b> • Currency: <b>${currBadge}</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
-      + `▫️ <b>Egyptians:</b> ${egStatusEn}\n`
-      + `   • Net Flow: <b>${fmtNet(egNet)}</b>\n`;
-    if (egBuy > 0 || egSell > 0) {
-      txt += `   • Buy: ${fmtVal(egBuy)} • Sell: ${fmtVal(egSell)}\n`;
-    }
-    txt += `\n▫️ <b>Arabs:</b> ${arStatusEn}\n`
-      + `   • Net Flow: <b>${fmtNet(arNet)}</b>\n`;
-    if (arBuy > 0 || arSell > 0) {
-      txt += `   • Buy: ${fmtVal(arBuy)} • Sell: ${fmtVal(arSell)}\n`;
-    }
-    txt += `\n▫️ <b>Foreigners:</b> ${foStatusEn}\n`
-      + `   • Net Flow: <b>${fmtNet(foNet)}</b>\n`;
+      + `🏛️ <b>Foreign Institutions (Today):</b> ${foStatusEn}\n`
+      + `   ▫️ Net Flow: <b>${fmtNet(foNet)}</b>\n`;
     if (foBuy > 0 || foSell > 0) {
-      txt += `   • Buy: ${fmtVal(foBuy)} • Sell: ${fmtVal(foSell)}\n`;
+      txt += `   ▫️ Buy: <b>${fmtVal(foBuy)}</b> • Sell: <b>${fmtVal(foSell)}</b>\n`;
     }
 
+    txt += `\n📊 <b>Total Institutional Net (Today):</b> ${totStatusEn}\n`
+      + `   ▪️ Net Flow: <b>${fmtNet(totNet)}</b>\n`;
+
     txt += `\n━━━━━━━━━━━━━━━━━━\n`
-      + `📈 <b>Cumulative Flow Performance:</b>\n\n`
+      + `📈 <b>Cumulative Performance:</b>\n\n`
       + `🗓️ <b>Weekly Total (from Mon):</b> [${weeklyCountEn}]\n`
-      + `   ▫️ Foreigners: ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b>\n`
-      + `   ▫️ Arabs: ${getDot(periodic.weekly.arNet)} <b>${fmtPeriodVal(periodic.weekly.arNet, periodic.weekly.arUsd)}</b>\n`
-      + `   ▫️ Egyptians: ${getDot(periodic.weekly.egNet)} <b>${fmtPeriodVal(periodic.weekly.egNet, periodic.weekly.egUsd)}</b>\n`
-      + `   ▪️ <b>Total Net:</b> ${getDot(periodic.weekly.totNet)} <b>${fmtPeriodVal(periodic.weekly.totNet, periodic.weekly.totUsd)}</b>\n\n`
+      + `   ▫️ Foreigners Net: ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b>\n`
+      + `   ▪️ Total Inst. Net: ${getDot(periodic.weekly.totNet)} <b>${fmtPeriodVal(periodic.weekly.totNet, periodic.weekly.totUsd)}</b>\n\n`
       + `🗓️ <b>Monthly Total (${monthNameEn}):</b> [${monthlyCountEn}]\n`
-      + `   ▫️ Foreigners: ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b>\n`
-      + `   ▫️ Arabs: ${getDot(periodic.monthly.arNet)} <b>${fmtPeriodVal(periodic.monthly.arNet, periodic.monthly.arUsd)}</b>\n`
-      + `   ▫️ Egyptians: ${getDot(periodic.monthly.egNet)} <b>${fmtPeriodVal(periodic.monthly.egNet, periodic.monthly.egUsd)}</b>\n`
-      + `   ▪️ <b>Total Net:</b> ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n`;
+      + `   ▫️ Foreigners Net: ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b>\n`
+      + `   ▪️ Total Inst. Net: ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n`;
 
     return txt + `\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
@@ -1090,34 +1070,23 @@ function formatEgxReport(data, lang, curr) {
     + snapshotLineAr + `\n`
     + `📅 تاريخ الجلسة: <b>${sessionDate}</b> • العملة: <b>${currBadge}</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `▫️ <b>المصريين:</b> ${egStatusAr}\n`
-    + `   • صافي السيولة: <b>${fmtNet(egNet)}</b>\n`;
-  if (egBuy > 0 || egSell > 0) {
-    txtAr += `   • مشتريات: ${fmtVal(egBuy)} • مبيعات: ${fmtVal(egSell)}\n`;
-  }
-  txtAr += `\n▫️ <b>العرب:</b> ${arStatusAr}\n`
-    + `   • صافي السيولة: <b>${fmtNet(arNet)}</b>\n`;
-  if (arBuy > 0 || arSell > 0) {
-    txtAr += `   • مشتريات: ${fmtVal(arBuy)} • مبيعات: ${fmtVal(arSell)}\n`;
-  }
-  txtAr += `\n▫️ <b>الأجانب:</b> ${foStatusAr}\n`
-    + `   • صافي السيولة: <b>${fmtNet(foNet)}</b>\n`;
+    + `🏛️ <b>المؤسسات الأجنبية (اليوم):</b> ${foStatusAr}\n`
+    + `   ▫️ صافي السيولة: <b>${fmtNet(foNet)}</b>\n`;
   if (foBuy > 0 || foSell > 0) {
-    txtAr += `   • مشتريات: ${fmtVal(foBuy)} • مبيعات: ${fmtVal(foSell)}\n`;
+    txtAr += `   ▫️ مشتريات: <b>${fmtVal(foBuy)}</b> • مبيعات: <b>${fmtVal(foSell)}</b>\n`;
   }
+
+  txtAr += `\n📊 <b>إجمالي صافي المؤسسات (اليوم):</b> ${totStatusAr}\n`
+    + `   ▪️ صافي السيولة: <b>${fmtNet(totNet)}</b>\n`;
 
   txtAr += `\n━━━━━━━━━━━━━━━━━━\n`
     + `📈 <b>الأداء التراكمي (أسبوعي وشهري):</b>\n\n`
     + `🗓️ <b>إجمالي الأسبوع (بدءاً من الاثنين):</b> [${weeklyCountAr}]\n`
-    + `   ▫️ الأجانب: ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b>\n`
-    + `   ▫️ العرب: ${getDot(periodic.weekly.arNet)} <b>${fmtPeriodVal(periodic.weekly.arNet, periodic.weekly.arUsd)}</b>\n`
-    + `   ▫️ المصريين: ${getDot(periodic.weekly.egNet)} <b>${fmtPeriodVal(periodic.weekly.egNet, periodic.weekly.egUsd)}</b>\n`
-    + `   ▪️ <b>صافي المؤسسات:</b> ${getDot(periodic.weekly.totNet)} <b>${fmtPeriodVal(periodic.weekly.totNet, periodic.weekly.totUsd)}</b>\n\n`
+    + `   ▫️ صافي الأجانب: ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b>\n`
+    + `   ▪️ صافي المؤسسات: ${getDot(periodic.weekly.totNet)} <b>${fmtPeriodVal(periodic.weekly.totNet, periodic.weekly.totUsd)}</b>\n\n`
     + `🗓️ <b>إجمالي شهر ${monthNameAr}:</b> [${monthlyCountAr}]\n`
-    + `   ▫️ الأجانب: ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b>\n`
-    + `   ▫️ العرب: ${getDot(periodic.monthly.arNet)} <b>${fmtPeriodVal(periodic.monthly.arNet, periodic.monthly.arUsd)}</b>\n`
-    + `   ▫️ المصريين: ${getDot(periodic.monthly.egNet)} <b>${fmtPeriodVal(periodic.monthly.egNet, periodic.monthly.egUsd)}</b>\n`
-    + `   ▪️ <b>صافي المؤسسات:</b> ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n`;
+    + `   ▫️ صافي الأجانب: ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b>\n`
+    + `   ▪️ صافي المؤسسات: ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n`;
 
   return txtAr + `\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
@@ -1177,16 +1146,12 @@ function formatEgxHistoryReport(data, lang, curr) {
       const sUsd = Number(s.usd_rate || usdRate);
 
       const fDot = Number(f) >= 0 ? "🟢" : "🔴";
-      const aDot = Number(a) >= 0 ? "🟢" : "🔴";
-      const eDot = Number(e) >= 0 ? "🟢" : "🔴";
       const totDot = Number(tot) >= 0 ? "🟢" : "🔴";
 
       const sessionTag = idx === 0 ? " <i>(Latest)</i>" : "";
 
       txt += `📅 <b>Session: ${s.date}</b>${sessionTag}\n`
         + `   ▫️ Foreigners: ${fDot} <b>${fmtNet(f, sUsd)}</b>\n`
-        + `   ▫️ Arabs: ${aDot} <b>${fmtNet(a, sUsd)}</b>\n`
-        + `   ▫️ Egyptians: ${eDot} <b>${fmtNet(e, sUsd)}</b>\n`
         + `   ▪️ <b>Total Net:</b> ${totDot} <b>${fmtNet(tot, sUsd)}</b>\n\n`;
     });
 
@@ -1207,16 +1172,12 @@ function formatEgxHistoryReport(data, lang, curr) {
     const sUsd = Number(s.usd_rate || usdRate);
 
     const fDot = Number(f) >= 0 ? "🟢" : "🔴";
-    const aDot = Number(a) >= 0 ? "🟢" : "🔴";
-    const eDot = Number(e) >= 0 ? "🟢" : "🔴";
     const totDot = Number(tot) >= 0 ? "🟢" : "🔴";
 
     const sessionTag = idx === 0 ? " <i>(الأحدث)</i>" : "";
 
     txtAr += `📅 <b>جلسة: ${s.date}</b>${sessionTag}\n`
       + `   ▫️ الأجانب: ${fDot} <b>${fmtNet(f, sUsd)}</b>\n`
-      + `   ▫️ العرب: ${aDot} <b>${fmtNet(a, sUsd)}</b>\n`
-      + `   ▫️ المصريين: ${eDot} <b>${fmtNet(e, sUsd)}</b>\n`
       + `   ▪️ <b>صافي المؤسسات:</b> ${totDot} <b>${fmtNet(tot, sUsd)}</b>\n\n`;
   });
 
@@ -1442,7 +1403,7 @@ function formatAllBanksReport(data, lang) {
 function formatExecutiveReport(data, lang, curr) {
   curr = curr || "usd";
   const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
-  let foNet = 0;
+  let foNet = 0, totNet = 0;
   let foBuy = 0, foSell = 0;
   let sessionDate = new Date().toISOString().split("T")[0];
 
@@ -1452,6 +1413,16 @@ function formatExecutiveReport(data, lang, curr) {
     if (f !== undefined && f !== null && f !== "") foNet = Number(f);
     foBuy = Number(r.foreign_buy !== undefined ? r.foreign_buy : (r.foreign_buy_egp || 0));
     foSell = Number(r.foreign_sell !== undefined ? r.foreign_sell : (r.foreign_sell_egp || 0));
+
+    const t = r.total_net !== undefined ? r.total_net : r.total_net_egp;
+    if (t !== undefined && t !== null && t !== "") {
+      totNet = Number(t);
+    } else {
+      const e = Number(r.egypt_net !== undefined ? r.egypt_net : (r.egypt_net_egp || 0));
+      const a = Number(r.arab_net !== undefined ? r.arab_net : (r.arab_net_egp || 0));
+      totNet = e + a + foNet;
+    }
+
     sessionDate = r.date || sessionDate;
   }
 
@@ -1502,6 +1473,7 @@ function formatExecutiveReport(data, lang, curr) {
 
   // تنسيق الأرقام حسب العملة المختارة لتدفقات البورصة
   let foAmountEn = "", foAmountAr = "";
+  let totAmountEn = "", totAmountAr = "";
   const gold24StrEn = `$${Number(gold24.usd_price).toFixed(2)}`;
   const gold24StrAr = `$${Number(gold24.usd_price).toFixed(2)}`;
   const brentStrEn = `$${Number(brent.usd_price).toFixed(2)}`;
@@ -1514,6 +1486,11 @@ function formatExecutiveReport(data, lang, curr) {
     foAmountEn = `${LRM}${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}${LRM}`;
     foAmountAr = `${LRM}${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}${LRM}`;
 
+    const totUsd = Math.round(totNet / usdRate);
+    const totSign = totUsd >= 0 ? "+" : "-";
+    totAmountEn = `${LRM}${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}${LRM}`;
+    totAmountAr = `${LRM}${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}${LRM}`;
+
     if (foBuy > 0 || foSell > 0) {
       breakdownEn = `  ▫️ Buy: $${Math.round(foBuy / usdRate).toLocaleString("en-US")} • Sell: $${Math.round(foSell / usdRate).toLocaleString("en-US")}\n`;
       breakdownAr = `  ▫️ مشتريات: $${Math.round(foBuy / usdRate).toLocaleString("en-US")} • مبيعات: $${Math.round(foSell / usdRate).toLocaleString("en-US")}\n`;
@@ -1523,6 +1500,11 @@ function formatExecutiveReport(data, lang, curr) {
     const absNet = Math.abs(foNet).toLocaleString("en-US");
     foAmountEn = `${LRM}${foSign}${absNet}${LRM} EGP`;
     foAmountAr = `${LRM}${foSign}${absNet}${LRM} ج.م`;
+
+    const totSign = totNet >= 0 ? "+" : "-";
+    const absTot = Math.abs(totNet).toLocaleString("en-US");
+    totAmountEn = `${LRM}${totSign}${absTot}${LRM} EGP`;
+    totAmountAr = `${LRM}${totSign}${absTot}${LRM} ج.م`;
 
     if (foBuy > 0 || foSell > 0) {
       breakdownEn = `  ▫️ Buy: ${foBuy.toLocaleString("en-US")} • Sell: ${foSell.toLocaleString("en-US")}\n`;
@@ -1567,8 +1549,10 @@ function formatExecutiveReport(data, lang, curr) {
       + `  ▫️ <b>Status (Today):</b> ${foStatusEn}\n`
       + `  ▫️ <b>Today's Net Flow:</b> <b>${foAmountEn}</b>\n`
       + breakdownEn
+      + `  ▪️ <b>Total Inst. Net (Today):</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n`
       + `  ▫️ <b>Weekly Total (from Mon):</b> ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b> [${weeklyCountEn}]\n`
-      + `  ▫️ <b>Monthly Total (${monthNameEn}):</b> ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b> [${monthlyCountEn}]\n\n`
+      + `  ▫️ <b>Monthly Total (${monthNameEn}):</b> ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b> [${monthlyCountEn}]\n`
+      + `  ▪️ <b>Total Inst. Monthly Net:</b> ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n\n`
       + `━━━━━━━━━━━━━━━━━━\n`
       + `💵 <b>USD Exchange Rates:</b>\n`
       + `  ▫️ <b>Central Bank (CBE):</b> Buy <b>${cbeBuy.toFixed(4)}</b> • Sell <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
@@ -1585,12 +1569,14 @@ function formatExecutiveReport(data, lang, curr) {
     + snapshotLineAr + `\n`
     + `📅 تاريخ الجلسة: <b>${sessionDate}</b> • العملة: <b>${currBadge}</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `🏛️ <b>صافي تدفقات المؤسسات الأجنبية:</b>\n`
-    + `  ▫️ <b>حالة اليوم:</b> ${foStatusAr}\n`
-    + `  ▫️ <b>صافي سيولة اليوم:</b> <b>${foAmountAr}</b>\n`
+    + `🏛️ <b>صافي تدفقات المؤسسات:</b>\n`
+    + `  ▫️ <b>حالة الأجانب اليوم:</b> ${foStatusAr}\n`
+    + `  ▫️ <b>صافي سيولة الأجانب (اليوم):</b> <b>${foAmountAr}</b>\n`
     + breakdownAr
+    + `  ▪️ <b>إجمالي صافي المؤسسات (اليوم):</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n`
     + `  ▫️ <b>إجمالي الأسبوع (بدءاً من الاثنين):</b> ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b> [${weeklyCountAr}]\n`
-    + `  ▫️ <b>إجمالي شهر ${monthNameAr} التراكمي:</b> ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b> [${monthlyCountAr}]\n\n`
+    + `  ▫️ <b>إجمالي شهر ${monthNameAr} التراكمي:</b> ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b> [${monthlyCountAr}]\n`
+    + `  ▪️ <b>صافي المؤسسات لشهر ${monthNameAr}:</b> ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n\n`
     + `━━━━━━━━━━━━━━━━━━\n`
     + `💵 <b>أسعار صرف الدولار:</b>\n`
     + `  ▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> • بيع <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
