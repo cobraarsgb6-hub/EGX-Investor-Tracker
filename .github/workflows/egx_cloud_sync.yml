@@ -1,28 +1,20 @@
 name: EGX & Market Rates Auto-Sync to Google Sheets
 
 on:
+  repository_dispatch:
+    types: [cron_sync]   # لازم يطابق event_type في cron-job.org
   schedule:
-    # Runs every 10 minutes during EGX market hours (10:00 AM to 2:45 PM Cairo Time, Sunday-Thursday)
-    - cron: '*/10 7-12 * * 0-4'
+    # Runs every 15 minutes during EGX market hours (10:00 AM to 2:45 PM Cairo Time, Sunday-Thursday)
+    - cron: '*/15 7-12 * * 0-4'
   workflow_dispatch: # Allows manual trigger from GitHub UI anytime
-  repository_dispatch: # Allows external trigger from cron-job.org or webhooks
-    types: [cron_sync, cloud_sync]
 
-# منع تشغيلين متوازيين حتى لا يتصادم حفظ الأرشيف (سبب ضياع جلسة 4 أكتوبر)
 concurrency:
-  group: egx-cloud-sync
+  group: egx-sync
   cancel-in-progress: false
-
-env:
-  TZ: Africa/Cairo
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -44,17 +36,3 @@ jobs:
           GOOGLE_SHEET_WEBHOOK_URL: ${{ secrets.GOOGLE_SHEET_WEBHOOK_URL }}
         run: |
           python cloud_sync.py
-
-      - name: Commit & Push Updated Archive Database
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/institutions_archive.db data/latest_sb_*.json data/ta3weem_rates.json || true
-          git commit -m "chore(data): auto-persist archive database and market cache [skip ci]" || { echo "No changes to commit"; exit 0; }
-          for i in 1 2 3 4; do
-            if git push origin main; then echo "✅ Pushed"; exit 0; fi
-            echo "⚠️ Push rejected, rebasing (attempt $i)..."
-            git pull --rebase -X theirs origin main || { git rebase --abort; sleep 3; }
-            sleep 2
-          done
-          echo "❌ Push failed after retries"; exit 1
