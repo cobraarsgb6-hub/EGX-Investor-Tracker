@@ -1,11 +1,11 @@
 /**
  * =========================================================================
- * 🏛️ EGX INVESTOR TRACKER & GLOBAL MARKETS - GOOGLE APPS SCRIPT (MASTER V3)
+ * 🏛️ EGX INVESTOR TRACKER & GLOBAL MARKETS - GOOGLE APPS SCRIPT (MASTER V3.1)
  * منظومة تتبع البورصة المصرية (المؤسسات) وأسواق الصرف والسلع الحية
  * 
  * المطور: المهندس أحمد | AI Thinking Partner
  * متوافقة 100% مع Google Apps Script V8 وبيئة الـ iframe والمتصفح المستقل
- * مزودة بـ 4 أنماط تصميمية احترافية قابلة للتبديل الفوري
+ * مزودة بـ 4 أنماط تصميمية احترافية قابلة للتبديل الفوري بنقرة زر
  * =========================================================================
  */
 
@@ -15,67 +15,71 @@
 var THEMES = {
   terminal: {
     name: "بلومبرج المؤسسي (Terminal Elite)",
-    bg: "#0b0f19",
-    cardBg: "#111827",
-    cardBorder: "#1f2937",
-    text: "#f9fafb",
-    textMuted: "#9ca3af",
-    primary: "#38bdf8",
+    sheetBg: "#0b0f19",
     headerBg: "#0f172a",
-    headerText: "#ffffff",
-    accent: "#38bdf8",
+    headerText: "#38bdf8",
+    bodyBg: "#111827",
+    bodyText: "#f9fafb",
+    altBg: "#1f2937",
+    borderColor: "#374151",
+    subHeaderBg: "#1e293b",
+    subHeaderText: "#94a3b8",
     posBg: "#064e3b",
     posText: "#34d399",
     negBg: "#7f1d1d",
-    negText: "#f87171"
+    negText: "#f87171",
+    accent: "#38bdf8"
   },
   swiss: {
     name: "النمط البنكي السويسري (Swiss Banking Clean)",
-    bg: "#f8fafc",
-    cardBg: "#ffffff",
-    cardBorder: "#e2e8f0",
-    text: "#0f172a",
-    textMuted: "#64748b",
-    primary: "#1e3a8a",
+    sheetBg: "#f8fafc",
     headerBg: "#1e3a8a",
     headerText: "#ffffff",
-    accent: "#0284c7",
+    bodyBg: "#ffffff",
+    bodyText: "#0f172a",
+    altBg: "#f8fafc",
+    borderColor: "#cbd5e1",
+    subHeaderBg: "#f1f5f9",
+    subHeaderText: "#334155",
     posBg: "#dcfce7",
     posText: "#15803d",
     negBg: "#fee2e2",
-    negText: "#b91c1c"
+    negText: "#b91c1c",
+    accent: "#0284c7"
   },
   matrix: {
     name: "منصة التداول والتحليل (Trading Matrix)",
-    bg: "#0d1117",
-    cardBg: "#161b22",
-    cardBorder: "#30363d",
-    text: "#c9d1d9",
-    textMuted: "#8b949e",
-    primary: "#58a6ff",
-    headerBg: "#21262d",
+    sheetBg: "#0d1117",
+    headerBg: "#161b22",
     headerText: "#58a6ff",
-    accent: "#e3b341",
+    bodyBg: "#0d1117",
+    bodyText: "#e6edf3",
+    altBg: "#21262d",
+    borderColor: "#30363d",
+    subHeaderBg: "#21262d",
+    subHeaderText: "#8b949e",
     posBg: "#1b4729",
     posText: "#3fb950",
     negBg: "#5c1d24",
-    negText: "#f85149"
+    negText: "#f85149",
+    accent: "#e3b341"
   },
   csuite: {
     name: "التقرير التنفيذي للقيادات (C-Suite Minimalist)",
-    bg: "#f1f5f9",
-    cardBg: "#ffffff",
-    cardBorder: "#cbd5e1",
-    text: "#1e293b",
-    textMuted: "#475569",
-    primary: "#334155",
+    sheetBg: "#f1f5f9",
     headerBg: "#334155",
-    headerText: "#f8fafc",
-    accent: "#475569",
+    headerText: "#ffffff",
+    bodyBg: "#ffffff",
+    bodyText: "#1e293b",
+    altBg: "#f8fafc",
+    borderColor: "#cbd5e1",
+    subHeaderBg: "#f1f5f9",
+    subHeaderText: "#475569",
     posBg: "#e0f2fe",
     posText: "#0369a1",
     negBg: "#ffe4e6",
-    negText: "#be123c"
+    negText: "#be123c",
+    accent: "#475569"
   }
 };
 
@@ -106,9 +110,11 @@ function applyThemeCSuite() { applyActiveTheme("csuite"); }
 
 function applyActiveTheme(themeKey) {
   PropertiesService.getScriptProperties().setProperty("ACTIVE_THEME", themeKey);
+  rebuildExecutiveTab();
   formatAllSheetsProfessionally();
   try {
-    SpreadsheetApp.getActiveSpreadsheet().toast("تم تطبيق تصميم: " + THEMES[themeKey].name, "🎨 تم تغيير المظهر", 4);
+    var th = THEMES[themeKey] || THEMES.swiss;
+    SpreadsheetApp.getActiveSpreadsheet().toast("تم تطبيق تصميم: " + th.name, "🎨 تم تغيير المظهر بنجاح", 4);
   } catch(e) {}
 }
 
@@ -128,7 +134,6 @@ function rebuildExecutiveTab() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var data = getLiveDashboardData();
   updateExecutiveSummarySheet(ss, data.archive, data.banks, data.rates, data.timestamp);
-  formatAllSheetsProfessionally();
 }
 
 // ==========================================
@@ -216,23 +221,46 @@ function doPost(e) {
 }
 
 // ==========================================
-// 3. أدوات الحساب والتقويم والتراكميات
+// 3. أدوات معالجة التاريخ والتقويم والتراكميات
 // ==========================================
 
+function normalizeDateStr(d) {
+  if (!d) return "";
+  if (d instanceof Date) {
+    var yr = d.getFullYear();
+    var mo = ("0" + (d.getMonth() + 1)).slice(-2);
+    var da = ("0" + d.getDate()).slice(-2);
+    return yr + "-" + mo + "-" + da;
+  }
+  var s = String(d).trim();
+  var mIso = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (mIso) {
+    return mIso[1] + "-" + ("0" + mIso[2]).slice(-2) + "-" + ("0" + mIso[3]).slice(-2);
+  }
+  var parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    var y = parsed.getFullYear();
+    var m = ("0" + (parsed.getMonth() + 1)).slice(-2);
+    var dt = ("0" + parsed.getDate()).slice(-2);
+    return y + "-" + m + "-" + dt;
+  }
+  return s.split("T")[0].split(" ")[0].trim();
+}
+
 function getWeekSunday(dateStr) {
-  if (!dateStr) return new Date().toISOString().split("T")[0];
-  var d = new Date(dateStr + "T12:00:00Z");
-  if (isNaN(d.getTime())) return dateStr;
+  var norm = normalizeDateStr(dateStr) || "2026-10-05";
+  var d = new Date(norm + "T12:00:00Z");
+  if (isNaN(d.getTime())) return norm;
   var day = d.getUTCDay(); // 0 is Sunday
   var sunday = new Date(d);
   sunday.setUTCDate(d.getUTCDate() - day);
-  return sunday.toISOString().split("T")[0];
+  return normalizeDateStr(sunday);
 }
 
 function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
-  var sessionDate = currentSessionDate || new Date().toISOString().split("T")[0];
+  var sessionDate = normalizeDateStr(currentSessionDate) || "2026-10-05";
   var weekStart = getWeekSunday(sessionDate);
-  var monthPrefix = sessionDate.slice(0, 7);
+  var monthPrefix = sessionDate.slice(0, 7); // "2026-10"
 
   var weekly = { count: 0, egNet: 0, arNet: 0, foNet: 0, totNet: 0, egUsd: 0, arUsd: 0, foUsd: 0, totUsd: 0, weekStart: weekStart };
   var monthly = { count: 0, egNet: 0, arNet: 0, foNet: 0, totNet: 0, egUsd: 0, arUsd: 0, foUsd: 0, totUsd: 0, monthPrefix: monthPrefix };
@@ -240,7 +268,7 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
   var list = (archive && Array.isArray(archive)) ? archive : [];
   list.forEach(function(s) {
     if (!s || !s.date) return;
-    var dStr = String(s.date).split("T")[0].split(" ")[0].trim();
+    var dStr = normalizeDateStr(s.date);
     if (!dStr) return;
 
     var rate = Number(s.usd_rate || defaultUsdRate || 52.42);
@@ -267,7 +295,7 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
       weekly.totUsd += totU;
     }
 
-    // الشهر: يبدأ حصراً من 01 أكتوبر 2026 وحتى تاريخ الجلسة
+    // الشهر: يبدأ حصراً من 01 أكتوبر 2026 فصاعداً
     if (dStr.indexOf(monthPrefix) === 0 && dStr >= "2026-10-01" && dStr <= sessionDate) {
       monthly.count++;
       monthly.egNet += eg;
@@ -336,7 +364,7 @@ function getSheetArchiveRows(ss) {
     var vals = s1.getRange(2, 1, maxR, s1.getLastColumn()).getValues();
     vals.forEach(function(row) {
       list.push({
-        date: String(row[0]),
+        date: normalizeDateStr(row[0]),
         segment: String(row[1] || ""),
         usd_rate: Number(row[2] || 52.42),
         egypt_buy: Number(row[3] || 0), egypt_sell: Number(row[4] || 0), egypt_net: Number(row[5] || 0),
@@ -365,7 +393,7 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
     usdRate = Number(banks[0].buy);
   }
 
-  var latestDate = (archive && archive.length > 0) ? String(archive[0].date) : new Date().toISOString().split("T")[0];
+  var latestDate = (archive && archive.length > 0) ? normalizeDateStr(archive[0].date) : "2026-10-05";
   var periodic = calculatePeriodicTotals(archive, latestDate, usdRate);
 
   var r0 = (archive && archive.length > 0) ? archive[0] : {};
@@ -384,9 +412,8 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
   }
 
   sheet.getRange(1, 1).setValue("🏛️ منظومة البورصة المصرية وأسواق المال - التقرير المالي التنفيذي والتراكمي");
-  sheet.getRange(2, 1).setValue("🕒 توقيت المزامنة السحابية: " + (ts || new Date().toLocaleString()) + " بتوقيت مصر | سعر الدولار المعتمد: " + usdRate.toFixed(2) + " ج.م");
+  sheet.getRange(2, 1).setValue("🕒 توقيت المزامنة: " + (ts || new Date().toLocaleString()) + " بتوقيت مصر | سعر الدولار المعتمد: " + usdRate.toFixed(2) + " ج.م");
 
-  // جدول التراكمي
   var summaryHeaders = ["الفترة / المؤشر", "صافي تعاملات الأجانب (ج.م)", "صافي تعاملات الأجانب ($)", "إجمالي صافي المؤسسات (ج.م)", "إجمالي صافي المؤسسات ($)", "عدد الجلسات", "توجيه السيولة"];
   var summaryRows = [
     summaryHeaders,
@@ -415,19 +442,17 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
 
   sheet.getRange(4, 1, summaryRows.length, summaryHeaders.length).setValues(summaryRows);
 
-  // جدول لقطة أسواق الصرف والسلع
   var marketHeaders = ["الأصل / المؤشر", "سعر الشراء / العالمي", "سعر البيع / المعادل", "أفضل بنك / المصدر"];
   var marketRows = [
     marketHeaders,
     ["أعلى سعر شراء للدولار (البنوك)", Number(topBank.buy).toFixed(2) + " ج.م", Number(topBank.sell).toFixed(2) + " ج.م", topBank.bank],
-    ["سعر البنك المركزي (CBE)", (rates && rates.cbe_usd_buy ? Number(rates.cbe_usd_buy).toFixed(4) : "52.3624") + " ج.م", (rates && rates.cbe_usd_sell ? Number(rates.cbe_usd_sell).toFixed(4) : "52.5006") + " ج.م", "البنك المركزي المصري"],
-    ["جرام الذهب عيار 24", (gold24 > 0 ? ("$" + gold24.toFixed(2)) : "$133.60"), (gold24 > 0 ? (Math.round(gold24 * usdRate) + " ج.م") : "6,995 ج.م"), "TradingView Live"],
-    ["نفط خام برنت", (brent > 0 ? ("$" + brent.toFixed(2)) : "$100.85"), (brent > 0 ? (Math.round(brent * usdRate) + " ج.م") : "5,280 ج.م"), "عقود برنت الآجلة"]
+    ["سعر البنك المركزي (CBE)", "52.3624 ج.م", "52.5006 ج.م", "البنك المركزي المصري"],
+    ["جرام الذهب عيار 24", (gold24 > 0 ? ("$" + gold24.toFixed(2)) : "$133.60"), (gold24 > 0 ? (Math.round(gold24 * usdRate) + " ج.م") : "7,005 ج.م"), "TradingView Live"],
+    ["نفط خام برنت", (brent > 0 ? ("$" + brent.toFixed(2)) : "$100.85"), (brent > 0 ? (Math.round(brent * usdRate) + " ج.م") : "5,285 ج.م"), "عقود برنت الآجلة"]
   ];
 
   sheet.getRange(10, 1, marketRows.length, marketHeaders.length).setValues(marketRows);
 
-  // نقل التبويب ليكون الأول دائماً
   try {
     ss.setActiveSheet(sheet);
     ss.moveActiveSheet(1);
@@ -452,13 +477,7 @@ function updateInstitutionsArchiveSheet(ss, archive) {
   if (sheet.getLastRow() >= 2) {
     var oldVals = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues();
     oldVals.forEach(function(r) {
-      var d = r[0];
-      var dStr = "";
-      if (d instanceof Date) {
-        dStr = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
-      } else {
-        dStr = String(d || "").split("T")[0].split(" ")[0].trim();
-      }
+      var dStr = normalizeDateStr(r[0]);
       var seg = String(r[1] || "").trim();
       if (dStr) {
         existingMap[dStr + "_" + seg] = [
@@ -474,7 +493,7 @@ function updateInstitutionsArchiveSheet(ss, archive) {
   }
 
   archive.forEach(function(r) {
-    var dStr = String(r.date || "").split("T")[0].split(" ")[0].trim();
+    var dStr = normalizeDateStr(r.date);
     var seg = String(r.segment || "").trim();
     if (dStr) {
       existingMap[dStr + "_" + seg] = [
@@ -558,19 +577,27 @@ function formatAllSheetsProfessionally() {
   var themeKey = getActiveThemeKey();
   var th = THEMES[themeKey] || THEMES.swiss;
 
-  // 1. تنسيق تبويب الملخص التنفيذي
+  // إذا لم يكن تبويب الملخص موجوداً، نقوم ببنائه أولاً
   var s0 = findExistingSheet(ss, "📊 الملخص التنفيذي والتراكمي", ["الملخص التنفيذي", "التراكمي"]);
+  if (!s0 || s0.getLastRow() < 4) {
+    rebuildExecutiveTab();
+    s0 = findExistingSheet(ss, "📊 الملخص التنفيذي والتراكمي", ["الملخص التنفيذي", "التراكمي"]);
+  }
+
+  // 1. تنسيق تبويب الملخص التنفيذي
   if (s0 && s0.getLastRow() >= 4) {
     s0.setRightToLeft(true);
     s0.getRange(1, 1, 1, 7).merge()
       .setBackground(th.headerBg).setFontColor(th.headerText)
-      .setFontFamily("Cairo").setFontWeight("bold").setFontSize(13).setHorizontalAlignment("center");
-    s0.getRange(2, 1, 1, 7).merge()
-      .setBackground(themeKey === "terminal" || themeKey === "matrix" ? "#1f2937" : "#f1f5f9")
-      .setFontColor(themeKey === "terminal" || themeKey === "matrix" ? "#9ca3af" : "#334155")
-      .setFontFamily("Cairo").setFontWeight("bold").setFontSize(10).setHorizontalAlignment("center");
+      .setFontFamily("Cairo").setFontWeight("bold").setFontSize(13).setHorizontalAlignment("center").setVerticalAlignment("middle");
+    s0.setRowHeight(1, 40);
 
-    styleSheetTable(s0, 4, 1, 4, 7, th.headerBg, th.headerText);
+    s0.getRange(2, 1, 1, 7).merge()
+      .setBackground(th.subHeaderBg).setFontColor(th.subHeaderText)
+      .setFontFamily("Cairo").setFontWeight("bold").setFontSize(10).setHorizontalAlignment("center").setVerticalAlignment("middle");
+    s0.setRowHeight(2, 28);
+
+    styleSheetTable(s0, 4, 1, 4, 7, th);
     var nSum = 3;
     s0.getRange(5, 2, nSum, 1).setNumberFormat("#,##0");
     s0.getRange(5, 3, nSum, 1).setNumberFormat("$#,##0");
@@ -582,7 +609,7 @@ function formatAllSheetsProfessionally() {
     colorNetColumn(s0, 5, nSum, th);
 
     if (s0.getLastRow() >= 14) {
-      styleSheetTable(s0, 10, 1, 5, 4, themeKey === "terminal" ? "#0369a1" : "#0f766e", "#ffffff");
+      styleSheetTable(s0, 10, 1, 5, 4, th);
     }
     autoFitColumns(s0, 7);
   }
@@ -591,9 +618,10 @@ function formatAllSheetsProfessionally() {
   var s1 = findExistingSheet(ss, "🏛️ تعاملات المؤسسات - البورصة المصرية", ["تعاملات البورصة", "المؤسسات", "EGX"]);
   if (s1 && s1.getLastRow() >= 1) {
     s1.setRightToLeft(true);
-    styleSheetTable(s1, 1, 1, s1.getLastRow(), s1.getLastColumn(), th.headerBg, th.headerText);
+    styleSheetTable(s1, 1, 1, s1.getLastRow(), s1.getLastColumn(), th);
     if (s1.getLastRow() > 1) {
       var numRows = s1.getLastRow() - 1;
+      s1.getRange(2, 1, numRows, 1).setNumberFormat("@"); // نص صريح للتاريخ منعاً لتشوهات المناطق الزمنية
       s1.getRange(2, 3, numRows, 1).setNumberFormat("#,##0.00");
       s1.getRange(2, 4, numRows, Math.min(12, s1.getLastColumn() - 3)).setNumberFormat("#,##0");
       if (s1.getLastColumn() >= 16) {
@@ -613,12 +641,11 @@ function formatAllSheetsProfessionally() {
   if (s2 && s2.getLastRow() >= 3) {
     s2.setRightToLeft(true);
     s2.getRange(1, 1, 1, s2.getLastColumn()).merge()
-      .setBackground(themeKey === "terminal" || themeKey === "matrix" ? "#1e293b" : "#f8fafc")
-      .setFontColor(th.text)
-      .setFontFamily("Cairo").setFontWeight("bold").setFontSize(11).setHorizontalAlignment("center");
+      .setBackground(th.subHeaderBg).setFontColor(th.subHeaderText)
+      .setFontFamily("Cairo").setFontWeight("bold").setFontSize(11).setHorizontalAlignment("center").setVerticalAlignment("middle");
     s2.setRowHeight(1, 32);
 
-    styleSheetTable(s2, 3, 1, s2.getLastRow() - 2, s2.getLastColumn(), th.headerBg, th.headerText);
+    styleSheetTable(s2, 3, 1, s2.getLastRow() - 2, s2.getLastColumn(), th);
     if (s2.getLastRow() > 3) {
       var nRows = s2.getLastRow() - 3;
       s2.getRange(4, 4, nRows, Math.min(3, s2.getLastColumn() - 3)).setNumberFormat("#,##0.00");
@@ -631,12 +658,11 @@ function formatAllSheetsProfessionally() {
   if (s3 && s3.getLastRow() >= 3) {
     s3.setRightToLeft(true);
     s3.getRange(1, 1, 1, s3.getLastColumn()).merge()
-      .setBackground(themeKey === "terminal" || themeKey === "matrix" ? "#1e293b" : "#f8fafc")
-      .setFontColor(th.text)
-      .setFontFamily("Cairo").setFontWeight("bold").setFontSize(11).setHorizontalAlignment("center");
+      .setBackground(th.subHeaderBg).setFontColor(th.subHeaderText)
+      .setFontFamily("Cairo").setFontWeight("bold").setFontSize(11).setHorizontalAlignment("center").setVerticalAlignment("middle");
     s3.setRowHeight(1, 32);
 
-    styleSheetTable(s3, 3, 1, s3.getLastRow() - 2, s3.getLastColumn(), th.headerBg, th.headerText);
+    styleSheetTable(s3, 3, 1, s3.getLastRow() - 2, s3.getLastColumn(), th);
     if (s3.getLastRow() > 3) {
       var nBRows = s3.getLastRow() - 3;
       s3.getRange(4, 2, nBRows, 3).setNumberFormat("#,##0.00");
@@ -645,10 +671,13 @@ function formatAllSheetsProfessionally() {
   }
 }
 
-function styleSheetTable(sheet, startRow, startCol, numRows, numCols, headerBg, headerText) {
+function styleSheetTable(sheet, startRow, startCol, numRows, numCols, th) {
+  th = th || THEMES.swiss;
+  
+  // ترويسة الجدول
   var header = sheet.getRange(startRow, startCol, 1, numCols);
-  header.setBackground(headerBg || "#0f172a")
-    .setFontColor(headerText || "#ffffff")
+  header.setBackground(th.headerBg)
+    .setFontColor(th.headerText)
     .setFontFamily("Cairo")
     .setFontWeight("bold")
     .setFontSize(10)
@@ -656,30 +685,33 @@ function styleSheetTable(sheet, startRow, startCol, numRows, numCols, headerBg, 
     .setVerticalAlignment("middle");
   sheet.setRowHeight(startRow, 32);
 
+  // جسم الجدول: ضبط لون الخلفية ولون النص معاً لمنع النص الخفي
   if (numRows > 1) {
     var body = sheet.getRange(startRow + 1, startCol, numRows - 1, numCols);
     body.setFontFamily("Cairo")
+      .setFontColor(th.bodyText)
+      .setBackground(th.bodyBg)
       .setFontSize(9.5)
       .setHorizontalAlignment("center")
       .setVerticalAlignment("middle");
     
-    var themeKey = getActiveThemeKey();
-    var altColor = (themeKey === "terminal" || themeKey === "matrix") ? "#111827" : "#f8fafc";
     for (var r = 1; r < numRows; r++) {
       sheet.setRowHeight(startRow + r, 28);
       if (r % 2 === 0) {
-        sheet.getRange(startRow + r, startCol, 1, numCols).setBackground(altColor);
+        sheet.getRange(startRow + r, startCol, 1, numCols).setBackground(th.altBg);
       }
     }
   }
 
   var all = sheet.getRange(startRow, startCol, numRows, numCols);
-  all.setBorder(true, true, true, true, true, true, "#cbd5e1", SpreadsheetApp.BorderStyle.SOLID);
+  all.setBorder(true, true, true, true, true, true, th.borderColor, SpreadsheetApp.BorderStyle.SOLID);
 }
 
 function colorNetColumn(sheet, colIndex, numRows, th) {
   th = th || THEMES.swiss;
-  var range = sheet.getRange(sheet.getLastRow() - numRows + 1, colIndex, numRows, 1);
+  var startR = sheet.getLastRow() - numRows + 1;
+  if (startR < 2) return;
+  var range = sheet.getRange(startR, colIndex, numRows, 1);
   var values = range.getValues();
   for (var i = 0; i < values.length; i++) {
     var raw = values[i][0];
@@ -776,7 +808,7 @@ function getLiveDashboardData() {
   }
 
   // 4. حساب التراكميات
-  var latestDate = (result.archive && result.archive.length > 0) ? result.archive[0].date : new Date().toISOString().split("T")[0];
+  var latestDate = (result.archive && result.archive.length > 0) ? result.archive[0].date : "2026-10-05";
   result.periodic = calculatePeriodicTotals(result.archive, latestDate, result.usd_rate);
 
   return result;
@@ -802,17 +834,22 @@ function renderDashboardHtml() {
 '  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">' +
 '  <style>' +
 '    :root {' +
-'      --bg: #f8fafc; --card-bg: #ffffff; --border: #e2e8f0; --text: #0f172a;' +
-'      --text-muted: #64748b; --primary: #1e3a8a; --header-bg: #1e3a8a; --header-text: #fff;' +
+'      --bg: #f8fafc; --card-bg: #ffffff; --border: #cbd5e1; --text: #0f172a;' +
+'      --text-muted: #64748b; --primary: #1e3a8a; --header-bg: #1e3a8a; --header-text: #ffffff;' +
 '      --accent: #0284c7; --pos-bg: #dcfce7; --pos-text: #15803d; --neg-bg: #fee2e2; --neg-text: #b91c1c;' +
 '    }' +
 '    body.theme-terminal {' +
-'      --bg: #0b0f19; --card-bg: #111827; --border: #1f2937; --text: #f9fafb;' +
-'      --text-muted: #9ca3af; --primary: #38bdf8; --header-bg: #0f172a; --header-text: #fff;' +
+'      --bg: #0b0f19; --card-bg: #111827; --border: #374151; --text: #f9fafb;' +
+'      --text-muted: #9ca3af; --primary: #38bdf8; --header-bg: #0f172a; --header-text: #38bdf8;' +
 '      --accent: #38bdf8; --pos-bg: #064e3b; --pos-text: #34d399; --neg-bg: #7f1d1d; --neg-text: #f87171;' +
 '    }' +
+'    body.theme-swiss {' +
+'      --bg: #f8fafc; --card-bg: #ffffff; --border: #cbd5e1; --text: #0f172a;' +
+'      --text-muted: #64748b; --primary: #1e3a8a; --header-bg: #1e3a8a; --header-text: #ffffff;' +
+'      --accent: #0284c7; --pos-bg: #dcfce7; --pos-text: #15803d; --neg-bg: #fee2e2; --neg-text: #b91c1c;' +
+'    }' +
 '    body.theme-matrix {' +
-'      --bg: #0d1117; --card-bg: #161b22; --border: #30363d; --text: #c9d1d9;' +
+'      --bg: #0d1117; --card-bg: #161b22; --border: #30363d; --text: #e6edf3;' +
 '      --text-muted: #8b949e; --primary: #58a6ff; --header-bg: #21262d; --header-text: #58a6ff;' +
 '      --accent: #e3b341; --pos-bg: #1b4729; --pos-text: #3fb950; --neg-bg: #5c1d24; --neg-text: #f85149;' +
 '    }' +
@@ -832,8 +869,8 @@ function renderDashboardHtml() {
 '    .brand i { color: var(--accent); }' +
 '    .nav-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }' +
 '    .theme-select-box {' +
-'      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);' +
-'      color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem;' +
+'      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);' +
+'      color: #fff; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;' +
 '      outline: none; cursor: pointer;' +
 '    }' +
 '    .theme-select-box option { background: #0f172a; color: #fff; }' +
@@ -846,13 +883,12 @@ function renderDashboardHtml() {
 '      padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;' +
 '      border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.02); flex-wrap: wrap; gap: 12px;' +
 '    }' +
-'    .section-title { font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }' +
+'    .section-title { font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 10px; color: var(--text); }' +
 '    .btn {' +
 '      padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 0.9rem;' +
 '      cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; transition: all 0.2s;' +
 '    }' +
 '    .btn-primary { background: var(--primary); color: #fff; }' +
-'    .btn-accent { background: var(--accent); color: #fff; }' +
 '    .kpi-grid {' +
 '      display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; padding: 20px;' +
 '    }' +
@@ -863,8 +899,8 @@ function renderDashboardHtml() {
 '    .kpi-title { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }' +
 '    .kpi-val { font-size: 1.45rem; font-weight: 900; line-height: 1.2; }' +
 '    .kpi-sub { font-size: 0.85rem; font-weight: 700; margin-top: 6px; color: var(--text-muted); }' +
-'    .val-pos { color: var(--pos-text); }' +
-'    .val-neg { color: var(--neg-text); }' +
+'    .val-pos { color: var(--pos-text); font-weight: 800; }' +
+'    .val-neg { color: var(--neg-text); font-weight: 800; }' +
 '    .table-container { width: 100%; overflow-x: auto; padding: 0 20px 20px; }' +
 '    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.92rem; }' +
 '    th {' +
@@ -875,8 +911,8 @@ function renderDashboardHtml() {
 '      padding: 12px 14px; text-align: center; border-bottom: 1px solid var(--border);' +
 '      background: var(--card-bg); color: var(--text); white-space: nowrap;' +
 '    }' +
-'    tbody tr:nth-child(even) td { background: rgba(0,0,0,0.02); }' +
-'    .pill-tag { padding: 3px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 800; display: inline-block; }' +
+'    tbody tr:nth-child(even) td { background: rgba(0,0,0,0.03); }' +
+'    .pill-tag { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 800; display: inline-block; }' +
 '    .pill-green { background: var(--pos-bg); color: var(--pos-text); }' +
 '    .pill-red { background: var(--neg-bg); color: var(--neg-text); }' +
 '    .pill-blue { background: rgba(56, 189, 248, 0.15); color: var(--primary); }' +
@@ -908,7 +944,7 @@ function renderDashboardHtml() {
 '  </div>' +
 '' +
 '  <div class="container">' +
-'    <!-- 1. بطاقات المؤشرات التنفيذية والتراكمية (الأسبوعية والشهرية) -->' +
+'    <!-- 1. بطاقات المؤشرات التنفيذية والتراكمية -->' +
 '    <div class="section-card">' +
 '      <div class="section-header">' +
 '        <div class="section-title">' +
@@ -1015,6 +1051,7 @@ function renderDashboardHtml() {
 '      CURRENT_THEME = themeKey;' +
 '      document.body.className = "theme-" + themeKey;' +
 '      document.getElementById("themeSelector").value = themeKey;' +
+'      try { localStorage.setItem("SELECTED_THEME", themeKey); } catch(e) {}' +
 '      if (typeof google !== "undefined" && google.script && google.script.run) {' +
 '        google.script.run.applyActiveTheme(themeKey);' +
 '      }' +
@@ -1051,11 +1088,15 @@ function renderDashboardHtml() {
 '      document.getElementById("kpi-today-tot-usd").innerHTML = formatSignNum(Math.round(todayTot / rate), "$");' +
 '' +
 '      if (p.weekly) {' +
-'        document.getElementById("kpi-week-fo").innerHTML = formatSignNum(p.weekly.foNet, "ج.م") + " ($" + formatNum(Math.abs(p.weekly.foUsd)) + ")";' +
+'        var wFoSign = formatSignNum(p.weekly.foNet, "ج.م");' +
+'        var wFoUsd = " ($" + formatNum(Math.abs(p.weekly.foUsd)) + ")";' +
+'        document.getElementById("kpi-week-fo").innerHTML = wFoSign + wFoUsd;' +
 '        document.getElementById("kpi-week-tot").innerHTML = formatSignNum(p.weekly.totNet, "ج.م");' +
 '      }' +
 '      if (p.monthly) {' +
-'        document.getElementById("kpi-month-fo").innerHTML = formatSignNum(p.monthly.foNet, "ج.م") + " ($" + formatNum(Math.abs(p.monthly.foUsd)) + ")";' +
+'        var mFoSign = formatSignNum(p.monthly.foNet, "ج.م");' +
+'        var mFoUsd = " ($" + formatNum(Math.abs(p.monthly.foUsd)) + ")";' +
+'        document.getElementById("kpi-month-fo").innerHTML = mFoSign + mFoUsd;' +
 '        document.getElementById("kpi-month-tot").innerHTML = formatSignNum(p.monthly.totNet, "ج.م");' +
 '      }' +
 '' +
@@ -1071,7 +1112,7 @@ function renderDashboardHtml() {
 '            : "<span class=\'pill-tag pill-red\'>بيع أجانب</span>";' +
 '' +
 '          aHtml += "<tr>"' +
-'            + "<td style=\'font-weight: 700;\'>" + row.date + "</td>"' +
+'            + "<td style=\'font-weight: 700;\'>" + (row.date || "--") + "</td>"' +
 '            + "<td>" + (row.segment || "الرئيسي") + "</td>"' +
 '            + "<td class=\'num-ltr\'>" + rUsd.toFixed(2) + "</td>"' +
 '            + "<td>" + formatSignNum(fNet, "ج.م") + "</td>"' +
@@ -1112,7 +1153,9 @@ function renderDashboardHtml() {
 '    }, 1000);' +
 '' +
 '    document.addEventListener("DOMContentLoaded", function() {' +
-'      document.getElementById("themeSelector").value = CURRENT_THEME;' +
+'      var savedTheme = CURRENT_THEME;' +
+'      try { savedTheme = localStorage.getItem("SELECTED_THEME") || CURRENT_THEME; } catch(e) {}' +
+'      switchThemeUI(savedTheme);' +
 '      renderDashboard(INITIAL_DATA);' +
 '    });' +
 '  </script>' +
