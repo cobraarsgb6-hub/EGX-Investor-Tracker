@@ -37,51 +37,43 @@ let userLangPreferences = {};
 let userCurrPreferences = {};
 
 const BANK_EN_NAMES = {
+  "HSBC": "HSBC Egypt",
+  "اتش اس بي سي": "HSBC Egypt",
   "أبوظبي الإسلامي": "ADIB Egypt",
-  "أبوظبي الإسلامي (ADIB)": "ADIB Egypt",
   "مصرف أبو ظبي الإسلامي": "ADIB Egypt",
   "الأهلي الكويتي": "ABK Egypt",
-  "البنك الأهلي الكويتي": "ABK Egypt",
   "بنك نكست": "Bank NXT",
   "نكست": "Bank NXT",
   "قناة السويس": "Suez Canal Bank",
-  "بنك قناة السويس": "Suez Canal Bank",
   "الشركة المصرفية": "saib Bank",
-  "بنك الشركة المصرفية": "saib Bank",
-  "بنك الشركة المصرفية العربية الدولية": "saib Bank",
+  "saib": "saib Bank",
   "التجاري الدولي": "CIB Egypt",
-  "البنك التجاري الدولي": "CIB Egypt",
-  "البنك التجاري الدولي (CIB)": "CIB Egypt",
   "بنك مصر": "Banque Misr",
   "الأهلي المصري": "National Bank of Egypt (NBE)",
-  "البنك الأهلي المصري": "National Bank of Egypt (NBE)",
   "بنك القاهرة": "Banque du Caire",
-  "بنك الإسكندرية": "Bank of Alexandria",
   "الإسكندرية": "Bank of Alexandria",
+  "ALEXBANK": "Bank of Alexandria",
   "قطر الوطني": "QNB Alahli",
-  "بنك قطر الوطني": "QNB Alahli",
-  "فيصل الإسلامي": "Faisal Islamic Bank",
-  "بنك فيصل الإسلامي": "Faisal Islamic Bank",
+  "QNB": "QNB Alahli",
+  "فيصل": "Faisal Islamic Bank",
   "البركة": "Al Baraka Bank",
-  "بنك البركة": "Al Baraka Bank",
   "التعمير والإسكان": "Housing & Dev Bank (HDB)",
-  "بنك التعمير والإسكان": "Housing & Dev Bank (HDB)",
   "الكويت الوطني": "NBK Egypt",
-  "بنك الكويت الوطني": "NBK Egypt",
   "المصرف المتحد": "The United Bank",
   "العقاري المصري العربي": "Egyptian Arab Land Bank",
-  "البنك العقاري المصري العربي": "Egyptian Arab Land Bank",
   "التنمية الصناعية": "Industrial Dev Bank (IDB)",
-  "بنك التنمية الصناعية": "Industrial Dev Bank (IDB)",
   "أبوظبي التجاري": "ADCB Egypt",
-  "بنك أبوظبي التجاري": "ADCB Egypt",
   "الاستثمار العربي": "aiBANK",
-  "بنك الاستثمار العربي": "aiBANK",
-  "المصرف العربي الدولي": "Arab Int'l Bank (AIB)",
+  "المصرف العربي": "Arab Int'l Bank (AIB)",
   "الإمارات دبي الوطني": "Emirates NBD Egypt",
-  "بنك الإمارات دبي الوطني": "Emirates NBD Egypt",
   "كريدي أجريكول": "Credit Agricole Egypt",
   "ميد بنك": "MIDBANK",
+  "المصري الخليجي": "EG Bank",
+  "بيت التمويل الكويتي": "Kuwait Finance House (KFH)",
+  "العربي الأفريقي": "Arab African Int'l Bank (AAIB)",
+  "أبوظبي الأول": "First Abu Dhabi Bank (FABMISR)",
+  "أبوظبي اﻷول": "First Abu Dhabi Bank (FABMISR)",
+  "FABMISR": "First Abu Dhabi Bank (FABMISR)",
   "البنك المركزي المصري": "Central Bank of Egypt (CBE)"
 };
 
@@ -933,16 +925,30 @@ function formatCommoditiesReport(data, lang, curr) {
 }
 
 /**
- * 3. تقرير العملات الأجنبية والعربية
+ * 3. تقرير العملات الأجنبية والعربية (مقابل الجنيه المصري فقط)
  */
 function formatCurrenciesReport(data, lang) {
   const rates = data.rates || [];
-  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.2571);
+  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
   const fmt = (v, d) => Number(v).toLocaleString("en-US", {
     minimumFractionDigits: d !== undefined ? d : 2,
     maximumFractionDigits: d !== undefined ? d : 2
   });
   const updatedTime = getCairoTimeStr();
+
+  const CURRENCY_EN = {
+    "USD": "US Dollar",
+    "EUR": "Euro",
+    "SAR": "Saudi Riyal",
+    "AED": "UAE Dirham",
+    "KWD": "Kuwaiti Dinar",
+    "GBP": "British Pound",
+    "QAR": "Qatari Riyal",
+    "CNY": "Chinese Yuan",
+    "BHD": "Bahraini Dinar",
+    "OMR": "Omani Rial",
+    "JPY": "Japanese Yen"
+  };
 
   const excludeCodes = ["GOLD24", "GOLD21", "GOLD18", "SILVER", "BRENT", "WTI", "BTC", "ETH", "OIL", "GOLDC", "USD"];
   const currItems = rates.filter(r => {
@@ -951,36 +957,36 @@ function formatCurrenciesReport(data, lang) {
   });
 
   if (lang === "en") {
-    let txt = `💵 <b>Foreign Currency Exchange Rates</b>\n`
+    let txt = `💵 <b>Foreign Currency Exchange Rates (vs EGP)</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
       + `🕒 Updated: <b>[${updatedTime}]</b> (Cairo Time)\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
-      + `▫️ <b>US Dollar [USD]:</b> <b>$1.00</b> • <b>${fmt(usdRate, 2)} EGP</b>\n`;
+      + `▫️ <b>US Dollar [USD]:</b> <b>${fmt(usdRate, 2)} EGP</b>\n`;
 
     currItems.forEach(item => {
-      const uP = Number(item.usd_price || 0);
-      const eP = Number(item.egp_price || (uP * usdRate));
-      const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : 2;
-      txt += `▫️ <b>${item.name} [${item.code}]:</b> <b>$${fmt(uP, uDec)}</b> • <b>${fmt(eP, 2)} EGP</b>\n`;
+      const eP = Number(item.egp_price || (Number(item.usd_price || 0) * usdRate));
+      const code = (item.code || "").toUpperCase();
+      const name = CURRENCY_EN[code] || item.name_en || item.name;
+      txt += `▫️ <b>${name} [${code}]:</b> <b>${fmt(eP, 2)} EGP</b>\n`;
     });
 
-    return txt + `\n🏛️ <i>Official Central Bank of Egypt rates.</i>`;
+    return txt + `\n🏛️ <i>Official Central Bank of Egypt rates via Ta3weem.</i>`;
   }
 
-  let txtAr = `💵 <b>أسعار العملات الأجنبية والعربية الرسمية</b>\n`
+  let txtAr = `💵 <b>أسعار العملات الرسمية مقابل الجنيه المصري</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
     + `🕒 وقت التحديث: <b>[${updatedTime}]</b> بتوقيت مصر\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `▫️ <b>الدولار الأمريكي [USD]:</b> <b>1.00$</b> • <b>${fmt(usdRate, 2)} ج.م</b>\n`;
+    + `▫️ <b>الدولار الأمريكي [USD]:</b> <b>${fmt(usdRate, 2)} ج.م</b>\n`;
 
   currItems.forEach(item => {
-    const uP = Number(item.usd_price || 0);
-    const eP = Number(item.egp_price || (uP * usdRate));
-    const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : 2;
-    txtAr += `▫️ <b>${item.name} [${item.code}]:</b> <b>$${fmt(uP, uDec)}</b> • <b>${fmt(eP, 2)} ج.م</b>\n`;
+    const eP = Number(item.egp_price || (Number(item.usd_price || 0) * usdRate));
+    const code = (item.code || "").toUpperCase();
+    const name = item.name_ar || item.name;
+    txtAr += `▫️ <b>${name} [${code}]:</b> <b>${fmt(eP, 2)} ج.م</b>\n`;
   });
 
-  return txtAr + `\n🏛️ <i>أسعار موثقة معتمدة من البنك المركزي المصري.</i>`;
+  return txtAr + `\n🏛️ <i>أسعار موثقة معتمدة من البنك المركزي المصري عبر تعويم.</i>`;
 }
 
 /**
@@ -1032,7 +1038,7 @@ function formatAllBanksReport(data, lang) {
     return `🏦 <b>All 25 Egyptian Banks - USD Rates</b>\n`
       + `🕒 Updated: <b>[${updatedTime}]</b> (Cairo Time)\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
-      + banks.map((b, idx) => `${idx + 1}. <b>${b.bank}:</b> Buy <b>${Number(b.buy).toFixed(2)}</b> - Sell <b>${Number(b.sell).toFixed(2)}</b>`).join("\n")
+      + banks.map((b, idx) => `${idx + 1}. <b>${getBankName(b.bank, "en")}:</b> Buy <b>${Number(b.buy).toFixed(2)}</b> - Sell <b>${Number(b.sell).toFixed(2)}</b>`).join("\n")
       + `\n\n⚡ <i>Live feed via Ta3weem.</i>`;
   }
   return `🏦 <b>قائمة الـ 25 بنكاً مصرياً بالكامل - أسعار الدولار</b>\n`
