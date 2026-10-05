@@ -8,9 +8,18 @@ on:
   repository_dispatch: # Allows external trigger from cron-job.org or webhooks
     types: [cron_sync, cloud_sync]
 
+# منع تشغيلين متوازيين حتى لا يتصادم حفظ الأرشيف (سبب ضياع جلسة 4 أكتوبر)
+concurrency:
+  group: egx-cloud-sync
+  cancel-in-progress: false
+
+env:
+  TZ: Africa/Cairo
+
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     permissions:
       contents: write
 
@@ -41,5 +50,11 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data/institutions_archive.db data/latest_sb_*.json data/ta3weem_rates.json || true
-          git commit -m "chore(data): auto-persist archive database and market cache [skip ci]" || echo "No changes to commit"
-          git push origin main || echo "Push failed"
+          git commit -m "chore(data): auto-persist archive database and market cache [skip ci]" || { echo "No changes to commit"; exit 0; }
+          for i in 1 2 3 4; do
+            if git push origin main; then echo "✅ Pushed"; exit 0; fi
+            echo "⚠️ Push rejected, rebasing (attempt $i)..."
+            git pull --rebase -X theirs origin main || { git rebase --abort; sleep 3; }
+            sleep 2
+          done
+          echo "❌ Push failed after retries"; exit 1
