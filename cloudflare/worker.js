@@ -155,6 +155,39 @@ function formatCleanTime(val) {
   return getCairoTimeStr();
 }
 
+function getEgxSnapshotTime(data) {
+  if (data?.egx_institutions?.timestamp) {
+    const m = String(data.egx_institutions.timestamp).match(/(\d{1,2}):(\d{2})/);
+    if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
+  }
+  if (data?.timestamp) {
+    try {
+      const d = new Date(data.timestamp);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit" });
+      }
+    } catch(e) {}
+    const m = String(data.timestamp).match(/(\d{1,2}):(\d{2})/);
+    if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
+  }
+  if (data?.archive && data.archive[0]?.created_at) {
+    return formatCleanTime(data.archive[0].created_at);
+  }
+  return "";
+}
+
+function getBankSnapshotTime(data) {
+  if (data?.banks && data.banks[0]?.updated_at) {
+    const m = String(data.banks[0].updated_at).match(/(\d{1,2}):(\d{2})/);
+    if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
+  }
+  if (data?.cbe_updated_at) {
+    const m = String(data.cbe_updated_at).match(/(\d{1,2}):(\d{2})/);
+    if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
+  }
+  return "";
+}
+
 function fmtSigned(v) {
   const n = Number(v) || 0;
   return LRM + (n >= 0 ? "+" : "-") + Math.abs(n).toLocaleString("en-US") + LRM;
@@ -587,6 +620,8 @@ async function getCachedDashboardData() {
     cbe_usd_buy: cbeBuy,
     cbe_usd_sell: cbeSell,
     cbe_updated_at: cbeTime,
+    timestamp: sheetData.timestamp || "",
+    egx_institutions: sheetData.egx_institutions || null,
     archive: archive,
     rates: rates,
     banks: banks,
@@ -703,6 +738,9 @@ async function handleTelegramUpdate(update, originUrl) {
       const targetLang = parts[1] || lang;
       const targetCurr = parts[2] || curr;
       memoryCache.timestamp = 0; // إعادة تعيين الكاش لفرض جلب البيانات الحية فوراً
+      if (Date.now() - sheetCache.timestamp > 15000) {
+        sheetCache.timestamp = 0;
+      }
       const data = await getCachedDashboardData();
       let content = "";
       let kb = getReportKeyboard(target, targetLang, cfg, targetCurr);
@@ -812,6 +850,7 @@ function formatEgxReport(data, lang, curr) {
   curr = curr || "usd";
   const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
   let egNet = 521112454, arNet = 658336787, foNet = -1234399972;
+  let egBuy = 0, egSell = 0, arBuy = 0, arSell = 0, foBuy = 0, foSell = 0;
   let sessionDate = "2026-10-05";
 
   if (data.archive && data.archive.length > 0) {
@@ -822,10 +861,39 @@ function formatEgxReport(data, lang, curr) {
     if (e !== undefined && e !== 0) egNet = Number(e);
     if (a !== undefined && a !== 0) arNet = Number(a);
     if (f !== undefined && f !== 0) foNet = Number(f);
+
+    egBuy = Number(r.egypt_buy !== undefined ? r.egypt_buy : (r.egypt_buy_egp || 0));
+    egSell = Number(r.egypt_sell !== undefined ? r.egypt_sell : (r.egypt_sell_egp || 0));
+    arBuy = Number(r.arab_buy !== undefined ? r.arab_buy : (r.arab_buy_egp || 0));
+    arSell = Number(r.arab_sell !== undefined ? r.arab_sell : (r.arab_sell_egp || 0));
+    foBuy = Number(r.foreign_buy !== undefined ? r.foreign_buy : (r.foreign_buy_egp || 0));
+    foSell = Number(r.foreign_sell !== undefined ? r.foreign_sell : (r.foreign_sell_egp || 0));
+
     sessionDate = r.date || sessionDate;
   }
 
-  const fmt = (v) => {
+  // Backup extraction from egx_institutions if archive buy/sell were 0
+  if (foBuy === 0 && data.egx_institutions?.tables?.institutions) {
+    const inst = data.egx_institutions.tables.institutions;
+    inst.forEach(item => {
+      const t = item.type || "";
+      if (t.includes("مصر") || t.toLowerCase().includes("egypt")) {
+        egBuy = Number(item.buy_egp || 0);
+        egSell = Number(item.sell_egp || 0);
+        egNet = Number(item.net_egp || egNet);
+      } else if (t.includes("عرب") || t.toLowerCase().includes("arab")) {
+        arBuy = Number(item.buy_egp || 0);
+        arSell = Number(item.sell_egp || 0);
+        arNet = Number(item.net_egp || arNet);
+      } else if (t.includes("أجانب") || t.includes("اجانب") || t.toLowerCase().includes("foreign")) {
+        foBuy = Number(item.buy_egp || 0);
+        foSell = Number(item.sell_egp || 0);
+        foNet = Number(item.net_egp || foNet);
+      }
+    });
+  }
+
+  const fmtNet = (v) => {
     const n = Number(v) || 0;
     if (curr === "usd") {
       const u = Math.round(n / usdRate);
@@ -834,13 +902,20 @@ function formatEgxReport(data, lang, curr) {
     return (n >= 0 ? "+" : "-") + Math.abs(n).toLocaleString("en-US") + (lang === "en" ? " EGP" : " ج.م");
   };
 
+  const fmtVal = (v) => {
+    const n = Number(v) || 0;
+    if (curr === "usd") {
+      const u = Math.round(n / usdRate);
+      return "$" + Math.abs(u).toLocaleString("en-US");
+    }
+    return Math.abs(n).toLocaleString("en-US");
+  };
+
   const updatedDateTime = getCairoFullDateTime(lang);
-  const snapshotTime = (data.archive && data.archive[0]?.created_at)
-    ? formatCleanTime(data.archive[0].created_at)
-    : (data.timestamp ? formatCleanTime(data.timestamp.split(" ")[1]) : "");
+  const snapshotTime = getEgxSnapshotTime(data);
 
   const snapshotLineEn = snapshotTime ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
-  const snapshotLineAr = snapshotTime ? `\n📸 وقت رصد الجلسة: <b>[${snapshotTime}]</b>` : "";
+  const snapshotLineAr = snapshotTime ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
 
   const egStatusEn = egNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
   const arStatusEn = arNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
@@ -853,34 +928,52 @@ function formatEgxReport(data, lang, curr) {
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
   if (lang === "en") {
-    return `🏛️ <b>Egyptian Stock Exchange (EGX) Flows</b>\n`
+    let txt = `🏛️ <b>Egyptian Stock Exchange (EGX) Flows</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
       + `🕒 Query: <b>${updatedDateTime}</b>`
       + snapshotLineEn + `\n`
       + `📅 Session: <b>${sessionDate}</b> • Currency: <b>${currBadge}</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
       + `▫️ <b>Egyptians:</b> ${egStatusEn}\n`
-      + `   • Net Flow: <b>${fmt(egNet)}</b>\n\n`
-      + `▫️ <b>Arabs:</b> ${arStatusEn}\n`
-      + `   • Net Flow: <b>${fmt(arNet)}</b>\n\n`
-      + `▫️ <b>Foreigners:</b> ${foStatusEn}\n`
-      + `   • Net Flow: <b>${fmt(foNet)}</b>\n\n`
-      + `🔒 <i>Officially audited from EGX Terminal.</i>`;
+      + `   • Net Flow: <b>${fmtNet(egNet)}</b>\n`;
+    if (egBuy > 0 || egSell > 0) {
+      txt += `   • Buy: ${fmtVal(egBuy)} • Sell: ${fmtVal(egSell)}\n`;
+    }
+    txt += `\n▫️ <b>Arabs:</b> ${arStatusEn}\n`
+      + `   • Net Flow: <b>${fmtNet(arNet)}</b>\n`;
+    if (arBuy > 0 || arSell > 0) {
+      txt += `   • Buy: ${fmtVal(arBuy)} • Sell: ${fmtVal(arSell)}\n`;
+    }
+    txt += `\n▫️ <b>Foreigners:</b> ${foStatusEn}\n`
+      + `   • Net Flow: <b>${fmtNet(foNet)}</b>\n`;
+    if (foBuy > 0 || foSell > 0) {
+      txt += `   • Buy: ${fmtVal(foBuy)} • Sell: ${fmtVal(foSell)}\n`;
+    }
+    return txt + `\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
 
-  return `🏛️ <b>صافي تعاملات البورصة المصرية (EGX)</b>\n`
+  let txtAr = `🏛️ <b>صافي تعاملات البورصة المصرية (EGX)</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
     + snapshotLineAr + `\n`
     + `📅 تاريخ الجلسة: <b>${sessionDate}</b> • العملة: <b>${currBadge}</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
     + `▫️ <b>المصريين:</b> ${egStatusAr}\n`
-    + `   • صافي السيولة: <b>${fmt(egNet)}</b>\n\n`
-    + `▫️ <b>العرب:</b> ${arStatusAr}\n`
-    + `   • صافي السيولة: <b>${fmt(arNet)}</b>\n\n`
-    + `▫️ <b>الأجانب:</b> ${foStatusAr}\n`
-    + `   • صافي السيولة: <b>${fmt(foNet)}</b>\n\n`
-    + `🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
+    + `   • صافي السيولة: <b>${fmtNet(egNet)}</b>\n`;
+  if (egBuy > 0 || egSell > 0) {
+    txtAr += `   • مشتريات: ${fmtVal(egBuy)} • مبيعات: ${fmtVal(egSell)}\n`;
+  }
+  txtAr += `\n▫️ <b>العرب:</b> ${arStatusAr}\n`
+    + `   • صافي السيولة: <b>${fmtNet(arNet)}</b>\n`;
+  if (arBuy > 0 || arSell > 0) {
+    txtAr += `   • مشتريات: ${fmtVal(arBuy)} • مبيعات: ${fmtVal(arSell)}\n`;
+  }
+  txtAr += `\n▫️ <b>الأجانب:</b> ${foStatusAr}\n`
+    + `   • صافي السيولة: <b>${fmtNet(foNet)}</b>\n`;
+  if (foBuy > 0 || foSell > 0) {
+    txtAr += `   • مشتريات: ${fmtVal(foBuy)} • مبيعات: ${fmtVal(foSell)}\n`;
+  }
+  return txtAr + `\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
 
 /**
@@ -942,7 +1035,11 @@ function formatCurrenciesReport(data, lang) {
     minimumFractionDigits: d !== undefined ? d : 2,
     maximumFractionDigits: d !== undefined ? d : 2
   });
-  const updatedTime = getCairoTimeStr();
+  
+  const updatedDateTime = getCairoFullDateTime(lang);
+  const bankSnapshot = getBankSnapshotTime(data);
+  const snapshotLineEn = bankSnapshot ? `\n📸 Rates Snapshot: <b>[${bankSnapshot}]</b>` : "";
+  const snapshotLineAr = bankSnapshot ? `\n📸 لقطة أسعار الصرف: <b>[${bankSnapshot}]</b>` : "";
 
   const CURRENCY_EN = {
     "USD": "US Dollar",
@@ -964,12 +1061,43 @@ function formatCurrenciesReport(data, lang) {
     return !excludeCodes.includes(c) && c.indexOf("GOLD") < 0 && c.indexOf("SILVER") < 0;
   });
 
+  const cairoHourStr = new Date().toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", hour12: false });
+  const cairoHour = parseInt(cairoHourStr, 10);
+  const isTradingHours = (cairoHour >= 9 && cairoHour < 17);
+
+  const banks = data.banks || [];
+  let topBank = (banks.length > 0) ? banks[0] : null;
+  if (banks.length > 0) {
+    let maxB = 0;
+    banks.forEach(b => {
+      const buyVal = Number(b.buy || 0);
+      if (buyVal > maxB) {
+        maxB = buyVal;
+        topBank = b;
+      }
+    });
+  }
+
+  const cbeBuy = Number(data.cbe_usd_buy || 52.22);
+  let usdLineEn = "", usdLineAr = "";
+
+  if (isTradingHours && topBank && Number(topBank.buy) > 0) {
+    const topRate = Number(topBank.buy);
+    const bankNameEn = getBankName(topBank.bank, "en");
+    usdLineEn = `▫️ <b>US Dollar [USD]:</b> <b>${fmt(topRate, 2)} EGP</b> <i>(Top Buy - ${bankNameEn})</i>\n`;
+    usdLineAr = `▫️ <b>الدولار الأمريكي [USD]:</b> <b>${fmt(topRate, 2)} ج.م</b> <i>(أعلى شراء - ${topBank.bank})</i>\n`;
+  } else {
+    usdLineEn = `▫️ <b>US Dollar [USD]:</b> <b>${fmt(cbeBuy, 2)} EGP</b> <i>(CBE Close)</i>\n`;
+    usdLineAr = `▫️ <b>الدولار الأمريكي [USD]:</b> <b>${fmt(cbeBuy, 2)} ج.م</b> <i>(إقفال البنك المركزي)</i>\n`;
+  }
+
   if (lang === "en") {
     let txt = `💵 <b>Foreign Currency Exchange Rates (vs EGP)</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `🕒 Updated: <b>[${updatedTime}]</b> (Cairo Time)\n`
+      + `🕒 Query: <b>${updatedDateTime}</b>`
+      + snapshotLineEn + `\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
-      + `▫️ <b>US Dollar [USD]:</b> <b>${fmt(usdRate, 2)} EGP</b>\n`;
+      + usdLineEn;
 
     currItems.forEach(item => {
       const eP = Number(item.egp_price || (Number(item.usd_price || 0) * usdRate));
@@ -978,14 +1106,15 @@ function formatCurrenciesReport(data, lang) {
       txt += `▫️ <b>${name} [${code}]:</b> <b>${fmt(eP, 2)} EGP</b>\n`;
     });
 
-    return txt + `\n🏛️ <i>Official Central Bank of Egypt rates via Ta3weem.</i>`;
+    return txt + `\n🏛️ <i>Official Central Bank of Egypt & Live Bank feeds.</i>`;
   }
 
   let txtAr = `💵 <b>أسعار العملات الرسمية مقابل الجنيه المصري</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `🕒 وقت التحديث: <b>[${updatedTime}]</b> بتوقيت مصر\n`
+    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
+    + snapshotLineAr + `\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `▫️ <b>الدولار الأمريكي [USD]:</b> <b>${fmt(usdRate, 2)} ج.م</b>\n`;
+    + usdLineAr;
 
   currItems.forEach(item => {
     const eP = Number(item.egp_price || (Number(item.usd_price || 0) * usdRate));
@@ -994,7 +1123,7 @@ function formatCurrenciesReport(data, lang) {
     txtAr += `▫️ <b>${name} [${code}]:</b> <b>${fmt(eP, 2)} ج.م</b>\n`;
   });
 
-  return txtAr + `\n🏛️ <i>أسعار موثقة معتمدة من البنك المركزي المصري عبر تعويم.</i>`;
+  return txtAr + `\n🏛️ <i>أسعار موثقة معتمدة من البنك المركزي المصري والبنوك.</i>`;
 }
 
 /**
@@ -1063,16 +1192,32 @@ function formatExecutiveReport(data, lang, curr) {
   curr = curr || "usd";
   const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
   let foNet = -1234399972;
+  let foBuy = 0, foSell = 0;
   let sessionDate = "2026-10-05";
 
   if (data.archive && data.archive.length > 0) {
     const r = data.archive[0];
     const f = r.foreign_net !== undefined ? r.foreign_net : r.foreign_net_egp;
     if (f !== undefined && f !== 0) foNet = Number(f);
+    foBuy = Number(r.foreign_buy !== undefined ? r.foreign_buy : (r.foreign_buy_egp || 0));
+    foSell = Number(r.foreign_sell !== undefined ? r.foreign_sell : (r.foreign_sell_egp || 0));
     sessionDate = r.date || sessionDate;
   }
 
+  if (foBuy === 0 && data.egx_institutions?.tables?.institutions) {
+    const inst = data.egx_institutions.tables.institutions;
+    const foItem = inst.find(i => (i.type || "").includes("أجانب") || (i.type || "").includes("اجانب") || (i.type || "").toLowerCase().includes("foreign"));
+    if (foItem) {
+      foBuy = Number(foItem.buy_egp || 0);
+      foSell = Number(foItem.sell_egp || 0);
+      foNet = Number(foItem.net_egp || foNet);
+    }
+  }
+
   const updatedDateTime = getCairoFullDateTime(lang);
+  const snapshotTime = getEgxSnapshotTime(data);
+  const snapshotLineEn = snapshotTime ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
+  const snapshotLineAr = snapshotTime ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
 
   // أسعار البنك المركزي وأعلى بنك كبديل لحظي
   const cbeBuy = Number(data.cbe_usd_buy || 52.22);
@@ -1108,11 +1253,17 @@ function formatExecutiveReport(data, lang, curr) {
   let foAmountEn = "", foAmountAr = "";
   let gold24StrEn = "", gold24StrAr = "";
   let brentStrEn = "", brentStrAr = "";
+  let breakdownEn = "", breakdownAr = "";
 
   if (curr === "usd") {
     const foUsd = Math.round(foNet / usdRate);
     foAmountEn = (foUsd >= 0 ? "+$" : "-$") + Math.abs(foUsd).toLocaleString("en-US");
     foAmountAr = (foUsd >= 0 ? "+$" : "-$") + Math.abs(foUsd).toLocaleString("en-US");
+
+    if (foBuy > 0 || foSell > 0) {
+      breakdownEn = `  ▫️ Buy: $${Math.round(foBuy / usdRate).toLocaleString("en-US")} • Sell: $${Math.round(foSell / usdRate).toLocaleString("en-US")}\n`;
+      breakdownAr = `  ▫️ مشتريات: $${Math.round(foBuy / usdRate).toLocaleString("en-US")} • مبيعات: $${Math.round(foSell / usdRate).toLocaleString("en-US")}\n`;
+    }
 
     gold24StrEn = `$${Number(gold24.usd_price).toFixed(2)}`;
     gold24StrAr = `$${Number(gold24.usd_price).toFixed(2)}`;
@@ -1122,6 +1273,11 @@ function formatExecutiveReport(data, lang, curr) {
   } else {
     foAmountEn = (foNet >= 0 ? "+" : "-") + Math.abs(foNet).toLocaleString("en-US") + " EGP";
     foAmountAr = (foNet >= 0 ? "+" : "-") + Math.abs(foNet).toLocaleString("en-US") + " ج.م";
+
+    if (foBuy > 0 || foSell > 0) {
+      breakdownEn = `  ▫️ Buy: ${foBuy.toLocaleString("en-US")} • Sell: ${foSell.toLocaleString("en-US")}\n`;
+      breakdownAr = `  ▫️ مشتريات: ${foBuy.toLocaleString("en-US")} • مبيعات: ${foSell.toLocaleString("en-US")}\n`;
+    }
 
     gold24StrEn = `${Math.round(gold24.egp_price || (gold24.usd_price * usdRate)).toLocaleString("en-US")} EGP`;
     gold24StrAr = `${Math.round(gold24.egp_price || (gold24.usd_price * usdRate)).toLocaleString("en-US")} ج.م`;
@@ -1135,12 +1291,14 @@ function formatExecutiveReport(data, lang, curr) {
   if (lang === "en") {
     return `📊 <b>Executive Financial Summary</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `🕒 <b>${updatedDateTime}</b>\n`
-      + `💱 Currency: <b>${currBadge}</b>\n`
+      + `🕒 Query: <b>${updatedDateTime}</b>`
+      + snapshotLineEn + `\n`
+      + `📅 Session: <b>${sessionDate}</b> • Currency: <b>${currBadge}</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
-      + `🏛️ <b>Foreign Institutional Flows (${sessionDate}):</b>\n`
+      + `🏛️ <b>Foreign Institutional Flows:</b>\n`
       + `  ▫️ <b>Status:</b> ${foStatusEn}\n`
-      + `  ▫️ <b>Net Flow:</b> <b>${foAmountEn}</b>\n\n`
+      + `  ▫️ <b>Net Flow:</b> <b>${foAmountEn}</b>\n`
+      + breakdownEn + `\n`
       + `━━━━━━━━━━━━━━━━━━\n`
       + `💵 <b>USD Exchange Rates:</b>\n`
       + `  ▫️ <b>Central Bank (CBE):</b> Buy <b>${cbeBuy.toFixed(4)}</b> - Sell <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
@@ -1153,15 +1311,17 @@ function formatExecutiveReport(data, lang, curr) {
 
   return `📊 <b>التقرير المالي التنفيذي الشامل</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `🕒 <b>${updatedDateTime}</b>\n`
-    + `💱 العملة: <b>${currBadge}</b>\n`
+    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
+    + snapshotLineAr + `\n`
+    + `📅 تاريخ الجلسة: <b>${sessionDate}</b> • العملة: <b>${currBadge}</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `🏛️ <b>صافي تدفقات المؤسسات الأجنبية (${sessionDate}):</b>\n`
-    + `▫️ <b>الحالة:</b> ${foStatusAr}\n`
-    + `▫️ <b>صافي السيولة:</b> <b>${foAmountAr}</b>\n\n`
+    + `🏛️ <b>صافي تدفقات المؤسسات الأجنبية:</b>\n`
+    + `  ▫️ <b>الحالة:</b> ${foStatusAr}\n`
+    + `  ▫️ <b>صافي السيولة:</b> <b>${foAmountAr}</b>\n`
+    + breakdownAr + `\n`
     + `━━━━━━━━━━━━━━━━━━\n`
     + `💵 <b>أسعار صرف الدولار:</b>\n`
-    + `▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> - بيع <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
+    + `  ▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> - بيع <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
     + bankPeakLineAr + `\n\n`
     + `━━━━━━━━━━━━━━━━━━\n`
     + `🪙 <b>ذهب عيار 24 (جرام):</b> <b>${gold24StrAr}</b>\n`
