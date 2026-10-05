@@ -202,44 +202,51 @@ def sync_to_google_sheets(webhook_url: Optional[str] = None, sb: str = "1") -> D
             "message": "لم يتم ضبط رابط Google Apps Script Webhook. يرجى إدخال الرابط أولاً."
         }
 
-    try:
-        data = prepare_google_sheets_data(sb=sb)
-        resp = requests.post(
-            target_url,
-            json=data,
-            headers={"Content-Type": "application/json"},
-            allow_redirects=True,
-            timeout=60
-        )
-        
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if resp.status_code == 200:
-            config["last_sync_time"] = now_str
-            config["last_sync_status"] = "success"
-            config["last_sync_message"] = "تمت المزامنة بنجاح مع كافة تبويبات Google Sheets"
-            save_google_config(config)
-            return {
-                "status": "success",
-                "message": "تم تحديث كافة تبويبات Google Sheets بنجاح! 📊",
-                "synced_at": now_str,
-                "archive_count": len(data["archive"]),
-                "rates_count": len(data["rates"]),
-                "banks_count": len(data["banks"])
-            }
-        else:
-            err_msg = f"استجابة غير متوقعة من Google Sheets (كود {resp.status_code})"
-            config["last_sync_time"] = now_str
-            config["last_sync_status"] = "error"
-            config["last_sync_message"] = err_msg
-            save_google_config(config)
-            return {"status": "error", "message": err_msg}
+    for attempt in range(2):
+        try:
+            data = prepare_google_sheets_data(sb=sb)
+            resp = requests.post(
+                target_url,
+                json=data,
+                headers={"Content-Type": "application/json"},
+                allow_redirects=True,
+                timeout=90
+            )
             
-    except requests.exceptions.Timeout:
-        err_msg = "انتهت مهلة الاتصال بخادم Google (Timeout). تأكد من صحة رابط الـ Webhook ونشره بشكل سليم."
-        return {"status": "error", "message": err_msg}
-    except Exception as e:
-        err_msg = f"فشل الاتصال بـ Google Sheets: {str(e)}"
-        return {"status": "error", "message": err_msg}
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            if resp.status_code == 200:
+                config["last_sync_time"] = now_str
+                config["last_sync_status"] = "success"
+                config["last_sync_message"] = "تمت المزامنة بنجاح مع كافة تبويبات Google Sheets"
+                save_google_config(config)
+                return {
+                    "status": "success",
+                    "message": "تم تحديث كافة تبويبات Google Sheets بنجاح! 📊",
+                    "synced_at": now_str,
+                    "archive_count": len(data["archive"]),
+                    "rates_count": len(data["rates"]),
+                    "banks_count": len(data["banks"])
+                }
+            else:
+                err_msg = f"استجابة غير متوقعة من Google Sheets (كود {resp.status_code})"
+                config["last_sync_time"] = now_str
+                config["last_sync_status"] = "error"
+                config["last_sync_message"] = err_msg
+                save_google_config(config)
+                return {"status": "error", "message": err_msg}
+                
+        except requests.exceptions.Timeout:
+            if attempt == 0:
+                time.sleep(3)
+                continue
+            err_msg = "انتهت مهلة الاتصال بخادم Google (Timeout). تأكد من صحة رابط الـ Webhook ونشره بشكل سليم."
+            return {"status": "error", "message": err_msg}
+        except Exception as e:
+            if attempt == 0:
+                time.sleep(3)
+                continue
+            err_msg = f"فشل الاتصال بـ Google Sheets: {str(e)}"
+            return {"status": "error", "message": err_msg}
 
 
 def generate_archive_csv(sb: str = "1") -> str:

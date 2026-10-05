@@ -382,7 +382,6 @@ function updateInstitutionsArchiveSheet(ss, archive) {
   if (!ss) return;
   if (!archive || archive.length === 0) return;
   var sheet = getOrCreateSheet(ss, "🏛️ تعاملات المؤسسات - البورصة المصرية", ["تعاملات البورصة المصرية", "البورصة المصرية", "أرشيف", "EGX"]);
-  sheet.clear();
   sheet.setRightToLeft(true);
 
   var headers = [
@@ -394,19 +393,54 @@ function updateInstitutionsArchiveSheet(ss, archive) {
     "صافي المؤسسات الإجمالي ($)"
   ];
 
-  var rows = [headers];
+  // دمج الجلسات السابقة المخزنة بالشيت لضمان عدم ضياع أي يوم تاريخي
+  var existingMap = {};
+  if (sheet.getLastRow() >= 2) {
+    var oldVals = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues();
+    oldVals.forEach(function(r) {
+      var d = r[0];
+      var dStr = "";
+      if (d instanceof Date) {
+        dStr = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+      } else {
+        dStr = String(d || "").split("T")[0].split(" ")[0].trim();
+      }
+      var seg = String(r[1] || "").trim();
+      if (dStr) {
+        existingMap[dStr + "_" + seg] = [
+          dStr, seg, Number(r[2] || 51.88),
+          Number(r[3] || 0), Number(r[4] || 0), Number(r[5] || 0),
+          Number(r[6] || 0), Number(r[7] || 0), Number(r[8] || 0),
+          Number(r[9] || 0), Number(r[10] || 0), Number(r[11] || 0),
+          Number(r[12] || 0), Number(r[13] || 0), Number(r[14] || 0),
+          Number(r[15] || 0)
+        ];
+      }
+    });
+  }
+
+  // تحديث / إضافة الجلسات الواردة
   archive.forEach(function(r) {
-    rows.push([
-      r.date, r.segment, Number(r.usd_rate || 51.88),
-      Number(r.egypt_buy_egp || 0), Number(r.egypt_sell_egp || 0), Number(r.egypt_net_egp || 0),
-      Number(r.arab_buy_egp || 0), Number(r.arab_sell_egp || 0), Number(r.arab_net_egp || 0),
-      Number(r.foreign_buy_egp || 0), Number(r.foreign_sell_egp || 0), Number(r.foreign_net_egp || 0),
-      Number(r.total_buy_egp || 0), Number(r.total_sell_egp || 0), Number(r.total_net_egp || 0),
-      Number(r.total_net_usd || 0)
-    ]);
+    var dStr = String(r.date || "").split("T")[0].split(" ")[0].trim();
+    var seg = String(r.segment || "").trim();
+    if (dStr) {
+      existingMap[dStr + "_" + seg] = [
+        dStr, seg, Number(r.usd_rate || 51.88),
+        Number(r.egypt_buy_egp || 0), Number(r.egypt_sell_egp || 0), Number(r.egypt_net_egp || 0),
+        Number(r.arab_buy_egp || 0), Number(r.arab_sell_egp || 0), Number(r.arab_net_egp || 0),
+        Number(r.foreign_buy_egp || 0), Number(r.foreign_sell_egp || 0), Number(r.foreign_net_egp || 0),
+        Number(r.total_buy_egp || 0), Number(r.total_sell_egp || 0), Number(r.total_net_egp || 0),
+        Number(r.total_net_usd || 0)
+      ];
+    }
   });
 
-  sheet.getRange(1, 1, rows.length, headers.length).setValues(rows);
+  var allRows = Object.values(existingMap);
+  allRows.sort(function(a, b) { return String(b[0]).localeCompare(String(a[0])); });
+
+  sheet.clear();
+  var out = [headers].concat(allRows);
+  sheet.getRange(1, 1, out.length, headers.length).setValues(out);
   sheet.setFrozenRows(1);
 }
 
