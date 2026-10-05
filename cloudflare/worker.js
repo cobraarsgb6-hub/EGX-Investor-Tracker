@@ -158,6 +158,18 @@ function getCairoFullDateTime(lang) {
   return `${dateStrAr} • ${timeAr} بتوقيت مصر`;
 }
 
+function extractTimeFromTimestamp(ts) {
+  if (!ts) return getCairoTimeStr().slice(0, 5);
+  try {
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hour12: false });
+    }
+  } catch(e) {}
+  const match = String(ts).match(/(\d{1,2}):(\d{2})/);
+  return match ? `${match[1].padStart(2, "0")}:${match[2]}` : getCairoTimeStr().slice(0, 5);
+}
+
 function formatCleanTime(val, lang) {
   if (!val) return format12HourTime(getCairoTimeStr(), lang);
   const s = String(val).trim();
@@ -561,20 +573,20 @@ async function getCachedDashboardData() {
   const cbeSell = (ta3weemCbe && ta3weemCbe.sell) ? ta3weemCbe.sell
                 : (sheetData.cbe_usd_sell ? Number(sheetData.cbe_usd_sell) : 52.36);
   const cbeTime = (ta3weemCbe && ta3weemCbe.updated_at) ? ta3weemCbe.updated_at
-                : (sheetData.timestamp ? sheetData.timestamp.split(" ")[1]?.slice(0, 5) : "12:07");
+                : (sheetData.cbe_updated_at || extractTimeFromTimestamp(sheetData.timestamp));
 
   // اعتماد سعر تعويم كافتراضي رسمي للدولار
-  const usdRate = Number(sheetData.usd_rate || cbeBuy || 52.29);
+  const usdRate = Number(sheetData.usd_rate || cbeBuy || 52.42);
 
   const defaultBanks = [
-    { bank: "كريدي أجريكول (CA)", buy: 52.37, sell: 52.47, updated_at: liveClock },
-    { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.35, sell: 52.45, updated_at: liveClock },
-    { bank: "بنك الشركة المصرفية (saib)", buy: 52.30, sell: 52.40, updated_at: liveClock },
-    { bank: "الأهلي الكويتي (ABK)", buy: 52.27, sell: 52.33, updated_at: liveClock },
-    { bank: "البنك الأهلي المصري (NBE)", buy: 52.25, sell: 52.35, updated_at: liveClock },
-    { bank: "البنك التجاري الدولي (CIB)", buy: 52.25, sell: 52.35, updated_at: liveClock },
-    { bank: "بنك مصر (BM)", buy: 52.25, sell: 52.35, updated_at: liveClock },
-    { bank: "بنك الإسكندرية (ALEXBANK)", buy: 52.25, sell: 52.35, updated_at: liveClock }
+    { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.42, sell: 52.52, updated_at: liveClock },
+    { bank: "الأهلي الكويتي (ABK)", buy: 52.42, sell: 52.52, updated_at: liveClock },
+    { bank: "بنك نكست (NXT)", buy: 52.42, sell: 52.52, updated_at: liveClock },
+    { bank: "الكويت الوطني (NBK)", buy: 52.42, sell: 52.52, updated_at: liveClock },
+    { bank: "قناة السويس (SCB)", buy: 52.40, sell: 52.50, updated_at: liveClock },
+    { bank: "كريدي أجريكول (CA)", buy: 52.38, sell: 52.48, updated_at: liveClock },
+    { bank: "البنك التجاري الدولي (CIB)", buy: 52.35, sell: 52.45, updated_at: liveClock },
+    { bank: "البنك الأهلي المصري (NBE)", buy: 52.35, sell: 52.45, updated_at: liveClock }
   ];
   let banks = (ta3weemBanks && ta3weemBanks.length > 0)
     ? ta3weemBanks
@@ -1112,7 +1124,9 @@ function formatEgxHistoryReport(data, lang, curr) {
   const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
   const updatedDateTime = getCairoFullDateTime(lang);
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
-  const archive = (data.archive && Array.isArray(data.archive)) ? data.archive : [];
+  const rawArchive = (data.archive && Array.isArray(data.archive)) ? data.archive : [];
+  // الأرشيف المعتمد يبدأ حصراً من بداية شهر أكتوبر 2026 فصاعداً
+  const archive = rawArchive.filter(s => s && s.date && s.date >= "2026-10-01");
 
   const fmtNet = (v, sessionUsd) => {
     const n = Number(v) || 0;
@@ -1132,13 +1146,13 @@ function formatEgxHistoryReport(data, lang, curr) {
       return `📜 <b>EGX Daily Closings Archive</b>\n`
         + `━━━━━━━━━━━━━━━━━━\n`
         + `🕒 Query: <b>${updatedDateTime}</b>\n\n`
-        + `⚠️ <i>No archived sessions recorded yet.</i>\n`
+        + `⚠️ <i>No archived sessions recorded yet for October 2026.</i>\n`
         + `Sessions will appear automatically upon market closing.`;
     }
     return `📜 <b>أرشيف الإقفالات اليومية - البورصة المصرية</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
       + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n\n`
-      + `⚠️ <i>لا توجد جلسات إقفال مؤرشفة حتى الآن.</i>\n`
+      + `⚠️ <i>لا توجد جلسات إقفال مؤرشفة لشهر أكتوبر حتى الآن.</i>\n`
       + `سيتم تسجيل الجلسات تلقائياً فور اعتماد الإقفال اليومي.`;
   }
 
@@ -1347,7 +1361,7 @@ function formatBanksReport(data, lang, cfg) {
 
   const usdBuy = Number(data.cbe_usd_buy || 52.22);
   const usdSell = Number(data.cbe_usd_sell || 52.36);
-  const cbeTime = formatCleanTime(data.cbe_updated_at || "12:07", lang);
+  const cbeTime = formatCleanTime(data.cbe_updated_at || extractTimeFromTimestamp(data.timestamp), lang);
   const updatedDateTime = getCairoFullDateTime(lang);
   const bankSnapshot = getBankSnapshotTime(data, lang);
   const snapshotLineEn = bankSnapshot ? `\n📸 Rates Snapshot: <b>[${bankSnapshot}]</b>` : "";
@@ -1356,7 +1370,7 @@ function formatBanksReport(data, lang, cfg) {
   // ترتيب البنوك حسب أعلى سعر شراء
   banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
 
-  let topBuy = banks[0] || { bank: "كريدي أجريكول (CA)", buy: 52.37, sell: 52.47, updated_at: "12:07" };
+  let topBuy = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.42, sell: 52.52, updated_at: getCairoTimeStr() };
   const topBuyTime = formatCleanTime(topBuy.updated_at, lang);
   const topBankNameEn = getBankName(topBuy.bank, "en");
 
@@ -1472,7 +1486,7 @@ function formatExecutiveReport(data, lang, curr) {
 
   const bNameEn = getBankName(topBank.bank, "en");
   const bTime = formatCleanTime(topBank.updated_at, lang);
-  const cbeTime = formatCleanTime(data.cbe_updated_at || "16:21", lang);
+  const cbeTime = formatCleanTime(data.cbe_updated_at || extractTimeFromTimestamp(data.timestamp), lang);
   const bankPeakLineEn = `\n  ▫️ <b>Top Buy Bank:</b> ${bNameEn} • Buy <b>${Number(topBank.buy).toFixed(2)}</b> • Sell <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
   const bankPeakLineAr = `\n  ▫️ <b>أعلى بنك شراء:</b> ${topBank.bank} • شراء <b>${Number(topBank.buy).toFixed(2)}</b> • بيع <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
 
