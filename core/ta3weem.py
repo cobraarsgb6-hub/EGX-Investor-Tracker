@@ -3,6 +3,7 @@ import json
 import os
 import re
 from typing import Dict, Any, List
+from datetime import datetime, timezone, timedelta
 from curl_cffi import requests
 from lxml import html
 
@@ -194,6 +195,7 @@ def fetch_ta3weem_data(force_refresh: bool = False) -> Dict[str, Any]:
     avg_rate = existing_cache.get("avg_rate", 52.12)
     nbe_rate = existing_cache.get("usd_rate", 52.07)
 
+    banks_scraped_ok = False
     if should_scrape_ta3weem:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -314,8 +316,18 @@ def fetch_ta3weem_data(force_refresh: bool = False) -> Dict[str, Any]:
 
         # 2. Scrape specific USD Bank Rates
         try:
-            usd_resp = requests.get("https://ta3weem.com/ar/currency-exchange-rates/USD-EGP", headers=headers, impersonate="chrome124", timeout=8)
-            if usd_resp.status_code == 200:
+            usd_resp = None
+            for prof in ("chrome124", "safari17_0", "chrome131", "edge101", "firefox133"):
+                try:
+                    usd_resp = requests.get("https://ta3weem.com/ar/currency-exchange-rates/USD-EGP", headers=headers, impersonate=prof, timeout=10)
+                    if usd_resp.status_code == 200 and "<table" in usd_resp.text:
+                        print(f"[Ta3weem] ✅ Bank page OK via {prof}")
+                        break
+                    print(f"[Ta3weem] {prof} -> HTTP {usd_resp.status_code}")
+                except Exception as e_p:
+                    print(f"[Ta3weem] {prof} error: {e_p}")
+                time.sleep(1.5)
+            if usd_resp is not None and usd_resp.status_code == 200:
                 utree = html.fromstring(usd_resp.text)
                 tables = utree.xpath('//table')
                 if tables:
@@ -346,12 +358,17 @@ def fetch_ta3weem_data(force_refresh: bool = False) -> Dict[str, Any]:
                                 })
                     if scraped_banks:
                         banks = scraped_banks
+                        banks_scraped_ok = True
                         highest_buy = max(b["buy"] for b in banks)
                         lowest_sell = min(b["sell"] for b in banks)
                         avg_rate = round(sum(b["buy"] for b in banks) / len(banks), 2)
                         nbe_rate = next((b["buy"] for b in banks if "الأهلي المصري" in b["bank"]), banks[0]["buy"])
+            else:
+                print(f"[Ta3weem] ❌ Bank page blocked/failed: HTTP {usd_resp.status_code}")
         except Exception as e:
             print(f"[Ta3weem] Bank rates scrape note: {e}")
+        if not banks_scraped_ok:
+            print("[Ta3weem] ⚠️ STALE: bank rates NOT refreshed, keeping previous snapshot from", existing_cache.get("banks_scraped_at_str"))
 
     # Fallbacks for banks if empty
     if not banks:
@@ -391,6 +408,8 @@ def fetch_ta3weem_data(force_refresh: bool = False) -> Dict[str, Any]:
         "cached_at": now,
         "ta3weem_scraped_at": now if should_scrape_ta3weem else existing_cache.get("ta3weem_scraped_at", now),
         "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "banks_fresh": banks_scraped_ok,
+        "banks_scraped_at_str": (datetime.now(timezone.utc) + timedelta(hours=3)).strftime("%H:%M") if banks_scraped_ok else existing_cache.get("banks_scraped_at_str", ""),
         "source": "البنك المركزي المصري (CBE) + منصات الطاقة والكريبتو العالمية",
         "source_url": "https://www.cbe.org.eg/ar",
         "cbe_official": cbe_data,

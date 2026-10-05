@@ -159,13 +159,14 @@ def prepare_google_sheets_data(sb: str = "1") -> Dict[str, Any]:
 
     # 3. Banks (Sorted descending by highest purchase price)
     banks = []
+    real_bank_time = ta3weem.get("banks_scraped_at_str") or ""
     for b in ta3weem.get("banks", []):
         banks.append({
             "bank": b.get("bank", ""),
             "buy": float(b.get("buy", 0)),
             "sell": float(b.get("sell", 0)),
             "avg": float(b.get("avg", 0)),
-            "updated_at": b.get("updated_at") or cairo_now.strftime("%H:%M")
+            "updated_at": b.get("updated_at") or real_bank_time or "قديم"
         })
     banks.sort(key=lambda x: x["buy"], reverse=True)
 
