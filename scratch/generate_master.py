@@ -1,4 +1,12 @@
-/**
+# -*- coding: utf-8 -*-
+"""
+Generator script to build core/google_apps_script_master.js with 4 visual themes,
+periodic weekly/monthly totals starting from Sunday & October 1st,
+executive summary tab, and interactive web dashboard.
+"""
+
+def generate_script():
+    js_code = r'''/**
  * =========================================================================
  * 🏛️ EGX INVESTOR TRACKER & GLOBAL MARKETS - GOOGLE APPS SCRIPT (MASTER V3)
  * منظومة تتبع البورصة المصرية (المؤسسات) وأسواق الصرف والسلع الحية
@@ -1119,3 +1127,11 @@ function renderDashboardHtml() {
 '</body>' +
 '</html>';
 }
+'''
+    return js_code
+
+if __name__ == "__main__":
+    code = generate_script()
+    with open("core/google_apps_script_master.js", "w", encoding="utf-8") as f:
+        f.write(code)
+    print(f"Successfully generated core/google_apps_script_master.js ({len(code)} characters)")
