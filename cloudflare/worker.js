@@ -835,6 +835,12 @@ function formatEgxReport(data, lang, curr) {
   };
 
   const updatedDateTime = getCairoFullDateTime(lang);
+  const snapshotTime = (data.archive && data.archive[0]?.created_at)
+    ? formatCleanTime(data.archive[0].created_at)
+    : (data.timestamp ? formatCleanTime(data.timestamp.split(" ")[1]) : "");
+
+  const snapshotLineEn = snapshotTime ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
+  const snapshotLineAr = snapshotTime ? `\n📸 وقت رصد الجلسة: <b>[${snapshotTime}]</b>` : "";
 
   const egStatusEn = egNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
   const arStatusEn = arNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
@@ -849,7 +855,8 @@ function formatEgxReport(data, lang, curr) {
   if (lang === "en") {
     return `🏛️ <b>Egyptian Stock Exchange (EGX) Flows</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `🕒 <b>${updatedDateTime}</b>\n`
+      + `🕒 Query: <b>${updatedDateTime}</b>`
+      + snapshotLineEn + `\n`
       + `📅 Session: <b>${sessionDate}</b> • Currency: <b>${currBadge}</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
       + `▫️ <b>Egyptians:</b> ${egStatusEn}\n`
@@ -863,7 +870,8 @@ function formatEgxReport(data, lang, curr) {
 
   return `🏛️ <b>صافي تعاملات البورصة المصرية (EGX)</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `🕒 <b>${updatedDateTime}</b>\n`
+    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
+    + snapshotLineAr + `\n`
     + `📅 تاريخ الجلسة: <b>${sessionDate}</b> • العملة: <b>${currBadge}</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
     + `▫️ <b>المصريين:</b> ${egStatusAr}\n`
