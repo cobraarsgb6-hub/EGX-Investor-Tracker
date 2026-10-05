@@ -166,10 +166,17 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  return HtmlService.createHtmlOutput(renderDashboardHtml())
-    .setTitle("منظومة البورصة المصرية وأسواق الصرف | EGX Institutions Tracker")
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag("viewport", "width=device-width, initial-scale=1");
+  try {
+    return HtmlService.createHtmlOutputFromFile("Index")
+      .setTitle("منظومة البورصة المصرية وأسواق الصرف | EGX Institutions Tracker")
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag("viewport", "width=device-width, initial-scale=1");
+  } catch (err) {
+    return HtmlService.createHtmlOutput(renderDashboardHtml())
+      .setTitle("منظومة البورصة المصرية وأسواق الصرف | EGX Institutions Tracker")
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag("viewport", "width=device-width, initial-scale=1");
+  }
 }
 
 function doPost(e) {
