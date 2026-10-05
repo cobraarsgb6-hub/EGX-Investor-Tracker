@@ -1,7 +1,7 @@
 {
-  "cached_at": 1791204061.359877,
-  "ta3weem_scraped_at": 1791204060.0429387,
-  "updated_at": "2026-10-05 12:41:02",
+  "cached_at": 1791204371.1047165,
+  "ta3weem_scraped_at": 1791204368.9875293,
+  "updated_at": "2026-10-05 12:46:12",
   "source": "البنك المركزي المصري (CBE) + منصات الطاقة والكريبتو العالمية",
   "source_url": "https://www.cbe.org.eg/ar",
   "cbe_official": {
@@ -325,24 +325,24 @@
       "code": "BRENT",
       "icon": "🛢️",
       "unit": "$/برميل",
-      "usd_price": 102.61,
-      "usd_price_formatted": "$102.61",
-      "change_24h": "+0.35%",
+      "usd_price": 102.51,
+      "usd_price_formatted": "$102.51",
+      "change_24h": "+0.25%",
       "is_positive": true,
-      "egp_price": 5380.0,
-      "egp_price_formatted": "5,380 ج.م"
+      "egp_price": 5374.75,
+      "egp_price_formatted": "5,375 ج.م"
     },
     {
       "name": "خام غرب تكساس (WTI)",
       "code": "WTI",
       "icon": "⚡",
       "unit": "$/برميل",
-      "usd_price": 90.44,
-      "usd_price_formatted": "$90.44",
-      "change_24h": "-0.74%",
+      "usd_price": 90.26,
+      "usd_price_formatted": "$90.26",
+      "change_24h": "-0.93%",
       "is_positive": false,
-      "egp_price": 4741.9,
-      "egp_price_formatted": "4,742 ج.م"
+      "egp_price": 4732.47,
+      "egp_price_formatted": "4,732 ج.م"
     }
   ]
 }
