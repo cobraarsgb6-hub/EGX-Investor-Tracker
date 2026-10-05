@@ -726,6 +726,8 @@ async function handleTelegramUpdate(update, originUrl) {
         content = formatCommoditiesReport(data, targetLang, newCurr);
       } else if (cmdType === "egx") {
         content = formatEgxReport(data, targetLang, newCurr);
+      } else if (cmdType === "history" || cmdType === "archive") {
+        content = formatEgxHistoryReport(data, targetLang, newCurr);
       } else if (cmdType === "currencies" || cmdType === "markets") {
         content = formatCurrenciesReport(data, targetLang, newCurr);
       }
@@ -757,6 +759,8 @@ async function handleTelegramUpdate(update, originUrl) {
         content = formatExecutiveReport(data, targetLang, targetCurr);
       } else if (target === "egx") {
         content = formatEgxReport(data, targetLang, targetCurr);
+      } else if (target === "history" || target === "archive") {
+        content = formatEgxHistoryReport(data, targetLang, targetCurr);
       } else if (target === "banks") {
         content = formatBanksReport(data, targetLang, cfg);
       } else if (target === "banks_all") {
@@ -782,6 +786,9 @@ async function handleTelegramUpdate(update, originUrl) {
     if (text === "cmd_egx") {
       const data = await getCachedDashboardData();
       await reply(formatEgxReport(data, lang, curr), getReportKeyboard("egx", lang, cfg, curr));
+    } else if (text === "cmd_history" || text === "cmd_archive") {
+      const data = await getCachedDashboardData();
+      await reply(formatEgxHistoryReport(data, lang, curr), getReportKeyboard("history", lang, cfg, curr));
     } else if (text === "cmd_banks") {
       const data = await getCachedDashboardData();
       await reply(formatBanksReport(data, lang, cfg), getReportKeyboard("banks", lang, cfg, curr));
@@ -804,6 +811,7 @@ async function handleTelegramUpdate(update, originUrl) {
   }
 
   const lower = text.toLowerCase();
+  const isHistory = lower === "/history" || lower === "/archive" || lower.includes("ارشيف") || lower.includes("أرشيف") || lower.includes("اقفال") || lower.includes("إقفال");
   const isCommodities = lower === "/commodities" || lower === "/gold" || lower === "/oil" || lower === "/crypto" ||
     lower.includes("ذهب") || lower.includes("نفط") || lower.includes("بنزين") || lower.includes("بترول") || lower.includes("كريبتو") || lower.includes("سلع");
   const isCurrencies = lower === "/currencies" || lower === "/rates" || lower.includes("عملات") || lower.includes("عملة") || lower.includes("اسعار الصرف");
@@ -814,6 +822,9 @@ async function handleTelegramUpdate(update, originUrl) {
 
   if (isMenu) {
     await sendMainMenu(chatId, lang, originUrl, cfg);
+  } else if (isHistory) {
+    const data = await getCachedDashboardData();
+    await sendTgMessage(chatId, formatEgxHistoryReport(data, lang, curr), getReportKeyboard("history", lang, cfg, curr));
   } else if (isCommodities) {
     const data = await getCachedDashboardData();
     await sendTgMessage(chatId, formatCommoditiesReport(data, lang, curr), getReportKeyboard("commodities", lang, cfg, curr));
@@ -986,6 +997,107 @@ function formatEgxReport(data, lang, curr) {
     txtAr += `   • مشتريات: ${fmtVal(foBuy)} • مبيعات: ${fmtVal(foSell)}\n`;
   }
   return txtAr + `\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
+}
+
+/**
+ * 1.1 تقرير أرشيف الإقفالات اليومية للبورصة المصرية (EGX Historical Closings)
+ */
+function formatEgxHistoryReport(data, lang, curr) {
+  curr = curr || "usd";
+  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
+  const updatedDateTime = getCairoFullDateTime(lang);
+  const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
+  const archive = (data.archive && Array.isArray(data.archive)) ? data.archive : [];
+
+  const fmtNet = (v, sessionUsd) => {
+    const n = Number(v) || 0;
+    const rate = Number(sessionUsd) || usdRate;
+    const sign = n >= 0 ? "+" : "-";
+    if (curr === "usd") {
+      const u = Math.round(n / rate);
+      const uSign = u >= 0 ? "+" : "-";
+      return `${LRM}${uSign}$${Math.abs(u).toLocaleString("en-US")}${LRM}`;
+    }
+    const unit = lang === "en" ? " EGP" : " ج.م";
+    return `${LRM}${sign}${Math.abs(n).toLocaleString("en-US")}${LRM}${unit}`;
+  };
+
+  if (archive.length === 0) {
+    if (lang === "en") {
+      return `📜 <b>EGX Daily Closings Archive</b>\n`
+        + `━━━━━━━━━━━━━━━━━━\n`
+        + `🕒 Query: <b>${updatedDateTime}</b>\n\n`
+        + `⚠️ <i>No archived sessions recorded yet.</i>\n`
+        + `Sessions will appear automatically upon market closing.`;
+    }
+    return `📜 <b>أرشيف الإقفالات اليومية - البورصة المصرية</b>\n`
+      + `━━━━━━━━━━━━━━━━━━\n`
+      + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n\n`
+      + `⚠️ <i>لا توجد جلسات إقفال مؤرشفة حتى الآن.</i>\n`
+      + `سيتم تسجيل الجلسات تلقائياً فور اعتماد الإقفال اليومي.`;
+  }
+
+  const sessions = archive.slice(0, 7);
+
+  if (lang === "en") {
+    let txt = `📜 <b>EGX Daily Closings Archive</b>\n`
+      + `━━━━━━━━━━━━━━━━━━\n`
+      + `🕒 Query: <b>${updatedDateTime}</b>\n`
+      + `📅 Archive: <b>Last ${sessions.length} Sessions</b> • Currency: <b>${currBadge}</b>\n`
+      + `━━━━━━━━━━━━━━━━━━\n\n`;
+
+    sessions.forEach((s, idx) => {
+      const e = s.egypt_net !== undefined ? s.egypt_net : (s.egypt_net_egp || 0);
+      const a = s.arab_net !== undefined ? s.arab_net : (s.arab_net_egp || 0);
+      const f = s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0);
+      const tot = s.total_net !== undefined ? s.total_net : (s.total_net_egp || (Number(e) + Number(a) + Number(f)));
+      const sUsd = Number(s.usd_rate || usdRate);
+
+      const fDot = Number(f) >= 0 ? "🟢" : "🔴";
+      const aDot = Number(a) >= 0 ? "🟢" : "🔴";
+      const eDot = Number(e) >= 0 ? "🟢" : "🔴";
+      const totDot = Number(tot) >= 0 ? "🟢" : "🔴";
+
+      const sessionTag = idx === 0 ? " <i>(Latest)</i>" : "";
+
+      txt += `📅 <b>Session: ${s.date}</b>${sessionTag}\n`
+        + `   ▫️ Foreigners: ${fDot} <b>${fmtNet(f, sUsd)}</b>\n`
+        + `   ▫️ Arabs: ${aDot} <b>${fmtNet(a, sUsd)}</b>\n`
+        + `   ▫️ Egyptians: ${eDot} <b>${fmtNet(e, sUsd)}</b>\n`
+        + `   ▪️ <b>Total Net:</b> ${totDot} <b>${fmtNet(tot, sUsd)}</b>\n\n`;
+    });
+
+    return txt + `🔒 <i>Officially recorded historical closing flows from EGX Terminal.</i>`;
+  }
+
+  let txtAr = `📜 <b>أرشيف الإقفالات اليومية - البورصة المصرية</b>\n`
+    + `━━━━━━━━━━━━━━━━━━\n`
+    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
+    + `📅 السجل: <b>آخر ${sessions.length} جلسات</b> • العملة: <b>${currBadge}</b>\n`
+    + `━━━━━━━━━━━━━━━━━━\n\n`;
+
+  sessions.forEach((s, idx) => {
+    const e = s.egypt_net !== undefined ? s.egypt_net : (s.egypt_net_egp || 0);
+    const a = s.arab_net !== undefined ? s.arab_net : (s.arab_net_egp || 0);
+    const f = s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0);
+    const tot = s.total_net !== undefined ? s.total_net : (s.total_net_egp || (Number(e) + Number(a) + Number(f)));
+    const sUsd = Number(s.usd_rate || usdRate);
+
+    const fDot = Number(f) >= 0 ? "🟢" : "🔴";
+    const aDot = Number(a) >= 0 ? "🟢" : "🔴";
+    const eDot = Number(e) >= 0 ? "🟢" : "🔴";
+    const totDot = Number(tot) >= 0 ? "🟢" : "🔴";
+
+    const sessionTag = idx === 0 ? " <i>(الأحدث)</i>" : "";
+
+    txtAr += `📅 <b>جلسة: ${s.date}</b>${sessionTag}\n`
+      + `   ▫️ الأجانب: ${fDot} <b>${fmtNet(f, sUsd)}</b>\n`
+      + `   ▫️ العرب: ${aDot} <b>${fmtNet(a, sUsd)}</b>\n`
+      + `   ▫️ المصريين: ${eDot} <b>${fmtNet(e, sUsd)}</b>\n`
+      + `   ▪️ <b>صافي المؤسسات:</b> ${totDot} <b>${fmtNet(tot, sUsd)}</b>\n\n`;
+  });
+
+  return txtAr + `🔒 <i>أرشيف رسمي موثق لجلسات الإقفال من شاشة البورصة المصرية.</i>`;
 }
 
 /**
@@ -1366,7 +1478,13 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
   rows.push([{ text: refreshText, callback_data: `refresh_${cmdType}:${lang}:${curr}` }]);
 
   // الصف الثاني: زر تبديل العملة للتقارير القابلة للتحويل أو التنقل بين البنوك
-  if (cmdType === "report" || cmdType === "egx") {
+  if (cmdType === "report") {
+    rows.push([{ text: currToggleText, callback_data: currToggleData }]);
+  } else if (cmdType === "egx") {
+    rows.push([{ text: (lang === "en" ? "📜 Daily Closings Archive" : "📜 أرشيف الإقفال اليومي"), callback_data: `cmd_history:${lang}:${curr}` }]);
+    rows.push([{ text: currToggleText, callback_data: currToggleData }]);
+  } else if (cmdType === "history" || cmdType === "archive") {
+    rows.push([{ text: (lang === "en" ? "🏛️ Back to EGX Live" : "🏛️ العودة للبورصة اللحظية"), callback_data: `cmd_egx:${lang}:${curr}` }]);
     rows.push([{ text: currToggleText, callback_data: currToggleData }]);
   } else if (cmdType === "banks") {
     rows.push([{ text: (lang === "en" ? "📋 View All 25 Banks" : "📋 عرض كافة الـ 25 بنكاً"), callback_data: `cmd_banks_all:${lang}` }]);
@@ -1397,9 +1515,10 @@ function getMenuKeyboard(lang, originUrl, cfg) {
   if (!cfg.hide_currencies) r2.push({ text: (lang === "en" ? "💵 Foreign Currencies" : "💵 أسعار العملات الأجنبية"), callback_data: `cmd_currencies:${lang}` });
   if (r2.length > 0) rows.push(r2);
 
-  if (!cfg.hide_report) {
-    rows.push([{ text: (lang === "en" ? "📊 Full Executive Report" : "📊 التقرير المالي الشامل"), callback_data: `cmd_report:${lang}` }]);
-  }
+  const r3 = [];
+  if (!cfg.hide_report) r3.push({ text: (lang === "en" ? "📊 Full Executive Report" : "📊 التقرير المالي الشامل"), callback_data: `cmd_report:${lang}` });
+  r3.push({ text: (lang === "en" ? "📜 Daily Closings" : "📜 أرشيف الإقفال اليومي"), callback_data: `cmd_history:${lang}` });
+  rows.push(r3);
 
   rows.push([
     { text: (lang === "en" ? "🔄 Refresh Menu" : "🔄 تحديث القائمة"), callback_data: `refresh_menu:${lang}` },
