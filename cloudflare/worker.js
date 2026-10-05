@@ -110,12 +110,12 @@ let sheetCache = {
   data: {
     archive: [
       {
-        date: "2026-10-01",
+        date: "2026-10-05",
         segment: "الأسهم والسندات والأذون (الإجمالي)",
-        usd_rate: 52.26,
-        egypt_net: -4118693655,
-        arab_net: -44947506,
-        foreign_net: 2888124033
+        usd_rate: 52.29,
+        egypt_net: 521112454,
+        arab_net: 658336787,
+        foreign_net: -1234399972
       }
     ],
     rates: [],
@@ -367,11 +367,12 @@ async function fetchTradingViewLiveMarket() {
     brent: 0, brent_chg: "+0.00%",
     wti: 0, wti_chg: "+0.00%",
     gold_ounce: 0, gold_chg: "+0.00%",
-    silver: 0, silver_chg: "+0.00%"
+    silver: 0, silver_chg: "+0.00%",
+    usd_egp: 0
   };
 
   try {
-    const [cryptoRes, cfdRes] = await Promise.all([
+    const [cryptoRes, cfdRes, forexRes] = await Promise.all([
       fetch("https://scanner.tradingview.com/crypto/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
@@ -385,6 +386,14 @@ async function fetchTradingViewLiveMarket() {
         headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
         body: JSON.stringify({
           symbols: { tickers: ["FX:UKOIL", "FX:USOIL", "TVC:GOLD", "TVC:SILVER"] },
+          columns: ["close", "change"]
+        })
+      }).catch(() => null),
+      fetch("https://scanner.tradingview.com/forex/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
+        body: JSON.stringify({
+          symbols: { tickers: ["FX_IDC:USDEGP"] },
           columns: ["close", "change"]
         })
       }).catch(() => null)
@@ -425,6 +434,16 @@ async function fetchTradingViewLiveMarket() {
         }
       });
     }
+
+    if (forexRes && forexRes.ok) {
+      const fxJ = await forexRes.json();
+      (fxJ.data || []).forEach(item => {
+        const val = item.d?.[0] ? parseFloat(item.d[0]) : 0;
+        if (item.s === "FX_IDC:USDEGP" && val > 0) {
+          result.usd_egp = val;
+        }
+      });
+    }
   } catch(e) {}
 
   // مسار احتياطي عبر Coinbase و Yahoo Finance في حال تعذر TradingView
@@ -456,7 +475,8 @@ async function fetchTradingViewLiveMarket() {
 }
 
 /**
- * جلب وتحديث كافة البيانات الحية سحابياً 100% مباشرة بدون جوجل شيت
+ * جلب وتحديث كافة البيانات الحية سحابياً 100%
+ * مصادر البيانات: شيت المزامنة (للبورصة المصرية وبنوك تعويم) + تريدنج فيو المباشر (للكريبتو والسلع)
  */
 async function getCachedDashboardData() {
   const now = Date.now();
@@ -466,29 +486,57 @@ async function getCachedDashboardData() {
 
   const liveClock = getCairoTimeStr();
 
-  // استدعاء متوازي للمصادر الحية الرسمية
+  // 1. تحديث بيانات الشيت عبر كاش 60 ثانية لجلب جلسات البورصة المصرية وأسعار بنوك تعويم
+  if (!sheetCache.timestamp || (now - sheetCache.timestamp > 60000)) {
+    try {
+      const sSignal = AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined;
+      const sRes = await fetch(DATA_API_URL, {
+        headers: { "User-Agent": "Cloudflare-Worker-EGX" },
+        signal: sSignal
+      });
+      if (sRes && sRes.ok) {
+        const sJson = await sRes.json();
+        if (sJson && ((sJson.archive && sJson.archive.length > 0) || (sJson.banks && sJson.banks.length > 0))) {
+          sheetCache.data = sJson;
+          sheetCache.timestamp = now;
+        }
+      }
+    } catch(eSheet) {}
+  }
+
+  const sheetData = sheetCache.data || {};
+
+  // 2. استدعاء متوازي للمصادر الحية (تريدنج فيو + محاولات تعويم المباشرة)
   const [ta3weemBanks, ta3weemCbe, tvMarket] = await Promise.all([
     fetchTa3weemLiveBanks(),
     fetchTa3weemCbeActual(),
     fetchTradingViewLiveMarket()
   ]);
 
-  const cbeBuy = (ta3weemCbe && ta3weemCbe.buy) ? ta3weemCbe.buy : 52.26;
-  const cbeSell = (ta3weemCbe && ta3weemCbe.sell) ? ta3weemCbe.sell : 52.40;
-  const cbeTime = (ta3weemCbe && ta3weemCbe.updated_at) ? ta3weemCbe.updated_at : "16:21";
-  const usdRate = cbeBuy;
+  // سعر الدولار الافتراضي المعتمد من موقع تعويم (المركزي أو العام) مع بديل تريدنج فيو
+  const cbeBuy = (ta3weemCbe && ta3weemCbe.buy) ? ta3weemCbe.buy
+               : (sheetData.cbe_usd_buy ? Number(sheetData.cbe_usd_buy) : (tvMarket?.usd_egp || 52.29));
+  const cbeSell = (ta3weemCbe && ta3weemCbe.sell) ? ta3weemCbe.sell
+                : (sheetData.cbe_usd_sell ? Number(sheetData.cbe_usd_sell) : 52.36);
+  const cbeTime = (ta3weemCbe && ta3weemCbe.updated_at) ? ta3weemCbe.updated_at
+                : (sheetData.timestamp ? sheetData.timestamp.split(" ")[1]?.slice(0, 5) : "12:07");
+
+  // اعتماد سعر تعويم كافتراضي رسمي للدولار
+  const usdRate = Number(sheetData.usd_rate || cbeBuy || 52.29);
 
   const defaultBanks = [
-    { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.40, sell: 52.50, updated_at: liveClock },
-    { bank: "بنك الشركة المصرفية العربية الدولية (saib)", buy: 52.30, sell: 52.40, updated_at: liveClock },
+    { bank: "كريدي أجريكول (CA)", buy: 52.37, sell: 52.47, updated_at: liveClock },
+    { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.35, sell: 52.45, updated_at: liveClock },
+    { bank: "بنك الشركة المصرفية (saib)", buy: 52.30, sell: 52.40, updated_at: liveClock },
     { bank: "الأهلي الكويتي (ABK)", buy: 52.27, sell: 52.33, updated_at: liveClock },
-    { bank: "البنك الأهلي المصري (NBE)", buy: 52.27, sell: 52.37, updated_at: liveClock },
-    { bank: "البنك التجاري الدولي (CIB)", buy: 52.27, sell: 52.37, updated_at: liveClock },
-    { bank: "بنك مصر (BM)", buy: 52.27, sell: 52.37, updated_at: liveClock },
-    { bank: "بنك الإسكندرية (ALEXBANK)", buy: 52.25, sell: 52.35, updated_at: liveClock },
-    { bank: "بنك فيصل الإسلامي (Faisal)", buy: 52.27, sell: 52.37, updated_at: liveClock }
+    { bank: "البنك الأهلي المصري (NBE)", buy: 52.25, sell: 52.35, updated_at: liveClock },
+    { bank: "البنك التجاري الدولي (CIB)", buy: 52.25, sell: 52.35, updated_at: liveClock },
+    { bank: "بنك مصر (BM)", buy: 52.25, sell: 52.35, updated_at: liveClock },
+    { bank: "بنك الإسكندرية (ALEXBANK)", buy: 52.25, sell: 52.35, updated_at: liveClock }
   ];
-  let banks = (ta3weemBanks && ta3weemBanks.length > 0) ? ta3weemBanks : defaultBanks;
+  let banks = (ta3weemBanks && ta3weemBanks.length > 0)
+    ? ta3weemBanks
+    : ((sheetData.banks && sheetData.banks.length > 0) ? sheetData.banks : defaultBanks);
   // ترتيب البنوك دائماً حسب أعلى سعر شراء
   banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
 
@@ -521,14 +569,25 @@ async function getCachedDashboardData() {
     { code: "SILVER", name: "أونصة الفضة (Silver)", name_en: "Silver (Ounce)", usd_price: silverPrice, egp_price: Math.round(silverPrice * usdRate), change: silverChg, updated_at: liveClock }
   ];
 
-  const rates = [
-    { code: "USD", name: "الدولار الأمريكي", name_en: "US Dollar", usd_price: 1.0, egp_price: Number(cbeBuy.toFixed(2)), buy: cbeBuy, sell: cbeSell },
-    { code: "EUR", name: "اليورو الأوروبي", name_en: "Euro", usd_price: 1.082, egp_price: Number((1.082 * cbeBuy).toFixed(2)), buy: Number((1.081 * cbeBuy).toFixed(2)), sell: Number((1.084 * cbeBuy).toFixed(2)) },
-    { code: "SAR", name: "الريال السعودي", name_en: "Saudi Riyal", usd_price: 0.2665, egp_price: Number((0.2665 * cbeBuy).toFixed(2)), buy: Number((0.266 * cbeBuy).toFixed(2)), sell: Number((0.267 * cbeBuy).toFixed(2)) },
-    { code: "AED", name: "الدرهم الإماراتي", name_en: "UAE Dirham", usd_price: 0.2723, egp_price: Number((0.2723 * cbeBuy).toFixed(2)), buy: Number((0.272 * cbeBuy).toFixed(2)), sell: Number((0.273 * cbeBuy).toFixed(2)) },
-    { code: "KWD", name: "الدينار الكويتي", name_en: "Kuwaiti Dinar", usd_price: 3.255, egp_price: Number((3.255 * cbeBuy).toFixed(2)), buy: Number((3.245 * cbeBuy).toFixed(2)), sell: Number((3.265 * cbeBuy).toFixed(2)) },
-    { code: "GBP", name: "الجنيه الإسترليني", name_en: "British Pound", usd_price: 1.305, egp_price: Number((1.305 * cbeBuy).toFixed(2)), buy: Number((1.302 * cbeBuy).toFixed(2)), sell: Number((1.308 * cbeBuy).toFixed(2)) },
-    { code: "QAR", name: "الريال القطري", name_en: "Qatari Riyal", usd_price: 0.2747, egp_price: Number((0.2747 * cbeBuy).toFixed(2)), buy: Number((0.274 * cbeBuy).toFixed(2)), sell: Number((0.275 * cbeBuy).toFixed(2)) }
+  let rates = (sheetData.rates && sheetData.rates.length > 0) ? sheetData.rates : [
+    { code: "USD", name: "الدولار الأمريكي", name_en: "US Dollar", usd_price: 1.0, egp_price: Number(usdRate.toFixed(2)), buy: cbeBuy, sell: cbeSell },
+    { code: "EUR", name: "اليورو الأوروبي", name_en: "Euro", usd_price: 1.082, egp_price: Number((1.082 * usdRate).toFixed(2)), buy: Number((1.081 * usdRate).toFixed(2)), sell: Number((1.084 * usdRate).toFixed(2)) },
+    { code: "SAR", name: "الريال السعودي", name_en: "Saudi Riyal", usd_price: 0.2665, egp_price: Number((0.2665 * usdRate).toFixed(2)), buy: Number((0.266 * usdRate).toFixed(2)), sell: Number((0.267 * usdRate).toFixed(2)) },
+    { code: "AED", name: "الدرهم الإماراتي", name_en: "UAE Dirham", usd_price: 0.2723, egp_price: Number((0.2723 * usdRate).toFixed(2)), buy: Number((0.272 * usdRate).toFixed(2)), sell: Number((0.273 * usdRate).toFixed(2)) },
+    { code: "KWD", name: "الدينار الكويتي", name_en: "Kuwaiti Dinar", usd_price: 3.255, egp_price: Number((3.255 * usdRate).toFixed(2)), buy: Number((3.245 * usdRate).toFixed(2)), sell: Number((3.265 * usdRate).toFixed(2)) },
+    { code: "GBP", name: "الجنيه الإسترليني", name_en: "British Pound", usd_price: 1.305, egp_price: Number((1.305 * usdRate).toFixed(2)), buy: Number((1.302 * usdRate).toFixed(2)), sell: Number((1.308 * usdRate).toFixed(2)) },
+    { code: "QAR", name: "الريال القطري", name_en: "Qatari Riyal", usd_price: 0.2747, egp_price: Number((0.2747 * usdRate).toFixed(2)), buy: Number((0.274 * usdRate).toFixed(2)), sell: Number((0.275 * usdRate).toFixed(2)) }
+  ];
+
+  const archive = (sheetData.archive && sheetData.archive.length > 0) ? sheetData.archive : [
+    {
+      date: "2026-10-05",
+      segment: "الأسهم والسندات والأذون (الإجمالي)",
+      usd_rate: usdRate,
+      egypt_net: 521112454,
+      arab_net: 658336787,
+      foreign_net: -1234399972
+    }
   ];
 
   const fullData = {
@@ -536,16 +595,7 @@ async function getCachedDashboardData() {
     cbe_usd_buy: cbeBuy,
     cbe_usd_sell: cbeSell,
     cbe_updated_at: cbeTime,
-    archive: [
-      {
-        date: "2026-10-01",
-        segment: "الأسهم والسندات والأذون (الإجمالي)",
-        usd_rate: usdRate,
-        egypt_net: -4118693655,
-        arab_net: -44947506,
-        foreign_net: 2888124033
-      }
-    ],
+    archive: archive,
     rates: rates,
     banks: banks,
     live_commodities: live_commodities
@@ -768,9 +818,9 @@ function getTrendIcon(change) {
  */
 function formatEgxReport(data, lang, curr) {
   curr = curr || "usd";
-  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.26);
-  let egNet = -4118693655, arNet = -44947506, foNet = 2888124033;
-  let sessionDate = "2026-10-01";
+  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
+  let egNet = 521112454, arNet = 658336787, foNet = -1234399972;
+  let sessionDate = "2026-10-05";
 
   if (data.archive && data.archive.length > 0) {
     const r = data.archive[0];
@@ -839,7 +889,7 @@ function formatEgxReport(data, lang, curr) {
 function formatCommoditiesReport(data, lang, curr) {
   curr = curr || "usd";
   let items = data.live_commodities || [];
-  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.26);
+  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
   const updatedTime = getCairoTimeStr();
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
@@ -942,15 +992,15 @@ function formatBanksReport(data, lang, cfg) {
   const showCbe = cfg ? (cfg.show_cbe_in_banks !== false) : true;
   const showBest = cfg ? (cfg.show_best_banks !== false) : true;
 
-  const usdBuy = Number(data.cbe_usd_buy || 52.26);
-  const usdSell = Number(data.cbe_usd_sell || 52.40);
-  const cbeTime = formatCleanTime(data.cbe_updated_at || "16:21");
+  const usdBuy = Number(data.cbe_usd_buy || 52.22);
+  const usdSell = Number(data.cbe_usd_sell || 52.36);
+  const cbeTime = formatCleanTime(data.cbe_updated_at || "12:07");
   const updatedTime = getCairoTimeStr();
 
   // ترتيب البنوك حسب أعلى سعر شراء
   banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
 
-  let topBuy = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.40, sell: 52.50, updated_at: "16:54" };
+  let topBuy = banks[0] || { bank: "كريدي أجريكول (CA)", buy: 52.37, sell: 52.47, updated_at: "12:07" };
   const topBuyTime = formatCleanTime(topBuy.updated_at);
   const topBankNameEn = getBankName(topBuy.bank, "en");
 
@@ -997,9 +1047,9 @@ function formatAllBanksReport(data, lang) {
  */
 function formatExecutiveReport(data, lang, curr) {
   curr = curr || "usd";
-  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.26);
-  let foNet = 2888124033;
-  let sessionDate = "2026-10-01";
+  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
+  let foNet = -1234399972;
+  let sessionDate = "2026-10-05";
 
   if (data.archive && data.archive.length > 0) {
     const r = data.archive[0];
@@ -1011,8 +1061,8 @@ function formatExecutiveReport(data, lang, curr) {
   const updatedDateTime = getCairoFullDateTime(lang);
 
   // أسعار البنك المركزي وأعلى بنك كبديل لحظي
-  const cbeBuy = Number(data.cbe_usd_buy || 52.26);
-  const cbeSell = Number(data.cbe_usd_sell || 52.40);
+  const cbeBuy = Number(data.cbe_usd_buy || 52.22);
+  const cbeSell = Number(data.cbe_usd_sell || 52.36);
   const banks = data.banks || [];
   let topBank = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.40, sell: 52.50, updated_at: getCairoTimeStr() };
   let maxBuy = 0;
