@@ -4,7 +4,7 @@ import csv
 import io
 import time
 import requests
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 from core.archive import get_daily_history, get_weekly_summary, get_monthly_summary
 from core.ta3weem import fetch_ta3weem_data
@@ -68,7 +68,8 @@ def prepare_google_sheets_data(sb: str = "1") -> Dict[str, Any]:
     # 2. Ta3weem & Live Rates
     ta3weem = fetch_ta3weem_data(force_refresh=False)
     usd_rate = float(ta3weem.get("usd_rate", 51.90))
-    now_time = datetime.now().strftime("%H:%M:%S")
+    cairo_now = datetime.now(timezone.utc) + timedelta(hours=3)
+    now_time = cairo_now.strftime("%H:%M:%S")
     live_rates = []
     
     # Currencies
@@ -164,7 +165,7 @@ def prepare_google_sheets_data(sb: str = "1") -> Dict[str, Any]:
             "buy": float(b.get("buy", 0)),
             "sell": float(b.get("sell", 0)),
             "avg": float(b.get("avg", 0)),
-            "updated_at": now_time
+            "updated_at": b.get("updated_at") or cairo_now.strftime("%H:%M")
         })
     banks.sort(key=lambda x: x["buy"], reverse=True)
 
@@ -178,7 +179,7 @@ def prepare_google_sheets_data(sb: str = "1") -> Dict[str, Any]:
             pass
 
     return {
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "timestamp": cairo_now.strftime("%Y-%m-%d %H:%M:%S"),
         "usd_rate": usd_rate,
         "cbe_usd_buy": ta3weem.get("cbe_usd_buy"),
         "cbe_usd_sell": ta3weem.get("cbe_usd_sell"),

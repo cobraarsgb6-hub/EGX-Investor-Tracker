@@ -331,12 +331,18 @@ def fetch_ta3weem_data(force_refresh: bool = False) -> Dict[str, Any]:
                             sell_nums = re.findall(r'(\d+\.\d+)', sell_text)
                             b_buy = float(buy_nums[0]) if buy_nums else 0.0
                             b_sell = float(sell_nums[0]) if sell_nums else 0.0
+                            b_time = ""
+                            if len(cells) >= 4:
+                                time_m = re.search(r'(\d{1,2}:\d{2})', cells[3].text_content())
+                                if time_m:
+                                    b_time = time_m.group(1)
                             if b_buy > 0:
                                 scraped_banks.append({
                                     "bank": b_name,
                                     "buy": b_buy,
                                     "sell": b_sell,
-                                    "avg": round((b_buy + b_sell) / 2, 2)
+                                    "avg": round((b_buy + b_sell) / 2, 2),
+                                    "updated_at": b_time
                                 })
                     if scraped_banks:
                         banks = scraped_banks

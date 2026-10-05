@@ -128,64 +128,86 @@ function getCairoTimeStr() {
   return d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
+function format12HourTime(timeStr, lang) {
+  if (!timeStr) return "";
+  const s = String(timeStr).trim();
+  const m = s.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return timeStr;
+  let h = parseInt(m[1], 10);
+  const min = m[2];
+  const isPm = h >= 12;
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  const suffix = (lang === "en") ? (isPm ? "PM" : "AM") : (isPm ? "م" : "ص");
+  return `${h}:${min} ${suffix}`;
+}
+
 function getCairoFullDateTime(lang) {
   const d = new Date();
-  const timeStr = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const time24 = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  const parts = time24.split(":");
+  let hNum = parseInt(parts[0], 10);
+  const min = parts[1] || "00";
+  const sec = parts[2] || "00";
+  const isPm = hNum >= 12;
+  if (hNum === 0) hNum = 12;
+  else if (hNum > 12) hNum -= 12;
+  const timeEn = `${hNum}:${min}:${sec} ${isPm ? "PM" : "AM"}`;
+  const timeAr = `${hNum}:${min}:${sec} ${isPm ? "م" : "ص"}`;
+
   if (lang === "en") {
     const dateStr = d.toLocaleDateString("en-US", { timeZone: "Africa/Cairo", weekday: "short", month: "short", day: "numeric", year: "numeric" });
-    return `${dateStr} • ${timeStr} (Cairo Time)`;
+    return `${dateStr} • ${timeEn} (Cairo Time)`;
   }
   const dateStrAr = d.toLocaleDateString("ar-EG", { timeZone: "Africa/Cairo", weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  return `${dateStrAr} • ${timeStr} بتوقيت مصر`;
+  return `${dateStrAr} • ${timeAr} بتوقيت مصر`;
 }
 
-function formatCleanTime(val) {
-  if (!val) return getCairoTimeStr();
+function formatCleanTime(val, lang) {
+  if (!val) return format12HourTime(getCairoTimeStr(), lang);
   const s = String(val).trim();
-  if (s.includes("1899") || s.includes("GMT") || s.includes("Gulf")) {
-    const timeMatch = s.match(/(\d{1,2}):(\d{2})/);
-    if (timeMatch) {
-      return `${timeMatch[1].padStart(2, "0")}:${timeMatch[2]}`;
-    }
-  }
   const match = s.match(/(\d{1,2}):(\d{2})/);
   if (match) {
-    return `${match[1].padStart(2, "0")}:${match[2]}`;
+    return format12HourTime(`${match[1].padStart(2, "0")}:${match[2]}`, lang);
   }
-  return getCairoTimeStr();
+  return format12HourTime(getCairoTimeStr(), lang);
 }
 
-function getEgxSnapshotTime(data) {
+function getEgxSnapshotTime(data, lang) {
+  let raw = "";
   if (data?.egx_institutions?.timestamp) {
     const m = String(data.egx_institutions.timestamp).match(/(\d{1,2}):(\d{2})/);
-    if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
+    if (m) raw = `${m[1].padStart(2, "0")}:${m[2]}`;
   }
-  if (data?.timestamp) {
+  if (!raw && data?.timestamp) {
     try {
       const d = new Date(data.timestamp);
       if (!isNaN(d.getTime())) {
-        return d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit" });
+        raw = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit" });
       }
     } catch(e) {}
-    const m = String(data.timestamp).match(/(\d{1,2}):(\d{2})/);
-    if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
+    if (!raw) {
+      const m = String(data.timestamp).match(/(\d{1,2}):(\d{2})/);
+      if (m) raw = `${m[1].padStart(2, "0")}:${m[2]}`;
+    }
   }
-  if (data?.archive && data.archive[0]?.created_at) {
-    return formatCleanTime(data.archive[0].created_at);
+  if (!raw && data?.archive && data.archive[0]?.created_at) {
+    raw = data.archive[0].created_at;
   }
-  return "";
+  return raw ? format12HourTime(raw, lang) : "";
 }
 
-function getBankSnapshotTime(data) {
+function getBankSnapshotTime(data, lang) {
+  let raw = "";
   if (data?.banks && data.banks[0]?.updated_at) {
     const m = String(data.banks[0].updated_at).match(/(\d{1,2}):(\d{2})/);
-    if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
+    if (m) raw = `${m[1].padStart(2, "0")}:${m[2]}`;
   }
-  if (data?.cbe_updated_at) {
+  if (!raw && data?.cbe_updated_at) {
     const m = String(data.cbe_updated_at).match(/(\d{1,2}):(\d{2})/);
-    if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
+    if (m) raw = `${m[1].padStart(2, "0")}:${m[2]}`;
   }
-  return "";
+  return raw ? format12HourTime(raw, lang) : "";
 }
 
 function fmtSigned(v) {
@@ -912,7 +934,7 @@ function formatEgxReport(data, lang, curr) {
   };
 
   const updatedDateTime = getCairoFullDateTime(lang);
-  const snapshotTime = getEgxSnapshotTime(data);
+  const snapshotTime = getEgxSnapshotTime(data, lang);
 
   const snapshotLineEn = snapshotTime ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
   const snapshotLineAr = snapshotTime ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
@@ -977,30 +999,23 @@ function formatEgxReport(data, lang, curr) {
 }
 
 /**
- * 2. تقرير الذهب والنفط والكريبتو اللحظي
+ * 2. تقرير الذهب والنفط والكريبتو اللحظي (بالدولار الأمريكي فقط)
  */
-function formatCommoditiesReport(data, lang, curr) {
-  curr = curr || "usd";
+function formatCommoditiesReport(data, lang) {
   let items = data.live_commodities || [];
-  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
-  const updatedTime = getCairoTimeStr();
-  const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
+  const updatedDateTime = getCairoFullDateTime(lang);
 
   if (lang === "en") {
     let txt = `🪙 <b>Gold, Oil & Crypto Live Market</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `🕒 Updated: <b>[${updatedTime}]</b> • Currency: <b>${currBadge}</b>\n`
+      + `🕒 Query: <b>${updatedDateTime}</b>\n`
+      + `💱 Currency: <b>USD ($)</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`;
 
     items.forEach(item => {
       const uP = Number(item.usd_price || 0);
-      const eP = Number(item.egp_price || (uP * usdRate));
-      if (curr === "usd") {
-        const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
-        txt += `▫️ <b>${item.name_en || item.name}:</b> <b>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</b>\n`;
-      } else {
-        txt += `▫️ <b>${item.name_en || item.name}:</b> <b>${Number(eP).toLocaleString("en-US", { minimumFractionDigits: eP >= 1000 ? 0 : 2, maximumFractionDigits: eP >= 1000 ? 0 : 2 })} EGP</b>\n`;
-      }
+      const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
+      txt += `▫️ <b>${item.name_en || item.name}:</b> <b>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</b>\n`;
     });
 
     return txt + `\n⚡ <i>Live real-time feed via TradingView.</i>`;
@@ -1008,21 +1023,17 @@ function formatCommoditiesReport(data, lang, curr) {
 
   let txtAr = `🪙 <b>أسواق الذهب والفضة والنفط والكريبتو</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `🕒 وقت التحديث: <b>[${updatedTime}]</b> • العملة: <b>${currBadge}</b>\n`
+    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
+    + `💱 العملة: <b>USD ($)</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`;
 
   items.forEach(item => {
     const uP = Number(item.usd_price || 0);
-    const eP = Number(item.egp_price || (uP * usdRate));
-    if (curr === "usd") {
-      const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
-      txtAr += `▫️ <b>${item.name}:</b> <b>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</b>\n`;
-    } else {
-      txtAr += `▫️ <b>${item.name}:</b> <b>${Number(eP).toLocaleString("en-US", { minimumFractionDigits: eP >= 1000 ? 0 : 2, maximumFractionDigits: eP >= 1000 ? 0 : 2 })} ج.م</b>\n`;
-    }
+    const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
+    txtAr += `▫️ <b>${item.name}:</b> <b>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</b>\n`;
   });
 
-  return txtAr + `\n⚡ <i>أسعار حية ولحظية مباشرة عبر تريدنج فيو.</i>`;
+  return txtAr + `\n⚡ <i>أسعار حية ولحظية بالدولار مباشرة عبر تريدنج فيو.</i>`;
 }
 
 /**
@@ -1037,7 +1048,7 @@ function formatCurrenciesReport(data, lang) {
   });
   
   const updatedDateTime = getCairoFullDateTime(lang);
-  const bankSnapshot = getBankSnapshotTime(data);
+  const bankSnapshot = getBankSnapshotTime(data, lang);
   const snapshotLineEn = bankSnapshot ? `\n📸 Rates Snapshot: <b>[${bankSnapshot}]</b>` : "";
   const snapshotLineAr = bankSnapshot ? `\n📸 لقطة أسعار الصرف: <b>[${bankSnapshot}]</b>` : "";
 
@@ -1137,29 +1148,31 @@ function formatBanksReport(data, lang, cfg) {
 
   const usdBuy = Number(data.cbe_usd_buy || 52.22);
   const usdSell = Number(data.cbe_usd_sell || 52.36);
-  const cbeTime = formatCleanTime(data.cbe_updated_at || "12:07");
-  const updatedTime = getCairoTimeStr();
+  const cbeTime = formatCleanTime(data.cbe_updated_at || "12:07", lang);
+  const updatedDateTime = getCairoFullDateTime(lang);
 
   // ترتيب البنوك حسب أعلى سعر شراء
   banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
 
   let topBuy = banks[0] || { bank: "كريدي أجريكول (CA)", buy: 52.37, sell: 52.47, updated_at: "12:07" };
-  const topBuyTime = formatCleanTime(topBuy.updated_at);
+  const topBuyTime = formatCleanTime(topBuy.updated_at, lang);
   const topBankNameEn = getBankName(topBuy.bank, "en");
 
   if (lang === "en") {
     return `🏦 <b>USD Exchange Rates - Egyptian Banks</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
+      + `🕒 Query: <b>${updatedDateTime}</b>\n`
+      + `━━━━━━━━━━━━━━━━━━\n`
       + (showCbe ? `🏛️ <b>Central Bank (CBE):</b> Buy <b>${usdBuy.toFixed(4)}</b> - Sell <b>${usdSell.toFixed(4)}</b> [${cbeTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
       + (showBest ? `🟢 <b>Top Buy Bank:</b> ${topBankNameEn}\n   ▫️ Buy <b>${Number(topBuy.buy).toFixed(2)}</b> • Sell <b>${Number(topBuy.sell).toFixed(2)}</b> [${topBuyTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
       + `📊 <b>Top ${Math.min(limit, banks.length)} Banks (Buy - Sell):</b>\n\n`
       + banks.slice(0, limit).map(b => `▫️ <b>${getBankName(b.bank, "en")}:</b> ${Number(b.buy).toFixed(2)} - ${Number(b.sell).toFixed(2)}`).join("\n")
-      + `\n\n⚡ <i>Cairo Time [${updatedTime}] • Live feed via Ta3weem.</i>`;
+      + `\n\n⚡ <i>Live feed via Ta3weem.</i>`;
   }
 
   return `🏦 <b>أسعار صرف الدولار في البنوك المصرية</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `🕒 وقت الفحص: <b>[${updatedTime}]</b> بتوقيت مصر\n`
+    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
     + (showCbe ? `🏛️ <b>البنك المركزي المصري:</b> شراء <b>${usdBuy.toFixed(4)}</b> - بيع <b>${usdSell.toFixed(4)}</b> [${cbeTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
     + (showBest ? `🟢 <b>أعلى بنك في سعر الشراء:</b> ${topBuy.bank}\n   ▫️ شراء <b>${Number(topBuy.buy).toFixed(2)}</b> • بيع <b>${Number(topBuy.sell).toFixed(2)}</b> [${topBuyTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
@@ -1215,7 +1228,7 @@ function formatExecutiveReport(data, lang, curr) {
   }
 
   const updatedDateTime = getCairoFullDateTime(lang);
-  const snapshotTime = getEgxSnapshotTime(data);
+  const snapshotTime = getEgxSnapshotTime(data, lang);
   const snapshotLineEn = snapshotTime ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
   const snapshotLineAr = snapshotTime ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
 
@@ -1236,23 +1249,25 @@ function formatExecutiveReport(data, lang, curr) {
   }
 
   const bNameEn = getBankName(topBank.bank, "en");
-  const bTime = formatCleanTime(topBank.updated_at);
-  const cbeTime = formatCleanTime(data.cbe_updated_at || "16:21");
+  const bTime = formatCleanTime(topBank.updated_at, lang);
+  const cbeTime = formatCleanTime(data.cbe_updated_at || "16:21", lang);
   const bankPeakLineEn = `\n  ▫️ <b>Top Buy Bank (${bNameEn}):</b> Buy <b>${Number(topBank.buy).toFixed(2)}</b> - Sell <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
   const bankPeakLineAr = `\n  ▫️ <b>أعلى بنك شراء (${topBank.bank}):</b> شراء <b>${Number(topBank.buy).toFixed(2)}</b> - بيع <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
 
-  // السلع المطلوبة: ذهب 24 وخام برنت
+  // السلع المطلوبة: ذهب 24 وخام برنت (بالدولار الأمريكي دائماً)
   const comms = data.live_commodities || [];
-  const gold24 = comms.find(c => c.code === "GOLD24") || { usd_price: 133.63, egp_price: Math.round(133.63 * usdRate) };
-  const brent = comms.find(c => c.code === "BRENT") || { usd_price: 101.02, egp_price: Number((101.02 * usdRate).toFixed(2)) };
+  const gold24 = comms.find(c => c.code === "GOLD24") || { usd_price: 133.63 };
+  const brent = comms.find(c => c.code === "BRENT") || { usd_price: 101.02 };
 
   const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
   const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
 
-  // تنسيق الأرقام حسب العملة المختارة
+  // تنسيق الأرقام حسب العملة المختارة لتدفقات البورصة
   let foAmountEn = "", foAmountAr = "";
-  let gold24StrEn = "", gold24StrAr = "";
-  let brentStrEn = "", brentStrAr = "";
+  const gold24StrEn = `$${Number(gold24.usd_price).toFixed(2)}`;
+  const gold24StrAr = `$${Number(gold24.usd_price).toFixed(2)}`;
+  const brentStrEn = `$${Number(brent.usd_price).toFixed(2)}`;
+  const brentStrAr = `$${Number(brent.usd_price).toFixed(2)}`;
   let breakdownEn = "", breakdownAr = "";
 
   if (curr === "usd") {
@@ -1264,12 +1279,6 @@ function formatExecutiveReport(data, lang, curr) {
       breakdownEn = `  ▫️ Buy: $${Math.round(foBuy / usdRate).toLocaleString("en-US")} • Sell: $${Math.round(foSell / usdRate).toLocaleString("en-US")}\n`;
       breakdownAr = `  ▫️ مشتريات: $${Math.round(foBuy / usdRate).toLocaleString("en-US")} • مبيعات: $${Math.round(foSell / usdRate).toLocaleString("en-US")}\n`;
     }
-
-    gold24StrEn = `$${Number(gold24.usd_price).toFixed(2)}`;
-    gold24StrAr = `$${Number(gold24.usd_price).toFixed(2)}`;
-
-    brentStrEn = `$${Number(brent.usd_price).toFixed(2)}`;
-    brentStrAr = `$${Number(brent.usd_price).toFixed(2)}`;
   } else {
     foAmountEn = (foNet >= 0 ? "+" : "-") + Math.abs(foNet).toLocaleString("en-US") + " EGP";
     foAmountAr = (foNet >= 0 ? "+" : "-") + Math.abs(foNet).toLocaleString("en-US") + " ج.م";
@@ -1278,12 +1287,6 @@ function formatExecutiveReport(data, lang, curr) {
       breakdownEn = `  ▫️ Buy: ${foBuy.toLocaleString("en-US")} • Sell: ${foSell.toLocaleString("en-US")}\n`;
       breakdownAr = `  ▫️ مشتريات: ${foBuy.toLocaleString("en-US")} • مبيعات: ${foSell.toLocaleString("en-US")}\n`;
     }
-
-    gold24StrEn = `${Math.round(gold24.egp_price || (gold24.usd_price * usdRate)).toLocaleString("en-US")} EGP`;
-    gold24StrAr = `${Math.round(gold24.egp_price || (gold24.usd_price * usdRate)).toLocaleString("en-US")} ج.م`;
-
-    brentStrEn = `${Number(brent.egp_price || (brent.usd_price * usdRate)).toFixed(2)} EGP`;
-    brentStrAr = `${Number(brent.egp_price || (brent.usd_price * usdRate)).toFixed(2)} ج.م`;
   }
 
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
@@ -1356,8 +1359,8 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
   // الصف الأول: زر التحديث اللحظي
   rows.push([{ text: refreshText, callback_data: `refresh_${cmdType}:${lang}:${curr}` }]);
 
-  // الصف الثاني: زر تبديل العملة للتقارير القابلة للتحويل
-  if (cmdType !== "banks" && cmdType !== "banks_all") {
+  // الصف الثاني: زر تبديل العملة للتقارير القابلة للتحويل (البورصة والتقرير الشامل فقط)
+  if (cmdType === "report" || cmdType === "egx") {
     rows.push([{ text: currToggleText, callback_data: currToggleData }]);
   } else if (cmdType === "banks") {
     rows.push([{ text: (lang === "en" ? "📋 View All 25 Banks" : "📋 عرض كافة الـ 25 بنكاً"), callback_data: `cmd_banks_all:${lang}` }]);
