@@ -5,6 +5,8 @@ on:
     # Runs every 10 minutes during EGX market hours (10:00 AM to 2:45 PM Cairo Time, Sunday-Thursday)
     - cron: '*/10 7-12 * * 0-4'
   workflow_dispatch: # Allows manual trigger from GitHub UI anytime
+  repository_dispatch: # Allows external trigger from cron-job.org or webhooks
+    types: [cron_sync, cloud_sync]
 
 jobs:
   sync:
