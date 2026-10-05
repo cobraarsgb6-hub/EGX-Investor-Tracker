@@ -1,7 +1,7 @@
 {
-  "cached_at": 1791187643.8377993,
-  "ta3weem_scraped_at": 1791187639.0122464,
-  "updated_at": "2026-10-05 12:07:28",
+  "cached_at": 1791196606.8654077,
+  "ta3weem_scraped_at": 1791196605.7681818,
+  "updated_at": "2026-10-05 10:36:47",
   "source": "البنك المركزي المصري (CBE) + منصات الطاقة والكريبتو العالمية",
   "source_url": "https://www.cbe.org.eg/ar",
   "cbe_official": {
@@ -300,23 +300,23 @@
       "name": "بتكوين",
       "code": "BTC",
       "icon": "🪙",
-      "usd_price": 86394.0,
-      "usd_price_formatted": "$86,394.00",
-      "change_24h": "+1.49%",
+      "usd_price": 84400.0,
+      "usd_price_formatted": "$84,400.00",
+      "change_24h": "+0.00%",
       "is_positive": true,
-      "egp_price": 4517922.39,
-      "egp_price_formatted": "4,517,922 ج.م"
+      "egp_price": 4413647.36,
+      "egp_price_formatted": "4,413,647 ج.م"
     },
     {
       "name": "إيثريوم",
       "code": "ETH",
       "icon": "🔷",
-      "usd_price": 2729.45,
-      "usd_price_formatted": "$2,729.45",
-      "change_24h": "+0.95%",
+      "usd_price": 2730.0,
+      "usd_price_formatted": "$2,730.00",
+      "change_24h": "+0.00%",
       "is_positive": true,
-      "egp_price": 142734.95,
-      "egp_price_formatted": "142,735 ج.م"
+      "egp_price": 142763.71,
+      "egp_price_formatted": "142,764 ج.م"
     }
   ],
   "commodities": [
@@ -325,24 +325,24 @@
       "code": "BRENT",
       "icon": "🛢️",
       "unit": "$/برميل",
-      "usd_price": 101.17,
-      "usd_price_formatted": "$101.17",
-      "change_24h": "-1.06%",
-      "is_positive": false,
-      "egp_price": 5290.62,
-      "egp_price_formatted": "5,291 ج.م"
+      "usd_price": 102.56,
+      "usd_price_formatted": "$102.56",
+      "change_24h": "+0.30%",
+      "is_positive": true,
+      "egp_price": 5363.31,
+      "egp_price_formatted": "5,363 ج.م"
     },
     {
       "name": "خام غرب تكساس (WTI)",
       "code": "WTI",
       "icon": "⚡",
       "unit": "$/برميل",
-      "usd_price": 89.73,
-      "usd_price_formatted": "$89.73",
-      "change_24h": "-1.51%",
+      "usd_price": 90.67,
+      "usd_price_formatted": "$90.67",
+      "change_24h": "-0.48%",
       "is_positive": false,
-      "egp_price": 4692.38,
-      "egp_price_formatted": "4,692 ج.م"
+      "egp_price": 4741.53,
+      "egp_price_formatted": "4,742 ج.م"
     }
   ]
 }
