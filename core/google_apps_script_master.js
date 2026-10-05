@@ -167,7 +167,12 @@ function doGet(e) {
   }
 
   try {
-    return HtmlService.createHtmlOutputFromFile("Index")
+    var out = HtmlService.createHtmlOutputFromFile("Index");
+    var rawHtml = out.getContent();
+    if (!rawHtml || (rawHtml.indexOf("<!DOCTYPE") === -1 && rawHtml.indexOf("<html") === -1 && rawHtml.indexOf("<body") === -1)) {
+      throw new Error("Index file does not contain valid HTML");
+    }
+    return out
       .setTitle("منظومة البورصة المصرية وأسواق الصرف | EGX Institutions Tracker")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
