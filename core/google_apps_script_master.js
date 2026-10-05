@@ -183,9 +183,6 @@ function doPost(e) {
     if (data.latest_egx) {
       PropertiesService.getScriptProperties().setProperty("LATEST_EGX_JSON", JSON.stringify(data.latest_egx));
     }
-    if (data.cbe_usd_buy) PropertiesService.getScriptProperties().setProperty("CBE_USD_BUY", String(data.cbe_usd_buy));
-    if (data.cbe_usd_sell) PropertiesService.getScriptProperties().setProperty("CBE_USD_SELL", String(data.cbe_usd_sell));
-    if (data.usd_rate) PropertiesService.getScriptProperties().setProperty("CURRENT_USD_RATE", String(data.usd_rate));
 
     // 1. تبويب تعاملات المؤسسات (الأرشيف التراكمي المدمج)
     if (data.archive && data.archive.length > 0) {
@@ -748,13 +745,9 @@ function autoFitColumns(sheet, maxCols) {
 
 function getLiveDashboardData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var prop = PropertiesService.getScriptProperties();
-
   var result = {
     timestamp: new Date().toISOString(),
-    usd_rate: Number(prop.getProperty("CURRENT_USD_RATE") || 52.42),
-    cbe_usd_buy: Number(prop.getProperty("CBE_USD_BUY") || 52.34),
-    cbe_usd_sell: Number(prop.getProperty("CBE_USD_SELL") || 52.36),
+    usd_rate: 52.42,
     active_theme: getActiveThemeKey(),
     egx_institutions: null,
     archive: [],
@@ -763,7 +756,7 @@ function getLiveDashboardData() {
     periodic: null
   };
 
-  var savedEgx = prop.getProperty("LATEST_EGX_JSON");
+  var savedEgx = PropertiesService.getScriptProperties().getProperty("LATEST_EGX_JSON");
   if (savedEgx) {
     try {
       result.egx_institutions = JSON.parse(savedEgx);
@@ -800,53 +793,22 @@ function getLiveDashboardData() {
     var maxC3 = Math.min(s3.getLastColumn(), 5);
     var bVals = s3.getRange(4, 1, maxR3, maxC3).getValues();
     bVals.forEach(function(row) {
-      var rawUp = row[4];
-      var cleanTime = "--";
-      if (rawUp instanceof Date) {
-        var h = rawUp.getHours();
-        var m = String(rawUp.getMinutes()).padStart(2, '0');
-        var ampm = h >= 12 ? 'م' : 'ص';
-        h = h % 12 || 12;
-        cleanTime = h + ":" + m + " " + ampm;
-      } else {
-        var strUp = String(rawUp || "");
-        var matchTime = strUp.match(/(\d{1,2}:\d{2})/);
-        cleanTime = matchTime ? matchTime[1] : (strUp.indexOf("GMT") >= 0 ? strUp.substring(16, 21) : strUp);
-      }
-
       result.banks.push({
         bank: String(row[0] || ""),
         buy: Number(row[1] || 0),
         sell: Number(row[2] || 0),
         avg: Number(row[3] || 0),
-        updated_at: cleanTime
+        updated_at: String(row[4] || "")
       });
     });
   }
 
-  // 4. استخراج واستكمال سعر الدولار والبنك المركزي
   if (result.banks && result.banks.length > 0 && Number(result.banks[0].buy) > 30) {
     result.usd_rate = Number(result.banks[0].buy);
   }
 
-  // إذا لم يتوفر سعر المركزي من الخصائص، نحاول استنتاجه من البنوك أو السحب السحابي
-  if (!result.cbe_usd_buy || result.cbe_usd_buy < 30) {
-    try {
-      var cfRes = UrlFetchApp.fetch("https://icy-math-7aa4.cobraarsgb6.workers.dev/api/data", { muteHttpExceptions: true });
-      if (cfRes.getResponseCode() === 200) {
-        var cfData = JSON.parse(cfRes.getContentText());
-        if (cfData.usd_rate) result.usd_rate = cfData.usd_rate;
-        if (cfData.cbe_usd_buy) result.cbe_usd_buy = cfData.cbe_usd_buy;
-        if (cfData.cbe_usd_sell) result.cbe_usd_sell = cfData.cbe_usd_sell;
-        if (cfData.banks && cfData.banks.length > 0 && result.banks.length === 0) {
-          result.banks = cfData.banks;
-        }
-      }
-    } catch(eCf) {}
-  }
-
-  // 5. حساب التراكميات
-  var latestDate = (result.archive && result.archive.length > 0) ? result.archive[0].date : "2026-10-06";
+  // 4. حساب التراكميات
+  var latestDate = (result.archive && result.archive.length > 0) ? result.archive[0].date : "2026-10-05";
   result.periodic = calculatePeriodicTotals(result.archive, latestDate, result.usd_rate);
 
   return result;

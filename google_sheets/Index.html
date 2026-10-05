@@ -884,9 +884,9 @@
         <span class="pulse-dot"></span>
         <span id="nav-usd-label">المركزي (CBE):</span>
         <span style="color:#86efac; font-size:0.76rem;" id="nav-buy-tag">شراء</span>
-        <span id="nav-usd-buy" class="num-ltr">52.34</span>
+        <span id="nav-usd-buy" class="num-ltr">51.94</span>
         <span style="color:#fcd34d; font-size:0.76rem; margin-inline-start:3px;" id="nav-sell-tag">بيع</span>
-        <span id="nav-usd-sell" class="num-ltr">52.36</span>
+        <span id="nav-usd-sell" class="num-ltr">52.04</span>
         <span id="nav-usd-curr">ج.م</span>
       </div>
 
@@ -901,28 +901,6 @@
         <i class="fa-brands fa-telegram"></i>
         <span>تحكم البوت</span>
       </a>
-    </div>
-  </div>
-
-  <!-- شريط استعراض واختيار التصميمات الأربعة المباشرة (Theme Showcase Bar) -->
-  <div class="theme-banner" style="background: var(--card-bg); border-bottom: 1.5px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <i class="fa-solid fa-palette" style="color: #0284c7; font-size: 1.15rem;"></i>
-      <span style="font-weight: 800; font-size: 0.95rem; color: var(--text);">اختر تصميم المنصة المفضل (4 Live Themes):</span>
-    </div>
-    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;" id="theme-buttons-container">
-      <button class="pill-btn theme-choice-btn" id="tbtn-swiss" onclick="switchTheme('swiss')" style="display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--border); padding:7px 15px; border-radius:8px; font-weight:800; cursor:pointer; font-family:inherit;">
-        <span>🏦</span> <span>النمط السويسري (Swiss Clean)</span>
-      </button>
-      <button class="pill-btn theme-choice-btn" id="tbtn-terminal" onclick="switchTheme('terminal')" style="display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--border); padding:7px 15px; border-radius:8px; font-weight:800; cursor:pointer; font-family:inherit;">
-        <span>💻</span> <span>بلومبرج المؤسسي (Terminal Elite)</span>
-      </button>
-      <button class="pill-btn theme-choice-btn" id="tbtn-matrix" onclick="switchTheme('matrix')" style="display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--border); padding:7px 15px; border-radius:8px; font-weight:800; cursor:pointer; font-family:inherit;">
-        <span>📈</span> <span>منصة التداول (Trading Matrix)</span>
-      </button>
-      <button class="pill-btn theme-choice-btn" id="tbtn-csuite" onclick="switchTheme('csuite')" style="display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--border); padding:7px 15px; border-radius:8px; font-weight:800; cursor:pointer; font-family:inherit;">
-        <span>📊</span> <span>التقرير التنفيذي (C-Suite Minimalist)</span>
-      </button>
     </div>
   </div>
 
@@ -1644,9 +1622,9 @@
         switchTheme(data.active_theme);
       }
       var t = i18n[currentLang];
-      var usdRate = Number(data.usd_rate || 52.42);
-      var usdBuy = Number(data.cbe_usd_buy || data.usd_buy || 52.34);
-      var usdSell = Number(data.cbe_usd_sell || data.usd_sell || 52.36);
+      var usdRate = Number(data.usd_rate || 51.94);
+      var usdBuy = Number(data.cbe_usd_buy || data.usd_buy || 51.94);
+      var usdSell = Number(data.cbe_usd_sell || data.usd_sell || 52.04);
       
       var elBuy = document.getElementById("nav-usd-buy");
       var elSell = document.getElementById("nav-usd-sell");
@@ -1983,22 +1961,6 @@
       localStorage.setItem("active_theme", themeKey);
       var sel = document.getElementById("themeSelector");
       if (sel) sel.value = themeKey;
-
-      // تحديث حالة الأزرار في شريط اختيار التصميم
-      document.querySelectorAll(".theme-choice-btn").forEach(function(btn) {
-        btn.style.background = "transparent";
-        btn.style.borderColor = "var(--border)";
-        btn.style.color = "var(--text)";
-        btn.style.boxShadow = "none";
-      });
-      var activeBtn = document.getElementById("tbtn-" + themeKey);
-      if (activeBtn) {
-        activeBtn.style.background = "var(--primary)";
-        activeBtn.style.borderColor = "var(--primary)";
-        activeBtn.style.color = "#ffffff";
-        activeBtn.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
-      }
-
       if (typeof google !== "undefined" && google.script && google.script.run) {
         google.script.run.applyActiveTheme(themeKey);
       }
