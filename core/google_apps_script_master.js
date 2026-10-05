@@ -197,7 +197,7 @@ function updateBanksSheet(ss, banks, ts) {
 
   sheet.getRange(1, 1).setValue("🏛️ قائمة أسعار صرف الدولار في 25 بنكاً مصرياً - آخر تحديث: " + (ts || new Date().toLocaleString()));
 
-  var headers = ["اسم البنك", "سعر الشراء للبنك (ج.م)", "سعر البيع من البنك (ج.م)", "متوسط السعر (ج.م)"];
+  var headers = ["اسم البنك", "سعر الشراء للبنك (ج.م)", "سعر البيع من البنك (ج.م)", "متوسط السعر (ج.م)", "وقت التحديث"];
   var rows = [headers];
 
   banks.forEach(function(b) {
@@ -205,7 +205,8 @@ function updateBanksSheet(ss, banks, ts) {
       b.bank,
       Number(b.buy || 0),
       Number(b.sell || 0),
-      Number(b.avg || 0)
+      Number(b.avg || 0),
+      String(b.updated_at || "")
     ]);
   });
 
@@ -397,14 +398,15 @@ function getLiveDashboardData() {
   var s3 = findExistingSheet(ss, "🏦 أسعار الدولار في البنوك المصرية", ["أسعار الدولار في البنوك", "البنوك"]);
   if (s3 && s3.getLastRow() >= 4) {
     var maxR3 = s3.getLastRow() - 3;
-    var maxC3 = Math.min(s3.getLastColumn(), 4);
+    var maxC3 = Math.min(s3.getLastColumn(), 5);
     var bVals = s3.getRange(4, 1, maxR3, maxC3).getValues();
     bVals.forEach(function(row) {
       result.banks.push({
         bank: String(row[0] || ""),
         buy: Number(row[1] || 0),
         sell: Number(row[2] || 0),
-        avg: Number(row[3] || 0)
+        avg: Number(row[3] || 0),
+        updated_at: String(row[4] || "")
       });
     });
   }
