@@ -34,9 +34,18 @@ let botConfig = {
   default_curr: "usd"
 };
 
-// تخزين اختيار لغة وعملة المستخدم الفردية
+// تخزين اختيار لغة وعملة ومنطقة المستخدم الفردية
 let userLangPreferences = {};
 let userCurrPreferences = {};
+let userTzPreferences = {};
+
+const TIMEZONES = {
+  "cairo": { id: "Africa/Cairo", name_ar: "القاهرة (مصر)", name_en: "Cairo (Egypt)", flag: "🇪🇬" },
+  "riyadh": { id: "Asia/Riyadh", name_ar: "الرياض (السعودية)", name_en: "Riyadh (KSA)", flag: "🇸🇦" },
+  "dubai": { id: "Asia/Dubai", name_ar: "دبي (الإمارات)", name_en: "Dubai (UAE)", flag: "🇦🇪" },
+  "london": { id: "Europe/London", name_ar: "لندن (جرينتش)", name_en: "London (GMT/BST)", flag: "🇬🇧" },
+  "newyork": { id: "America/New_York", name_ar: "نيويورك (وول ستريت)", name_en: "New York (EST/EDT)", flag: "🇺🇸" }
+};
 
 const BANK_EN_NAMES = {
   "HSBC": "HSBC Egypt",
@@ -139,9 +148,12 @@ function format12HourTime(timeStr, lang) {
   return `${h}:${min} ${suffix}`;
 }
 
-function getCairoFullDateTime(lang) {
+function getCairoFullDateTime(lang, tzKey) {
+  tzKey = tzKey || "cairo";
+  const tzObj = TIMEZONES[tzKey] || TIMEZONES["cairo"];
+  const tzId = tzObj.id;
   const d = new Date();
-  const time24 = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  const time24 = d.toLocaleTimeString("en-GB", { timeZone: tzId, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
   const parts = time24.split(":");
   let hNum = parseInt(parts[0], 10);
   const min = parts[1] || "00";
@@ -152,12 +164,15 @@ function getCairoFullDateTime(lang) {
   const timeEn = `${hNum}:${min}:${sec} ${isPm ? "PM" : "AM"}`;
   const timeAr = `${hNum}:${min}:${sec} ${isPm ? "م" : "ص"}`;
 
+  const tzLabelEn = tzObj.name_en;
+  const tzLabelAr = tzObj.name_ar;
+
   if (lang === "en") {
-    const dateStr = d.toLocaleDateString("en-US", { timeZone: "Africa/Cairo", weekday: "short", month: "short", day: "numeric", year: "numeric" });
-    return `${dateStr} • ${timeEn} (Cairo Time)`;
+    const dateStr = d.toLocaleDateString("en-US", { timeZone: tzId, weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    return `${dateStr} • ${timeEn} (${tzLabelEn})`;
   }
-  const dateStrAr = d.toLocaleDateString("ar-EG-u-nu-latn", { timeZone: "Africa/Cairo", weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  return `${dateStrAr} • ${timeAr} بتوقيت مصر`;
+  const dateStrAr = d.toLocaleDateString("ar-EG-u-nu-latn", { timeZone: tzId, weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return `${dateStrAr} • ${timeAr} بتوقيت ${tzLabelAr}`;
 }
 
 function extractTimeFromTimestamp(ts) {
@@ -820,7 +835,8 @@ async function handleTelegramUpdate(update, originUrl) {
       let kb = getReportKeyboard(target, targetLang, cfg, targetCurr);
 
       if (target === "report") {
-        content = formatExecutiveReport(data, targetLang, targetCurr);
+        const userTz = userTzPreferences[chatId] || "cairo";
+        content = formatExecutiveReport(data, targetLang, targetCurr, userTz);
       } else if (target === "egx") {
         content = formatEgxReport(data, targetLang, targetCurr);
       } else if (target === "history" || target === "archive") {
@@ -867,7 +883,27 @@ async function handleTelegramUpdate(update, originUrl) {
       await reply(formatCurrenciesReport(data, lang, curr), getReportKeyboard("currencies", lang, cfg, curr));
     } else if (text === "cmd_report") {
       const data = await getCachedDashboardData();
-      await reply(formatExecutiveReport(data, lang, curr), getReportKeyboard("report", lang, cfg, curr));
+      const userTz = userTzPreferences[chatId] || "cairo";
+      await reply(formatExecutiveReport(data, lang, curr, userTz), getReportKeyboard("report", lang, cfg, curr));
+    } else if (text.startsWith("cmd_timezone")) {
+      const parts = text.split(":");
+      const tLang = parts[1] || lang;
+      const userTz = userTzPreferences[chatId] || "cairo";
+      const title = tLang === "en" ? "🌍 <b>Select Your Preferred Timezone:</b>" : "🌍 <b>اختر منطقتك الزمنية المفضلة لعرض الأوقات:</b>";
+      await reply(title, getTimezoneKeyboard(tLang, userTz));
+      return;
+    } else if (text.startsWith("set_tz:")) {
+      const parts = text.split(":");
+      const newTz = parts[1] || "cairo";
+      const tLang = parts[2] || lang;
+      userTzPreferences[chatId] = newTz;
+      const tzObj = TIMEZONES[newTz] || TIMEZONES["cairo"];
+      const toast = tLang === "en" ? `✅ Timezone set to ${tzObj.name_en}` : `✅ تم ضبط التوقيت على ${tzObj.name_ar}`;
+      if (callbackId) {
+        try { await answerCallback(callbackId, toast); } catch(e) {}
+      }
+      await sendMainMenu(chatId, tLang, originUrl, cfg, messageId);
+      return;
     } else if (text === "cmd_menu") {
       await sendMainMenu(chatId, lang, originUrl, cfg, messageId);
     }
@@ -882,10 +918,15 @@ async function handleTelegramUpdate(update, originUrl) {
   const isEgx = lower === "/egx" || lower.includes("بورصة") || lower.includes("مؤسسات") || lower.includes("اسهم") || lower.includes("اجانب") || lower.includes("أجانب");
   const isBanks = lower === "/banks" || lower.includes("بنوك") || lower.includes("بنك") || lower.includes("دولار");
   const isReport = lower === "/report" || lower.includes("تقرير") || lower.includes("تنفيذي");
+  const isTimezone = lower === "/timezone" || lower === "/tz" || lower.includes("توقيت") || lower.includes("منطقة زمنية");
   const isMenu = lower === "/start" || lower === "/help" || lower.includes("قائمة") || lower === "menu";
 
   if (isMenu) {
     await sendMainMenu(chatId, lang, originUrl, cfg);
+  } else if (isTimezone) {
+    const userTz = userTzPreferences[chatId] || "cairo";
+    const title = lang === "en" ? "🌍 <b>Select Your Preferred Timezone:</b>" : "🌍 <b>اختر منطقتك الزمنية المفضلة لعرض الأوقات:</b>";
+    await sendTgMessage(chatId, title, getTimezoneKeyboard(lang, userTz));
   } else if (isHistory) {
     const data = await getCachedDashboardData();
     await sendTgMessage(chatId, formatEgxHistoryReport(data, lang, curr), getReportKeyboard("history", lang, cfg, curr));
@@ -903,7 +944,8 @@ async function handleTelegramUpdate(update, originUrl) {
     await sendTgMessage(chatId, formatBanksReport(data, lang, cfg), getReportKeyboard("banks", lang, cfg, curr));
   } else if (isReport) {
     const data = await getCachedDashboardData();
-    await sendTgMessage(chatId, formatExecutiveReport(data, lang, curr), getReportKeyboard("report", lang, cfg, curr));
+    const userTz = userTzPreferences[chatId] || "cairo";
+    await sendTgMessage(chatId, formatExecutiveReport(data, lang, curr, userTz), getReportKeyboard("report", lang, cfg, curr));
   } else if (lower.indexOf("/") === 0) {
     await sendTgMessage(chatId, lang === "en" ? "❓ Unknown command. Type /start for menu." : "❓ أمر غير معروف. اضغط /start لعرض القائمة الرئيسية.", getMenuKeyboard(lang, originUrl, cfg));
   }
@@ -1485,8 +1527,9 @@ function formatAllBanksReport(data, lang) {
 /**
  * 5. التقرير المالي التنفيذي الشامل (المخصص - الأجانب فقط، الدولار، الذهب 24، برنت)
  */
-function formatExecutiveReport(data, lang, curr) {
+function formatExecutiveReport(data, lang, curr, tzKey) {
   curr = curr || "usd";
+  tzKey = tzKey || "cairo";
   const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
   let foNet = 0, totNet = 0;
   let foBuy = 0, foSell = 0;
@@ -1521,7 +1564,7 @@ function formatExecutiveReport(data, lang, curr) {
     }
   }
 
-  const updatedDateTime = getCairoFullDateTime(lang);
+  const updatedDateTime = getCairoFullDateTime(lang, tzKey);
   const snapshotTime = getEgxSnapshotTime(data, lang);
   const snapshotLineEn = snapshotTime ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
   const snapshotLineAr = snapshotTime ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
@@ -1753,6 +1796,23 @@ function getMenuKeyboard(lang, originUrl, cfg) {
     { text: (lang === "en" ? "🌐 اللغة العربية" : "🌐 English"), callback_data: (lang === "en" ? "cmd_lang_ar" : "cmd_lang_en") }
   ]);
 
+  rows.push([
+    { text: (lang === "en" ? "🌍 Timezone Settings" : "🌍 ضبط المنطقة الزمنية"), callback_data: `cmd_timezone:${lang}` }
+  ]);
+
+  return { inline_keyboard: rows };
+}
+
+function getTimezoneKeyboard(lang, currentTz) {
+  currentTz = currentTz || "cairo";
+  const rows = [];
+  for (let key in TIMEZONES) {
+    const tz = TIMEZONES[key];
+    const isSel = (key === currentTz);
+    const label = `${tz.flag} ${lang === "en" ? tz.name_en : tz.name_ar} ${isSel ? "✅" : ""}`;
+    rows.push([{ text: label, callback_data: `set_tz:${key}:${lang}` }]);
+  }
+  rows.push([{ text: (lang === "en" ? "🔙 Main Menu" : "🔙 القائمة الرئيسية"), callback_data: `cmd_menu:${lang}` }]);
   return { inline_keyboard: rows };
 }
 
@@ -1761,7 +1821,8 @@ function getBanksKeyboard(lang) {
 }
 
 async function sendMainMenu(chatId, lang, originUrl, cfg, messageId) {
-  const updatedDateTime = getCairoFullDateTime(lang);
+  const userTz = userTzPreferences[chatId] || "cairo";
+  const updatedDateTime = getCairoFullDateTime(lang, userTz);
   const text = (lang === "en")
     ? `🏛️ <b>Egyptian Stock Exchange & Live Markets Bot</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ Powered by <b>Cloudflare Edge & Live Feeds</b> 24/7.\n\n👇 <i>Choose from the interactive menu below:</i>`
     : `🏛️ <b>منظومة البورصة المصرية وأسواق الصرف الحية 24/7</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ تعمل سحابياً عبر <b>Cloudflare Edge وموقع تعويم وبينانس</b> مباشرة.\n\n👇 <i>اختر ما تريد من القائمة التفاعلية أدناه:</i>`;
