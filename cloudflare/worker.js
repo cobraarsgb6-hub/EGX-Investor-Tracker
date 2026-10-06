@@ -184,25 +184,34 @@ function formatCleanTime(val, lang) {
 
 function getEgxSnapshotTime(data, lang) {
   let raw = "";
-  if (data?.egx_institutions?.timestamp) {
-    const m = String(data.egx_institutions.timestamp).match(/(\d{1,2}):(\d{2})/);
-    if (m) raw = `${m[1].padStart(2, "0")}:${m[2]}`;
-  }
-  if (!raw && data?.timestamp) {
-    try {
-      const d = new Date(data.timestamp);
-      if (!isNaN(d.getTime())) {
-        raw = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit" });
+  const tsCandidate = data?.egx_institutions?.timestamp || data?.timestamp || (data?.archive && data.archive[0]?.created_at) || "";
+
+  if (tsCandidate) {
+    const s = String(tsCandidate).trim();
+    // If it's an ISO UTC string like "2026-10-06T11:03:06.061Z" or ends with Z
+    if (s.includes("T") || s.endsWith("Z")) {
+      try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          raw = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hour12: false });
+        }
+      } catch(e) {}
+    } else {
+      // If it's a plain string like "2026-10-06 11:01:10" coming from GitHub Actions (UTC)
+      const m = s.match(/(\d{1,2}):(\d{2})/);
+      if (m) {
+        let h = parseInt(m[1], 10);
+        const min = m[2];
+        // If hour is <= 12 during afternoon (e.g. 10:56 AM or 11:01 AM while it was run in UTC on GitHub Actions)
+        // Check if converting UTC to Cairo (+3 hours) makes it fit EGX trading hours (10:00 to 15:00)
+        if (h <= 12 && (s.includes(" 10:") || s.includes(" 11:") || s.includes(" 07:") || s.includes(" 08:") || s.includes(" 09:") || s.includes(" 12:"))) {
+          h = (h + 3) % 24;
+        }
+        raw = `${String(h).padStart(2, "0")}:${min}`;
       }
-    } catch(e) {}
-    if (!raw) {
-      const m = String(data.timestamp).match(/(\d{1,2}):(\d{2})/);
-      if (m) raw = `${m[1].padStart(2, "0")}:${m[2]}`;
     }
   }
-  if (!raw && data?.archive && data.archive[0]?.created_at) {
-    raw = data.archive[0].created_at;
-  }
+
   return raw ? format12HourTime(raw, lang) : "";
 }
 

@@ -1,6 +1,7 @@
 import json
 import time
 import os
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 from playwright.sync_api import sync_playwright
 
@@ -165,8 +166,11 @@ def fetch_investors_from_egx(
     individuals = process_group("2")
     institutions = process_group("3")
 
+    cairo_now = datetime.now(timezone.utc) + timedelta(hours=3)
+    cairo_ts = cairo_now.strftime("%Y-%m-%d %H:%M:%S")
+
     result = {
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "timestamp": cairo_ts,
         "sb": sb,
         "segment_name": MARKET_SEGMENTS.get(sb, "غير محدد"),
         "usd_rate": usd_rate,
