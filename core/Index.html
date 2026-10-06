@@ -1124,30 +1124,8 @@
       <!-- زر لوحة تحكم وتخصيص بوت تلجرام -->
       <a href="?page=tg_control" class="pill-btn" style="background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.4); color:#38bdf8; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
         <i class="fa-brands fa-telegram"></i>
-        <span>تحكم البوت</span>
+        <span id="txt-bot-control">تحكم البوت</span>
       </a>
-    </div>
-  </div>
-
-  <!-- شريط استعراض واختيار التصميمات الأربعة المباشرة (Theme Showcase Bar) -->
-  <div class="theme-banner" style="background: var(--card-bg); border-bottom: 1.5px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <i class="fa-solid fa-palette" style="color: #0284c7; font-size: 1.15rem;"></i>
-      <span style="font-weight: 800; font-size: 0.95rem; color: var(--text);">اختر تصميم المنصة المفضل (4 Live Themes):</span>
-    </div>
-    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;" id="theme-buttons-container">
-      <button class="pill-btn theme-choice-btn" id="tbtn-swiss" onclick="switchTheme('swiss')" style="display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--border); padding:7px 15px; border-radius:8px; font-weight:800; cursor:pointer; font-family:inherit;">
-        <span>🏦</span> <span>النمط السويسري (Swiss Clean)</span>
-      </button>
-      <button class="pill-btn theme-choice-btn" id="tbtn-terminal" onclick="switchTheme('terminal')" style="display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--border); padding:7px 15px; border-radius:8px; font-weight:800; cursor:pointer; font-family:inherit;">
-        <span>💻</span> <span>بلومبرج المؤسسي (Terminal Elite)</span>
-      </button>
-      <button class="pill-btn theme-choice-btn" id="tbtn-matrix" onclick="switchTheme('matrix')" style="display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--border); padding:7px 15px; border-radius:8px; font-weight:800; cursor:pointer; font-family:inherit;">
-        <span>📈</span> <span>منصة التداول (Trading Matrix)</span>
-      </button>
-      <button class="pill-btn theme-choice-btn" id="tbtn-csuite" onclick="switchTheme('csuite')" style="display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--border); padding:7px 15px; border-radius:8px; font-weight:800; cursor:pointer; font-family:inherit;">
-        <span>📊</span> <span>التقرير التنفيذي (C-Suite Minimalist)</span>
-      </button>
     </div>
   </div>
 
@@ -1185,12 +1163,12 @@
         </div>
       </div>
 
-      <!-- كارت البطل الرئيسي للمؤسسات الأجنبية + التراكمي الأسبوعي والشهري -->
-      <div id="foreign-hero-spotlight" style="padding: 16px 20px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, rgba(225,29,72,0.04) 0%, rgba(37,99,235,0.04) 100%);">
+      <!-- كارت البطل الرئيسي للمؤسسات الأجنبية (مباشر وأنيق دون تكرار) -->
+      <div id="foreign-hero-spotlight" style="padding: 16px 20px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, rgba(2,132,199,0.04) 0%, rgba(37,99,235,0.03) 100%);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
           <div>
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-              <span class="badge-flow badge-buyer" style="background:#ffe4e6; color:#9f1239; border-color:#fecdd3;">🌐 فئة التركيز الرئيسية</span>
+              <span class="badge-flow badge-buyer" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">🌐 فئة التركيز الرئيسية</span>
               <span style="font-size: 1.05rem; font-weight: 900; color: #0f172a;">المؤسسات الأجنبية (Foreign Institutional Flows)</span>
             </div>
             <div style="font-size: 0.82rem; color: #64748b; font-weight: 600;">
@@ -1199,25 +1177,10 @@
           </div>
           
           <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-            <!-- صافي جلسة اليوم -->
-            <div style="background:var(--card-bg); padding:10px 16px; border-radius:10px; border:1.5px solid var(--border); text-align:center; min-width:140px; box-shadow:var(--shadow-sm);">
-              <div style="font-size:0.72rem; font-weight:800; color:#64748b; text-transform:uppercase;">صافي جلسة اليوم</div>
-              <div class="num-ltr" id="hero-fo-today" style="font-size:1.35rem; font-weight:900; line-height:1.2; margin-top:2px;">--</div>
-              <div class="num-ltr" id="hero-fo-today-sub" style="font-size:0.75rem; font-weight:700; color:#64748b;">--</div>
-            </div>
-
-            <!-- التراكمي الأسبوعي من الأحد -->
-            <div style="background:var(--card-bg); padding:10px 16px; border-radius:10px; border:1.5px solid var(--border); text-align:center; min-width:150px; box-shadow:var(--shadow-sm);">
-              <div style="font-size:0.72rem; font-weight:800; color:#2563eb; text-transform:uppercase;">التراكمي الأسبوعي (من الأحد)</div>
-              <div class="num-ltr" id="hero-fo-weekly" style="font-size:1.35rem; font-weight:900; line-height:1.2; margin-top:2px;">--</div>
-              <div class="num-ltr" id="hero-fo-weekly-sub" style="font-size:0.75rem; font-weight:700; color:#64748b;">--</div>
-            </div>
-
-            <!-- التراكمي الشهري لأكتوبر -->
-            <div style="background:var(--card-bg); padding:10px 16px; border-radius:10px; border:1.5px solid var(--border); text-align:center; min-width:150px; box-shadow:var(--shadow-sm);">
-              <div style="font-size:0.72rem; font-weight:800; color:#d97706; text-transform:uppercase;">التراكمي الشهري (أكتوبر 2026)</div>
-              <div class="num-ltr" id="hero-fo-monthly" style="font-size:1.35rem; font-weight:900; line-height:1.2; margin-top:2px;">--</div>
-              <div class="num-ltr" id="hero-fo-monthly-sub" style="font-size:0.75rem; font-weight:700; color:#64748b;">--</div>
+            <div style="background:var(--card-bg); padding:10px 20px; border-radius:10px; border:1.5px solid var(--border); text-align:center; min-width:180px; box-shadow:var(--shadow-sm);">
+              <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">صافي جلسة اليوم (الأجانب)</div>
+              <div class="num-ltr" id="hero-fo-today" style="font-size:1.45rem; font-weight:900; line-height:1.2; margin-top:2px;">--</div>
+              <div class="num-ltr" id="hero-fo-today-sub" style="font-size:0.8rem; font-weight:700; color:#64748b;">--</div>
             </div>
           </div>
         </div>
@@ -1299,6 +1262,28 @@
             <button class="filter-btn" id="btn-filter-october" onclick="filterArchiveByPeriod('october')">أكتوبر 2026 (الحالي)</button>
             <button class="filter-btn" id="btn-filter-september" onclick="filterArchiveByPeriod('september')">سبتمبر 2026</button>
             <button class="filter-btn" id="btn-filter-yearly" onclick="filterArchiveByPeriod('yearly')">سنوي (YTD 2026)</button>
+          </div>
+        </div>
+
+        <!-- شريط التراكميات الذكي المدمج بجوار الأرشيف مباشرة -->
+        <div id="archive-cumulative-strip" style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:0.8rem; font-weight:800; color:#0284c7;"><i class="fa-solid fa-chart-pie"></i> <span id="txt-cumul-label">الرصيد التراكمي للفترة المحددة:</span></span>
+            <span class="badge-flow badge-neutral num-ltr" id="arch-cumul-period-tag" style="font-size:0.75rem; font-weight:700;">كافة الجلسات</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div style="font-size:0.82rem; font-weight:700;">
+              <span style="color:#64748b;">تراكمي الأجانب (الأساس):</span>
+              <span class="num-ltr" id="arch-cumul-fo" style="font-weight:900; margin-inline-start:4px;">--</span>
+            </div>
+            <div style="font-size:0.82rem; font-weight:700;">
+              <span style="color:#64748b;">تراكمي المصريين:</span>
+              <span class="num-ltr" id="arch-cumul-eg" style="font-weight:900; margin-inline-start:4px;">--</span>
+            </div>
+            <div style="font-size:0.82rem; font-weight:700;">
+              <span style="color:#64748b;">تراكمي العرب:</span>
+              <span class="num-ltr" id="arch-cumul-ar" style="font-weight:900; margin-inline-start:4px;">--</span>
+            </div>
           </div>
         </div>
 
@@ -1829,6 +1814,8 @@
 
       // Archive
       setTxt("txt-archive-table-title", t.archive_table_title);
+      setTxt("txt-cumul-label", (currentLang === "en") ? "Period Cumulative Net:" : "الرصيد التراكمي للفترة المحددة:");
+      setTxt("txt-bot-control", (currentLang === "en") ? "Bot Control" : "تحكم البوت");
       setTxt("btn-filter-all", t.filter_all);
       setTxt("btn-filter-daily", t.filter_daily);
       setTxt("btn-filter-weekly", t.filter_weekly);
@@ -1986,9 +1973,25 @@
         switchTheme(data.active_theme);
       }
       var t = i18n[currentLang];
-      var usdRate = Number(data.usd_rate || 51.94);
-      var usdBuy = Number(data.cbe_usd_buy || data.usd_buy || 51.94);
-      var usdSell = Number(data.cbe_usd_sell || data.usd_sell || 52.04);
+      // استخراج سعر البنك المركزي الفعلي الموثق
+      var usdBuy = 0, usdSell = 0;
+      if (data.cbe_usd_buy && Number(data.cbe_usd_buy) > 40) {
+        usdBuy = Number(data.cbe_usd_buy);
+        usdSell = Number(data.cbe_usd_sell || (usdBuy + 0.10));
+      } else if (data.banks && data.banks.length > 0) {
+        var cbeBank = data.banks.find(function(b) {
+          var bn = (b.bank || "").toLowerCase();
+          return bn.indexOf("مركزي") >= 0 || bn.indexOf("cbe") >= 0;
+        });
+        if (cbeBank && Number(cbeBank.buy) > 40) {
+          usdBuy = Number(cbeBank.buy);
+          usdSell = Number(cbeBank.sell || (usdBuy + 0.10));
+        }
+      }
+      if (!usdBuy || usdBuy < 45) usdBuy = 52.26;
+      if (!usdSell || usdSell < 45) usdSell = 52.36;
+
+      var usdRate = usdBuy;
       
       var elBuy = document.getElementById("nav-usd-buy");
       var elSell = document.getElementById("nav-usd-sell");
@@ -2084,29 +2087,16 @@
         foMonthlyNet = foNet;
       }
 
-      // تحديث كارت البطل المخصص للأجانب والتراكمي (Foreign Hero Spotlight)
+      // تحديث كارت البطل المخصص للأجانب لليوم (Foreign Hero Spotlight)
       var heroTodayEl = document.getElementById("hero-fo-today");
       var heroTodaySubEl = document.getElementById("hero-fo-today-sub");
-      var heroWeeklyEl = document.getElementById("hero-fo-weekly");
-      var heroWeeklySubEl = document.getElementById("hero-fo-weekly-sub");
-      var heroMonthlyEl = document.getElementById("hero-fo-monthly");
-      var heroMonthlySubEl = document.getElementById("hero-fo-monthly-sub");
-
       if (heroTodayEl) {
         if (currentCurrency === "USD") {
           heroTodayEl.innerHTML = formatSignNum(foNet / usdRate, "$", 0);
           if (heroTodaySubEl) heroTodaySubEl.innerHTML = formatSignNum(foNet, currEgpLabel, 0);
-          if (heroWeeklyEl) heroWeeklyEl.innerHTML = formatSignNum(foWeeklyNet / usdRate, "$", 0);
-          if (heroWeeklySubEl) heroWeeklySubEl.innerHTML = formatSignNum(foWeeklyNet, currEgpLabel, 0);
-          if (heroMonthlyEl) heroMonthlyEl.innerHTML = formatSignNum(foMonthlyNet / usdRate, "$", 0);
-          if (heroMonthlySubEl) heroMonthlySubEl.innerHTML = formatSignNum(foMonthlyNet, currEgpLabel, 0);
         } else {
           heroTodayEl.innerHTML = formatSignNum(foNet, currEgpLabel, 0);
           if (heroTodaySubEl) heroTodaySubEl.innerHTML = formatSignNum(foNet / usdRate, "$", 0);
-          if (heroWeeklyEl) heroWeeklyEl.innerHTML = formatSignNum(foWeeklyNet, currEgpLabel, 0);
-          if (heroWeeklySubEl) heroWeeklySubEl.innerHTML = formatSignNum(foWeeklyNet / usdRate, "$", 0);
-          if (heroMonthlyEl) heroMonthlyEl.innerHTML = formatSignNum(foMonthlyNet, currEgpLabel, 0);
-          if (heroMonthlySubEl) heroMonthlySubEl.innerHTML = formatSignNum(foMonthlyNet / usdRate, "$", 0);
         }
       }
 
@@ -2147,7 +2137,7 @@
     // بطاقات الأسواق الحية المدمجة الشاملة (بدون أي تكرار)
     function renderMarketCards(rates) {
       var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
-      var usdRate = Number((globalData && globalData.usd_rate) || 51.94);
+      var usdRate = Number((globalData && globalData.usd_rate) || 52.26);
       var cardsHtml = "";
 
       var filtered = rates.filter(function(item) {
@@ -2169,16 +2159,33 @@
         var trendClass = chgInfo.isPos ? "trend-up" : "trend-down";
         var trendIcon = chgInfo.isPos ? "fa-arrow-up" : "fa-arrow-down";
 
-        var pEgp = formatNum(ePrice, 2) + " " + currEgpLabel;
-        var pUsd = "$" + formatNum(uPrice, uPrice < 10 ? (uPrice < 1 ? 4 : 3) : 2);
-
-        var mainVal = (currentCurrency === "USD") ? pUsd : pEgp;
-        var subVal = (currentCurrency === "USD") ? pEgp : pUsd;
-
         var catKey = assetMeta.cat || "curr";
         var catClass = "card-cat-" + catKey;
         var catTagLabel = (currentLang === "en") ? (assetMeta.cat_en || "Asset") : (assetMeta.cat_ar || "أصل");
         var catTagClass = "cat-tag-" + catKey;
+
+        var mainVal, subVal;
+        if (catKey === "curr") {
+          // أسعار العملات مقابل الجنيه المصري فقط مع سعر الشراء والبيع للبنك
+          var buyVal = Number(item.buy || 0);
+          var sellVal = Number(item.sell || 0);
+          mainVal = formatNum(ePrice, 2) + " " + currEgpLabel;
+          if (buyVal > 0 && sellVal > 0) {
+            subVal = (currentLang === "en") 
+              ? ("Buy: " + formatNum(buyVal, 2) + " | Sell: " + formatNum(sellVal, 2) + " " + currEgpLabel)
+              : ("شراء: " + formatNum(buyVal, 2) + " | بيع: " + formatNum(sellVal, 2) + " " + currEgpLabel);
+          } else {
+            subVal = item.code + " / " + currEgpLabel;
+          }
+        } else if (catKey === "crypto" || catKey === "oil" || item.code === "GOLD") {
+          // الكريبتو والنفط وأونصة الذهب: السعر العالمي بالدولار وتحته المعادل بالجنيه
+          mainVal = (currentCurrency === "EGP") ? pEgp : pUsd;
+          subVal = (currentCurrency === "EGP") ? pUsd : pEgp;
+        } else {
+          // الذهب والفضة المحلي
+          mainVal = (currentCurrency === "USD") ? pUsd : pEgp;
+          subVal = (currentCurrency === "USD") ? pEgp : pUsd;
+        }
 
         cardsHtml += '<div class="asset-card ' + catClass + '">'
           + '<div class="asset-head">'
@@ -2200,7 +2207,7 @@
     function renderArchiveTable(data) {
       if (!data || !data.archive) return;
       var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
-      var usdRate = Number(data.usd_rate || 51.94);
+      var usdRate = Number(data.usd_rate || 52.26);
       var rows = data.archive.slice();
 
       if (currentArchiveFilter === "daily") {
@@ -2234,6 +2241,46 @@
         rows = rows.filter(function(r) { return String(r.date).indexOf(String(currYear)) >= 0; });
       }
       if (rows.length === 0) rows = data.archive.slice(0, 1);
+
+      // حساب التراكمي للفترة المحددة وتحديث الشريط الذكي
+      var cumFo = 0, cumEg = 0, cumAr = 0;
+      rows.forEach(function(r) {
+        cumFo += Number(r.foreign_net || 0);
+        cumEg += Number(r.egypt_net || 0);
+        cumAr += Number(r.arab_net || 0);
+      });
+
+      var periodNamesMap = {
+        "all": currentLang === "en" ? "All Records" : "كافة الجلسات",
+        "daily": currentLang === "en" ? "Latest Session" : "جلسة اليوم",
+        "weekly": currentLang === "en" ? "Current Week" : "الأسبوع الحالي",
+        "october": currentLang === "en" ? "October 2026" : "أكتوبر 2026",
+        "september": currentLang === "en" ? "September 2026" : "سبتمبر 2026",
+        "yearly": currentLang === "en" ? "YTD 2026" : "سنوي 2026"
+      };
+
+      var tagEl = document.getElementById("arch-cumul-period-tag");
+      if (tagEl) tagEl.innerText = periodNamesMap[currentArchiveFilter] || periodNamesMap["all"];
+
+      var foEl = document.getElementById("arch-cumul-fo");
+      var egEl = document.getElementById("arch-cumul-eg");
+      var arEl = document.getElementById("arch-cumul-ar");
+
+      if (foEl) {
+        foEl.innerHTML = (currentCurrency === "USD") 
+          ? formatSignNum(cumFo / usdRate, "$", 0) 
+          : formatSignNum(cumFo, currEgpLabel, 0);
+      }
+      if (egEl) {
+        egEl.innerHTML = (currentCurrency === "USD") 
+          ? formatSignNum(cumEg / usdRate, "$", 0) 
+          : formatSignNum(cumEg, currEgpLabel, 0);
+      }
+      if (arEl) {
+        arEl.innerHTML = (currentCurrency === "USD") 
+          ? formatSignNum(cumAr / usdRate, "$", 0) 
+          : formatSignNum(cumAr, currEgpLabel, 0);
+      }
 
       var archHtml = "";
       rows.forEach(function(row) {
@@ -2391,7 +2438,7 @@
             var item = globalData.rates.find(function(r) { return r.code === code; });
             if (item) {
               item.usd_price = parseFloat(d.c);
-              item.egp_price = item.usd_price * Number(globalData.usd_rate || 51.94);
+              item.egp_price = item.usd_price * Number(globalData.usd_rate || 52.26);
               item.change = parseFloat(d.P).toFixed(2) + "%";
               item.updated_at = new Date().toLocaleTimeString("en-US");
               renderMarketCards(globalData.rates);
@@ -2408,19 +2455,6 @@
       localStorage.setItem("active_theme", themeKey);
       var sel = document.getElementById("themeSelector");
       if (sel) sel.value = themeKey;
-      
-      // تمييز الزر النشط في شريط الثيمات العلوي
-      document.querySelectorAll(".theme-choice-btn").forEach(function(b) {
-        b.style.boxShadow = "none";
-        b.style.borderColor = "var(--border)";
-        b.style.opacity = "0.7";
-      });
-      var activeTBtn = document.getElementById("tbtn-" + themeKey);
-      if (activeTBtn) {
-        activeTBtn.style.opacity = "1";
-        activeTBtn.style.borderColor = "var(--primary)";
-        activeTBtn.style.boxShadow = "0 0 10px rgba(0,0,0,0.15)";
-      }
 
       if (typeof google !== "undefined" && google.script && google.script.run) {
         google.script.run.applyActiveTheme(themeKey);

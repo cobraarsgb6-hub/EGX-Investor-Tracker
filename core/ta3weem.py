@@ -16,7 +16,7 @@ def fetch_crypto_rates() -> List[Dict[str, Any]]:
     Fetches real-time BTC and ETH prices from Binance public ticker.
     """
     cryptos = [
-        {"sym": "BTCUSDT", "name": "بتكوين", "code": "BTC", "icon": "🪙", "default_price": 84400.0},
+        {"sym": "BTCUSDT", "name": "بتكوين", "code": "BTC", "icon": "🪙", "default_price": 86000.0},
         {"sym": "ETHUSDT", "name": "إيثريوم", "code": "ETH", "icon": "🔷", "default_price": 2730.0}
     ]
     results = []
