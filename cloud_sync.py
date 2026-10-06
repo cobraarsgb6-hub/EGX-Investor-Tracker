@@ -56,8 +56,19 @@ def run_cloud_sync(webhook_url=None):
     result = sync_to_google_sheets(webhook_url=target_url)
     print("📌 Google Sheets Result:", json.dumps(result, ensure_ascii=False, indent=2))
     
+    # 4. Save latest unified payload to JSON for GitHub Actions / Cloudflare direct CDN access
+    try:
+        from core.google_sheets import prepare_google_sheets_data
+        payload = prepare_google_sheets_data(sb="1")
+        export_path = os.path.join(BASE_DIR, "data", "live_dashboard_data.json")
+        with open(export_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        print(f"💾 [4/4] Saved unified data payload to {export_path}")
+    except Exception as eExp:
+        print(f"⚠️ Failed to save unified JSON payload: {eExp}")
+
     if result.get("status") == "success":
-        print("🎉 [DONE] Google Sheets successfully updated completely in the cloud!")
+        print("🎉 [DONE] Google Sheets & Cloud Sync completed successfully!")
     else:
         print("❌ [FAILED] Google Sheets update failed:", result.get("message"))
         sys.exit(1)

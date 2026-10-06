@@ -13,9 +13,11 @@
  * ==================================================================================
  */
 
-const BOT_TOKEN = "8602326797:AAH0__1Q9RTSvmkho6qR0-Sk6FWSrHQF6GY";
+// توكن البوت الافتراضي (مع إمكانية تجاوزه تلقائياً عبر Cloudflare Secrets: env.BOT_TOKEN)
+let BOT_TOKEN = "8602326797:AAH0__1Q9RTSvmkho6qR0-Sk6FWSrHQF6GY";
 const DATA_API_URL = "https://script.google.com/macros/s/AKfycbwO2XFvnxgA4aXgzZKoVCLhRy0CnfUonrptmkxvQF4nZChW_D_RrZsQDXm6NUW6QIRGuA/exec?action=data";
 const CONFIG_API_URL = "https://script.google.com/macros/s/AKfycbwO2XFvnxgA4aXgzZKoVCLhRy0CnfUonrptmkxvQF4nZChW_D_RrZsQDXm6NUW6QIRGuA/exec";
+const GITHUB_RAW_DATA_URL = "https://raw.githubusercontent.com/cobraarsgb6-hub/EGX-Investor-Tracker/main/data/live_dashboard_data.json";
 
 // الإعدادات المركزية الافتراضية (اللغة الافتراضية إنجليزية بناءً على رغبة المستخدم)
 let botConfig = {
@@ -229,6 +231,11 @@ function fmtSignedUsd(v, usdRate) {
 
 export default {
   async fetch(request, env, ctx) {
+    // تحديث توكن البوت تلقائياً من Cloudflare Secrets إذا وجد، وإلا استخدام التوكن الافتراضي
+    if (env && env.BOT_TOKEN) {
+      BOT_TOKEN = env.BOT_TOKEN;
+    }
+
     const url = new URL(request.url);
 
     // 1. فحص الحالة
@@ -542,8 +549,9 @@ async function getCachedDashboardData() {
 
   // 1. تحديث بيانات الشيت عبر كاش 60 ثانية لجلب جلسات البورصة المصرية وأسعار بنوك تعويم
   if (!sheetCache.timestamp || (now - sheetCache.timestamp > 60000)) {
+    let fetched = false;
     try {
-      const sSignal = AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined;
+      const sSignal = AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined;
       const sRes = await fetch(DATA_API_URL, {
         headers: { "User-Agent": "Cloudflare-Worker-EGX" },
         signal: sSignal
@@ -553,9 +561,26 @@ async function getCachedDashboardData() {
         if (sJson && ((sJson.archive && sJson.archive.length > 0) || (sJson.banks && sJson.banks.length > 0))) {
           sheetCache.data = sJson;
           sheetCache.timestamp = now;
+          fetched = true;
         }
       }
     } catch(eSheet) {}
+
+    // في حال تعذر Google Apps Script أو تأخره، يتم السحب الفوري من مستودع GitHub Raw
+    if (!fetched) {
+      try {
+        const ghRes = await fetch(GITHUB_RAW_DATA_URL, {
+          headers: { "User-Agent": "Cloudflare-Worker-EGX" }
+        });
+        if (ghRes && ghRes.ok) {
+          const ghJson = await ghRes.json();
+          if (ghJson && ((ghJson.archive && ghJson.archive.length > 0) || (ghJson.banks && ghJson.banks.length > 0))) {
+            sheetCache.data = ghJson;
+            sheetCache.timestamp = now;
+          }
+        }
+      } catch(eGh) {}
+    }
   }
 
   const sheetData = sheetCache.data || {};

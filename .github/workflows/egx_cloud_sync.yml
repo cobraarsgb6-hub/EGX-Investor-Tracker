@@ -40,7 +40,7 @@ jobs:
         run: |
           python cloud_sync.py
 
-      - name: Commit & Push Updated Archive Database
+      - name: Commit & Push Updated Archive Database and Data Payloads
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
