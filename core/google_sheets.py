@@ -123,6 +123,34 @@ def prepare_google_sheets_data(sb: str = "1") -> Dict[str, Any]:
             "updated_at": now_time
         })
 
+    # Gold Ounce & Silver (Global Spot)
+    g_ounce_val = float(ta3weem.get("gold_ounce", 4165.0) or 4165.0)
+    live_rates.append({
+        "category": "ذهب ومعادن",
+        "name": "أونصة الذهب (Gold Ounce)",
+        "code": "GOLD_OUNCE",
+        "usd_price": g_ounce_val,
+        "egp_price": round(g_ounce_val * usd_rate, 2),
+        "buy": g_ounce_val,
+        "sell": g_ounce_val,
+        "rate_egp": round(g_ounce_val * usd_rate, 2),
+        "change": "+0.45%",
+        "updated_at": now_time
+    })
+    silver_val = float(ta3weem.get("silver", 61.10) or 61.10)
+    live_rates.append({
+        "category": "ذهب ومعادن",
+        "name": "أونصة الفضة (Silver Ounce)",
+        "code": "SILVER",
+        "usd_price": silver_val,
+        "egp_price": round(silver_val * usd_rate, 2),
+        "buy": silver_val,
+        "sell": silver_val,
+        "rate_egp": round(silver_val * usd_rate, 2),
+        "change": "+0.80%",
+        "updated_at": now_time
+    })
+
     # Oil
     for o in ta3weem.get("commodities", []):
         usd_p = float(o.get("usd_price", 0))

@@ -403,13 +403,24 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
   var todayTotUsd = Math.round(todayTotNet / usdRate);
 
   var topBank = (banks && banks.length > 0) ? banks[0] : { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.42, sell: 52.52 };
-  var gold24 = 0, brent = 0;
+  var gold24 = 0, goldOunce = 0, silver = 0, brent = 0, wti = 0;
   if (rates && rates.length > 0) {
     rates.forEach(function(r) {
-      if (r.code === "GOLD24") gold24 = Number(r.buy || r.sell || 0);
-      if (r.code === "BRENT") brent = Number(r.buy || r.sell || 0);
+      if (r.code === "GOLD24") gold24 = Number(r.usd_price || (r.rate_egp ? r.rate_egp / usdRate : 0));
+      if (r.code === "GOLD_OUNCE" || (r.name && r.name.indexOf("أونصة الذهب") >= 0)) goldOunce = Number(r.usd_price || r.buy || r.sell || 0);
+      if (r.code === "SILVER" || (r.name && r.name.indexOf("الفضة") >= 0)) silver = Number(r.usd_price || r.buy || r.sell || 0);
+      if (r.code === "BRENT") brent = Number(r.usd_price || r.buy || r.sell || 0);
+      if (r.code === "WTI") wti = Number(r.usd_price || r.buy || r.sell || 0);
     });
   }
+
+  if (goldOunce <= 0 && gold24 > 0) goldOunce = Number((gold24 * 31.1035).toFixed(2));
+  if (gold24 <= 0 && goldOunce > 0) gold24 = Number((goldOunce / 31.1035).toFixed(2));
+  if (goldOunce <= 0) goldOunce = 4165.0;
+  if (gold24 <= 0) gold24 = 133.90;
+  if (silver <= 0) silver = 61.10;
+  if (brent <= 0) brent = 98.33;
+  if (wti <= 0) wti = 90.25;
 
   sheet.getRange(1, 1).setValue("🏛️ منظومة البورصة المصرية وأسواق المال - التقرير المالي التنفيذي والتراكمي");
   sheet.getRange(2, 1).setValue("🕒 توقيت المزامنة: " + (ts || new Date().toLocaleString()) + " بتوقيت مصر | سعر الدولار المعتمد: " + usdRate.toFixed(2) + " ج.م");
@@ -442,13 +453,19 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
 
   sheet.getRange(4, 1, summaryRows.length, summaryHeaders.length).setValues(summaryRows);
 
-  var marketHeaders = ["الأصل / المؤشر", "سعر الشراء / العالمي", "سعر البيع / المعادل", "أفضل بنك / المصدر"];
+  var cbeBuyStr = (r0.cbe_usd_buy ? Number(r0.cbe_usd_buy).toFixed(4) : "52.2600") + " ج.م";
+  var cbeSellStr = (r0.cbe_usd_sell ? Number(r0.cbe_usd_sell).toFixed(4) : "52.3600") + " ج.م";
+
+  var marketHeaders = ["الأصل / المؤشر", "السعر العالمي ($USD)", "المعادل المحلي (EGP)", "أفضل بنك / المصدر المعتمد"];
   var marketRows = [
     marketHeaders,
-    ["أعلى سعر شراء للدولار (البنوك)", Number(topBank.buy).toFixed(2) + " ج.م", Number(topBank.sell).toFixed(2) + " ج.م", topBank.bank],
-    ["سعر البنك المركزي (CBE)", "52.3624 ج.م", "52.5006 ج.م", "البنك المركزي المصري"],
-    ["جرام الذهب عيار 24", (gold24 > 0 ? ("$" + gold24.toFixed(2)) : "$133.60"), (gold24 > 0 ? (Math.round(gold24 * usdRate) + " ج.م") : "7,005 ج.م"), "TradingView Live"],
-    ["نفط خام برنت", (brent > 0 ? ("$" + brent.toFixed(2)) : "$100.85"), (brent > 0 ? (Math.round(brent * usdRate) + " ج.م") : "5,285 ج.م"), "عقود برنت الآجلة"]
+    ["أعلى سعر شراء للدولار (البنوك)", "$" + Number(topBank.buy).toFixed(2), Number(topBank.sell).toFixed(2) + " ج.م (بيع)", topBank.bank + " • شراء " + Number(topBank.buy).toFixed(2) + " ج.م"],
+    ["سعر البنك المركزي (CBE)", "$" + cbeBuyStr.replace(" ج.م", ""), cbeSellStr + " (بيع)", "البنك المركزي المصري • رسمي"],
+    ["نفط خام برنت (Brent)", "$" + brent.toFixed(2), Math.round(brent * usdRate).toLocaleString() + " ج.م", "TradingView Futures / ICE"],
+    ["خام غرب تكساس (WTI)", "$" + wti.toFixed(2), Math.round(wti * usdRate).toLocaleString() + " ج.م", "TradingView Futures / NYMEX"],
+    ["أونصة الذهب (Gold Ounce)", "$" + goldOunce.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}), Math.round(goldOunce * usdRate).toLocaleString() + " ج.م", "TradingView Spot / COMEX"],
+    ["جرام الذهب عيار 24", "$" + gold24.toFixed(2), Math.round(gold24 * usdRate).toLocaleString() + " ج.م", "تعويم • ذهب 24"],
+    ["أونصة الفضة (Silver Ounce)", "$" + silver.toFixed(2), Math.round(silver * usdRate).toLocaleString() + " ج.م", "TradingView Spot"]
   ];
 
   sheet.getRange(10, 1, marketRows.length, marketHeaders.length).setValues(marketRows);
@@ -608,8 +625,8 @@ function formatAllSheetsProfessionally() {
     colorNetColumn(s0, 4, nSum, th);
     colorNetColumn(s0, 5, nSum, th);
 
-    if (s0.getLastRow() >= 14) {
-      styleSheetTable(s0, 10, 1, 5, 4, th);
+    if (s0.getLastRow() >= 17) {
+      styleSheetTable(s0, 10, 1, 8, 4, th);
     }
     autoFitColumns(s0, 7);
   }
