@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="page-title">منظومة البورصة المصرية وأسواق الصرف والسلع الحية</title>
   
-  <!-- خطوط احترافية: Plus Jakarta Sans للإنجليزية و Cairo للعربية -->
+  <!-- خطوط احترافية متباينة: Plus Jakarta Sans, IBM Plex Sans Arabic, Cairo, Roboto Mono, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
@@ -42,18 +42,20 @@
       --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
     }
 
-    /* ==========================================
-       منظومة السمات والأنماط البصرية (4 Themes Engine)
-       ========================================== */
+    /* ==========================================================================
+       منظومة السمات والأنماط البصرية الـ 4 المتباينة تماماً (4 Distinct Theme Engines)
+       ========================================================================== */
+
+    /* 🏦 النمط 1: السويسري المالي الحديث (Swiss Clean Financial) - ثيم فاتح نقي فائق النعومة */
     body.theme-swiss {
       --bg: #f8fafc;
       --card-bg: #ffffff;
-      --header-bg: #1e3a8a;
+      --header-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       --header-text: #ffffff;
-      --primary: #090e1a;
-      --primary-card: #0f172a;
-      --border: #cbd5e1;
-      --border-subtle: #f1f5f9;
+      --primary: #0284c7;
+      --primary-card: #f1f5f9;
+      --border: #e2e8f0;
+      --border-subtle: #f8fafc;
       --text: #0f172a;
       --text-muted: #64748b;
       --green: #059669;
@@ -63,128 +65,315 @@
       --red-bg: #fff1f2;
       --red-border: #fecdd3;
       --accent: #0284c7;
+      --card-radius: 14px;
+      --table-header-bg: #0f172a;
+      --table-header-color: #ffffff;
+      font-family: 'Plus Jakarta Sans', 'Cairo', sans-serif;
     }
 
+    /* 💻 النمط 2: شاشة بلومبرج المؤسسية (Terminal Elite Pro) - شاشة أسود داكن كحلي احترافي مع لمسات Cyan وأرقام مونو */
     body.theme-terminal {
-      --bg: #0b0f19;
-      --card-bg: #111827;
-      --header-bg: #0f172a;
+      --bg: #050811;
+      --card-bg: #0b1120;
+      --header-bg: linear-gradient(135deg, #020617 0%, #0b1120 100%);
       --header-text: #38bdf8;
       --primary: #38bdf8;
-      --primary-card: #1e293b;
+      --primary-card: #0f172a;
       --border: #1e293b;
-      --border-subtle: #1e293b;
-      --text: #f9fafb;
+      --border-subtle: #0f172a;
+      --text: #f1f5f9;
       --text-muted: #94a3b8;
-      --green: #4ade80;
-      --green-bg: rgba(34, 197, 94, 0.15);
+      --green: #22c55e;
+      --green-bg: rgba(34, 197, 94, 0.12);
       --green-border: rgba(34, 197, 94, 0.35);
-      --red: #f87171;
-      --red-bg: rgba(239, 68, 68, 0.15);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.12);
       --red-border: rgba(239, 68, 68, 0.35);
       --accent: #38bdf8;
+      --card-radius: 6px;
+      --table-header-bg: #020617;
+      --table-header-color: #38bdf8;
+      font-family: 'JetBrains Mono', 'Cairo', monospace;
     }
-
-    body.theme-matrix {
-      --bg: #0d1117;
-      --card-bg: #161b22;
-      --header-bg: #161b22;
-      --header-text: #58a6ff;
-      --primary: #58a6ff;
-      --primary-card: #21262d;
-      --border: #30363d;
-      --border-subtle: #21262d;
-      --text: #e6edf3;
-      --text-muted: #8b949e;
-      --green: #3fb950;
-      --green-bg: rgba(63, 185, 80, 0.15);
-      --green-border: rgba(63, 185, 80, 0.35);
-      --red: #f85149;
-      --red-bg: rgba(248, 81, 73, 0.15);
-      --red-border: rgba(248, 81, 73, 0.35);
-      --accent: #e3b341;
+    body.theme-terminal .section-box {
+      border: 1px solid #1e293b !important;
+      border-radius: 6px !important;
+      background: #0b1120 !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
     }
-
-    body.theme-csuite {
-      --bg: #f1f5f9;
-      --card-bg: #ffffff;
-      --header-bg: #334155;
-      --header-text: #ffffff;
-      --primary: #334155;
-      --primary-card: #475569;
-      --border: #cbd5e1;
-      --border-subtle: #e2e8f0;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --green: #059669;
-      --green-bg: #ecfdf5;
-      --green-border: #a7f3d0;
-      --red: #e11d48;
-      --red-bg: #fff1f2;
-      --red-border: #fecdd3;
-      --accent: #0284c7;
+    body.theme-terminal .section-head {
+      background: #070c18 !important;
+      border-bottom: 1px solid #1e293b !important;
     }
-
-    /* ضبط التوافق البصري للثيمات الداكنة */
-    body.theme-terminal .bank-hero-grid,
-    body.theme-matrix .bank-hero-grid,
-    body.theme-terminal .section-head,
-    body.theme-matrix .section-head,
-    body.theme-terminal .market-spread-bar,
-    body.theme-matrix .market-spread-bar,
-    body.theme-terminal .bank-drawer-toolbar,
-    body.theme-matrix .bank-drawer-toolbar,
-    body.theme-terminal .formula-banner,
-    body.theme-matrix .formula-banner {
-      background: var(--primary-card) !important;
-      border-color: var(--border) !important;
-      color: var(--text) !important;
+    body.theme-terminal .section-title {
+      color: #38bdf8 !important;
+      font-family: 'JetBrains Mono', 'Cairo', monospace !important;
+      letter-spacing: -0.2px;
     }
-    body.theme-terminal .hero-bank-card,
-    body.theme-matrix .hero-bank-card,
-    body.theme-terminal .asset-card,
-    body.theme-matrix .asset-card,
     body.theme-terminal .kpi-card,
-    body.theme-matrix .kpi-card {
-      background: var(--card-bg) !important;
-      border-color: var(--border) !important;
+    body.theme-terminal .asset-card,
+    body.theme-terminal .hero-bank-card {
+      background: #0d1527 !important;
+      border: 1px solid #1e293b !important;
+      border-radius: 6px !important;
+    }
+    body.theme-terminal .kpi-card:hover,
+    body.theme-terminal .asset-card:hover {
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.15) !important;
+    }
+    body.theme-terminal .kpi-val,
+    body.theme-terminal .asset-price-main,
+    body.theme-terminal .hero-bank-rate {
+      font-family: 'JetBrains Mono', 'Roboto Mono', monospace !important;
+    }
+    body.theme-terminal .kpi-chip,
+    body.theme-terminal .asset-price-sub {
+      background: #070c18 !important;
+      color: #94a3b8 !important;
+      border: 1px solid #1e293b !important;
+    }
+    body.theme-terminal .formula-banner,
+    body.theme-terminal .bank-hero-grid,
+    body.theme-terminal .bank-drawer-toolbar {
+      background: #070c18 !important;
+      border-color: #1e293b !important;
+      color: #cbd5e1 !important;
+    }
+    body.theme-terminal table {
+      border-color: #1e293b !important;
+      border-radius: 6px !important;
+    }
+    body.theme-terminal th {
+      background: #020617 !important;
+      color: #38bdf8 !important;
+      border-bottom: 2px solid #1e293b !important;
+      font-family: 'JetBrains Mono', monospace !important;
+    }
+    body.theme-terminal td {
+      background: #0b1120 !important;
+      color: #f1f5f9 !important;
+      border-bottom: 1px solid #151e33 !important;
+      font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace !important;
+    }
+    body.theme-terminal tbody tr:nth-child(even) td {
+      background: #080d1a !important;
+    }
+    body.theme-terminal tbody tr:hover td {
+      background: #111a30 !important;
     }
     body.theme-terminal .hero-bank-name,
-    body.theme-matrix .hero-bank-name,
-    body.theme-terminal .section-title,
-    body.theme-matrix .section-title,
-    body.theme-terminal .asset-name,
-    body.theme-matrix .asset-name,
-    body.theme-terminal .kpi-val,
-    body.theme-matrix .kpi-val {
-      color: var(--text) !important;
-    }
-    body.theme-terminal td,
-    body.theme-matrix td {
-      background: var(--card-bg) !important;
-      color: var(--text) !important;
-      border-bottom-color: var(--border) !important;
-    }
-    body.theme-terminal tbody tr:nth-child(even) td,
-    body.theme-matrix tbody tr:nth-child(even) td {
-      background: rgba(255, 255, 255, 0.02) !important;
-    }
-    body.theme-terminal .select-bank,
-    body.theme-matrix .select-bank {
-      background: var(--primary-card) !important;
-      color: var(--text) !important;
-      border-color: var(--border) !important;
+    body.theme-terminal .asset-name {
+      color: #f8fafc !important;
     }
     body.theme-terminal .filter-btn,
-    body.theme-matrix .filter-btn {
-      background: var(--primary-card) !important;
-      color: var(--text-muted) !important;
-      border-color: var(--border) !important;
+    body.theme-terminal .select-bank {
+      background: #070c18 !important;
+      color: #94a3b8 !important;
+      border: 1px solid #1e293b !important;
     }
-    body.theme-terminal .filter-btn.active,
+    body.theme-terminal .filter-btn.active {
+      background: #38bdf8 !important;
+      color: #020617 !important;
+      border-color: #38bdf8 !important;
+      font-weight: 800;
+    }
+
+    /* 📈 النمط 3: غرفة عمليات التداول المباشر (Cyber Trading Matrix) - أسود فحمي داكن مع أخضر نيون وبوردرات حادة وأرقام نابضة */
+    body.theme-matrix {
+      --bg: #030704;
+      --card-bg: #081109;
+      --header-bg: linear-gradient(135deg, #020502 0%, #061408 100%);
+      --header-text: #00ff66;
+      --primary: #00ff66;
+      --primary-card: #0c1a0e;
+      --border: #143518;
+      --border-subtle: #0a1c0d;
+      --text: #e1fae5;
+      --text-muted: #70a67a;
+      --green: #00ff66;
+      --green-bg: rgba(0, 255, 102, 0.1);
+      --green-border: rgba(0, 255, 102, 0.4);
+      --red: #ff3344;
+      --red-bg: rgba(255, 51, 68, 0.1);
+      --red-border: rgba(255, 51, 68, 0.4);
+      --accent: #ffd700;
+      --card-radius: 4px;
+      --table-header-bg: #030a04;
+      --table-header-color: #00ff66;
+      font-family: 'Roboto Mono', 'Cairo', monospace;
+    }
+    body.theme-matrix .section-box {
+      border: 1px solid #143518 !important;
+      border-radius: 4px !important;
+      background: #081109 !important;
+      box-shadow: 0 0 20px rgba(0, 255, 102, 0.04) !important;
+    }
+    body.theme-matrix .section-head {
+      background: #050d06 !important;
+      border-bottom: 1px solid #143518 !important;
+    }
+    body.theme-matrix .section-title {
+      color: #00ff66 !important;
+      font-family: 'Roboto Mono', 'Cairo', monospace !important;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    body.theme-matrix .kpi-card,
+    body.theme-matrix .asset-card,
+    body.theme-matrix .hero-bank-card {
+      background: #0a160b !important;
+      border: 1px solid #143518 !important;
+      border-radius: 4px !important;
+    }
+    body.theme-matrix .kpi-card:hover,
+    body.theme-matrix .asset-card:hover {
+      border-color: #00ff66 !important;
+      box-shadow: 0 0 16px rgba(0, 255, 102, 0.2) !important;
+    }
+    body.theme-matrix .kpi-val,
+    body.theme-matrix .asset-price-main,
+    body.theme-matrix .hero-bank-rate {
+      font-family: 'Roboto Mono', monospace !important;
+      letter-spacing: -0.5px;
+    }
+    body.theme-matrix .kpi-chip,
+    body.theme-matrix .asset-price-sub {
+      background: #040905 !important;
+      color: #70a67a !important;
+      border: 1px solid #143518 !important;
+    }
+    body.theme-matrix .formula-banner,
+    body.theme-matrix .bank-hero-grid,
+    body.theme-matrix .bank-drawer-toolbar {
+      background: #050d06 !important;
+      border-color: #143518 !important;
+      color: #a3e6b1 !important;
+    }
+    body.theme-matrix table {
+      border-color: #143518 !important;
+      border-radius: 4px !important;
+    }
+    body.theme-matrix th {
+      background: #030a04 !important;
+      color: #00ff66 !important;
+      border-bottom: 2px solid #143518 !important;
+      font-family: 'Roboto Mono', monospace !important;
+    }
+    body.theme-matrix td {
+      background: #081109 !important;
+      color: #e1fae5 !important;
+      border-bottom: 1px solid #0f2612 !important;
+      font-family: 'Roboto Mono', monospace !important;
+    }
+    body.theme-matrix tbody tr:nth-child(even) td {
+      background: #050c06 !important;
+    }
+    body.theme-matrix tbody tr:hover td {
+      background: #0e2110 !important;
+    }
+    body.theme-matrix .hero-bank-name,
+    body.theme-matrix .asset-name {
+      color: #ffffff !important;
+    }
+    body.theme-matrix .filter-btn,
+    body.theme-matrix .select-bank {
+      background: #050d06 !important;
+      color: #70a67a !important;
+      border: 1px solid #143518 !important;
+    }
     body.theme-matrix .filter-btn.active {
-      background: var(--primary) !important;
-      color: #000 !important;
+      background: #00ff66 !important;
+      color: #020502 !important;
+      border-color: #00ff66 !important;
+      font-weight: 900;
+    }
+    body.theme-matrix .val-pos { color: #00ff66 !important; }
+    body.theme-matrix .val-neg { color: #ff3344 !important; }
+
+    /* 📊 النمط 4: التقرير التنفيذي لمجالس الإدارة (C-Suite Minimalist & Luxury) - رمادي دافئ راقٍ وأناقة رصينة مع كروت بدون حدود حادة وخلفيات Slate */
+    body.theme-csuite {
+      --bg: #eceef2;
+      --card-bg: #ffffff;
+      --header-bg: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      --header-text: #f8fafc;
+      --primary: #4338ca;
+      --primary-card: #f8fafc;
+      --border: #d1d5db;
+      --border-subtle: #e5e7eb;
+      --text: #111827;
+      --text-muted: #4b5563;
+      --green: #15803d;
+      --green-bg: #dcfce7;
+      --green-border: #86efac;
+      --red: #b91c1c;
+      --red-bg: #fee2e2;
+      --red-border: #fca5a5;
+      --accent: #4338ca;
+      --card-radius: 20px;
+      --table-header-bg: #1e293b;
+      --table-header-color: #ffffff;
+      font-family: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif;
+    }
+    body.theme-csuite .section-box {
+      border: 1px solid #e5e7eb !important;
+      border-radius: 20px !important;
+      background: #ffffff !important;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+    }
+    body.theme-csuite .section-head {
+      background: #f8fafc !important;
+      border-bottom: 1.5px solid #e5e7eb !important;
+      padding: 18px 24px !important;
+    }
+    body.theme-csuite .section-title {
+      font-size: 1.15rem !important;
+      color: #1e293b !important;
+      font-weight: 900 !important;
+    }
+    body.theme-csuite .kpi-card,
+    body.theme-csuite .asset-card,
+    body.theme-csuite .hero-bank-card {
+      background: #f8fafc !important;
+      border: 1.5px solid #e2e8f0 !important;
+      border-radius: 16px !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03) !important;
+    }
+    body.theme-csuite .kpi-card:hover,
+    body.theme-csuite .asset-card:hover {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.08) !important;
+    }
+    body.theme-csuite table {
+      border-radius: 14px !important;
+      border: 1px solid #e5e7eb !important;
+    }
+    body.theme-csuite th {
+      background: #1e293b !important;
+      color: #f8fafc !important;
+      font-weight: 800 !important;
+    }
+    body.theme-csuite td {
+      background: #ffffff !important;
+      color: #111827 !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+    }
+    body.theme-csuite tbody tr:nth-child(even) td {
+      background: #f8fafc !important;
+    }
+    body.theme-csuite .btn-blue {
+      background: #1e293b !important;
+      color: #ffffff !important;
+      border-radius: 10px !important;
+    }
+    body.theme-csuite .btn-blue:hover {
+      background: #0f172a !important;
+    }
+    body.theme-csuite .filter-btn.active {
+      background: #1e293b !important;
+      color: #ffffff !important;
+      border-color: #1e293b !important;
     }
 
     * {
@@ -938,7 +1127,7 @@
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
           <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);" id="egx-update-status">تحديث سحابي مباشر</span>
-          <button class="btn-action btn-blue" onclick="requestDataUpdate(true)">
+          <button class="btn-action btn-blue" onclick="refreshEgxWidget()">
             <i class="fa-solid fa-rotate"></i>
             <span id="txt-egx-refresh-btn">تحديث البورصة</span>
           </button>
@@ -1016,10 +1205,11 @@
           </div>
           <div class="archive-filters-row">
             <button class="filter-btn active" id="btn-filter-all" onclick="filterArchiveByPeriod('all')">الكل (All)</button>
-            <button class="filter-btn" id="btn-filter-daily" onclick="filterArchiveByPeriod('daily')">يومي (Daily)</button>
-            <button class="filter-btn" id="btn-filter-weekly" onclick="filterArchiveByPeriod('weekly')">أسبوعي (Weekly)</button>
-            <button class="filter-btn" id="btn-filter-monthly" onclick="filterArchiveByPeriod('monthly')">شهري (Monthly)</button>
-            <button class="filter-btn" id="btn-filter-yearly" onclick="filterArchiveByPeriod('yearly')">سنوي (YTD)</button>
+            <button class="filter-btn" id="btn-filter-daily" onclick="filterArchiveByPeriod('daily')">جلسة اليوم (Latest)</button>
+            <button class="filter-btn" id="btn-filter-weekly" onclick="filterArchiveByPeriod('weekly')">الأسبوع الحالي (Current Week)</button>
+            <button class="filter-btn" id="btn-filter-october" onclick="filterArchiveByPeriod('october')">أكتوبر 2026 (الحالي)</button>
+            <button class="filter-btn" id="btn-filter-september" onclick="filterArchiveByPeriod('september')">سبتمبر 2026</button>
+            <button class="filter-btn" id="btn-filter-yearly" onclick="filterArchiveByPeriod('yearly')">سنوي (YTD 2026)</button>
           </div>
         </div>
 
@@ -1056,8 +1246,8 @@
             <button class="filter-btn" style="border:none;" id="cat-btn-curr" onclick="filterMarketCategory('curr')">عملات رئيسية</button>
             <button class="filter-btn" style="border:none;" id="cat-btn-crypto" onclick="filterMarketCategory('crypto')">كريبتو</button>
           </div>
-          <button class="btn-action btn-amber" onclick="requestDataUpdate(false)">
-            <i class="fa-solid fa-bolt"></i>
+          <button class="btn-action btn-amber" onclick="refreshMarketsWidget()">
+            <i class="fa-solid fa-rotate"></i>
             <span id="txt-markets-refresh-btn">تحديث</span>
           </button>
         </div>
@@ -1074,10 +1264,14 @@
           <i class="fa-solid fa-building-columns" style="color: #059669;"></i>
           <span id="txt-banks-title">تقرير أسعار صرف الدولار في 25 بنكاً مصرياً</span>
         </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
           <button class="btn-action btn-blue" id="btn-toggle-banks" onclick="toggleBanksDrawer()">
             <i class="fa-solid fa-table-list"></i>
             <span id="txt-toggle-banks-label">عرض كافة الـ 25 بنكاً ▾</span>
+          </button>
+          <button class="btn-action btn-blue" onclick="refreshBanksWidget()" style="background:#059669;" id="btn-banks-refresh">
+            <i class="fa-solid fa-rotate"></i>
+            <span id="txt-banks-refresh-btn">تحديث البنوك</span>
           </button>
         </div>
       </div>
@@ -1219,10 +1413,11 @@
         badge_net_sell: "بيع صافي",
         archive_table_title: "أرشيف الجلسات السابقة للمؤسسات:",
         filter_all: "الكل (All)",
-        filter_daily: "يومي (Daily)",
-        filter_weekly: "أسبوعي (Weekly)",
-        filter_monthly: "شهري (Monthly)",
-        filter_yearly: "سنوي (YTD)",
+        filter_daily: "جلسة اليوم (Latest)",
+        filter_weekly: "الأسبوع الحالي (Current Week)",
+        filter_october: "أكتوبر 2026 (الحالي)",
+        filter_september: "سبتمبر 2026",
+        filter_yearly: "سنوي (YTD 2026)",
         th_arch_date: "التاريخ",
         th_arch_segment: "القطاع",
         th_arch_usd: "سعر الدولار",
@@ -1288,10 +1483,11 @@
         badge_net_sell: "Net Seller",
         archive_table_title: "Institutional Historical Archive:",
         filter_all: "All Records",
-        filter_daily: "Daily",
-        filter_weekly: "Weekly",
-        filter_monthly: "Monthly",
-        filter_yearly: "YTD (Yearly)",
+        filter_daily: "Latest Session",
+        filter_weekly: "Current Week",
+        filter_october: "October 2026",
+        filter_september: "September 2026",
+        filter_yearly: "YTD (2026)",
         th_arch_date: "Date",
         th_arch_segment: "Market Segment",
         th_arch_usd: "USD Rate",
@@ -1548,7 +1744,8 @@
       setTxt("btn-filter-all", t.filter_all);
       setTxt("btn-filter-daily", t.filter_daily);
       setTxt("btn-filter-weekly", t.filter_weekly);
-      setTxt("btn-filter-monthly", t.filter_monthly);
+      setTxt("btn-filter-october", t.filter_october);
+      setTxt("btn-filter-september", t.filter_september);
       setTxt("btn-filter-yearly", t.filter_yearly);
       setTxt("th-arch-date", t.th_arch_date);
       setTxt("th-arch-segment", t.th_arch_segment);
@@ -1622,16 +1819,46 @@
 
     function requestDataUpdate(showStatus) {
       var t = i18n[currentLang];
-      if (showStatus) document.getElementById("egx-update-status").innerText = (currentLang === "en") ? "Fetching cloud data..." : "جاري استرداد البيانات السحابية...";
+      if (showStatus) {
+        var elStatus = document.getElementById("egx-update-status");
+        if (elStatus) elStatus.innerText = (currentLang === "en") ? "Fetching cloud data..." : "جاري استرداد البيانات السحابية...";
+      }
       if (typeof google !== "undefined" && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(function(data) {
-            document.getElementById("egx-update-status").innerText = (currentLang === "en" ? "Cloud Sync: " : "تحديث سحابي: ") + new Date().toLocaleTimeString("en-US");
+            var elStatus = document.getElementById("egx-update-status");
+            if (elStatus) elStatus.innerText = (currentLang === "en" ? "Cloud Sync: " : "تحديث سحابي: ") + new Date().toLocaleTimeString("en-US");
             globalData = data;
             renderDashboard(data);
           })
           .getLiveDashboardData();
       }
+    }
+
+    function refreshEgxWidget() {
+      var elStatus = document.getElementById("egx-update-status");
+      if (elStatus) elStatus.innerText = (currentLang === "en") ? "Syncing EGX..." : "جاري تحديث البورصة...";
+      requestDataUpdate(true);
+    }
+
+    function refreshMarketsWidget() {
+      var btn = document.getElementById("txt-markets-refresh-btn");
+      var original = btn ? btn.innerText : "";
+      if (btn) btn.innerText = (currentLang === "en") ? "Updating..." : "جاري التحديث...";
+      requestDataUpdate(false);
+      setTimeout(function() {
+        if (btn) btn.innerText = original || ((currentLang === "en") ? "Refresh" : "تحديث الأسعار");
+      }, 1500);
+    }
+
+    function refreshBanksWidget() {
+      var btn = document.getElementById("txt-banks-refresh-btn");
+      var original = btn ? btn.innerText : "";
+      if (btn) btn.innerText = (currentLang === "en") ? "Updating..." : "جاري التحديث...";
+      requestDataUpdate(false);
+      setTimeout(function() {
+        if (btn) btn.innerText = original || ((currentLang === "en") ? "Refresh Banks" : "تحديث البنوك");
+      }, 1500);
     }
 
     // ==========================================
@@ -1800,10 +2027,33 @@
       var usdRate = Number(data.usd_rate || 51.94);
       var rows = data.archive.slice();
 
-      if (currentArchiveFilter === "daily") rows = rows.slice(0, 1);
-      else if (currentArchiveFilter === "weekly") rows = rows.slice(0, 7);
-      else if (currentArchiveFilter === "monthly") rows = rows.slice(0, 30);
-      else if (currentArchiveFilter === "yearly") {
+      if (currentArchiveFilter === "daily") {
+        rows = rows.slice(0, 1);
+      } else if (currentArchiveFilter === "weekly") {
+        // فلترة دقيقة للأسبوع الحالي بدءاً من آخر أحد (الأسبوع التداولي المصري من الأحد للخميس)
+        var latestDateStr = rows.length > 0 ? formatArchiveDate(rows[0].date) : "2026-10-06";
+        var refD = new Date(latestDateStr);
+        var dayOfWeek = refD.getDay(); // 0 is Sunday
+        var sundayD = new Date(refD);
+        sundayD.setDate(refD.getDate() - dayOfWeek);
+        var sundayIso = sundayD.toISOString().substring(0, 10);
+        rows = rows.filter(function(r) {
+          var dStr = formatArchiveDate(r.date);
+          return dStr >= sundayIso;
+        });
+      } else if (currentArchiveFilter === "october") {
+        // جلسات شهر أكتوبر 2026 حصراً بدون أي تداخل مع سبتمبر
+        rows = rows.filter(function(r) {
+          var dStr = formatArchiveDate(r.date);
+          return dStr.indexOf("2026-10") === 0;
+        });
+      } else if (currentArchiveFilter === "september") {
+        // جلسات شهر سبتمبر 2026 حصراً
+        rows = rows.filter(function(r) {
+          var dStr = formatArchiveDate(r.date);
+          return dStr.indexOf("2026-09") === 0;
+        });
+      } else if (currentArchiveFilter === "yearly") {
         var currYear = new Date().getFullYear();
         rows = rows.filter(function(r) { return String(r.date).indexOf(String(currYear)) >= 0; });
       }
@@ -1983,6 +2233,20 @@
       localStorage.setItem("active_theme", themeKey);
       var sel = document.getElementById("themeSelector");
       if (sel) sel.value = themeKey;
+      
+      // تمييز الزر النشط في شريط الثيمات العلوي
+      document.querySelectorAll(".theme-choice-btn").forEach(function(b) {
+        b.style.boxShadow = "none";
+        b.style.borderColor = "var(--border)";
+        b.style.opacity = "0.7";
+      });
+      var activeTBtn = document.getElementById("tbtn-" + themeKey);
+      if (activeTBtn) {
+        activeTBtn.style.opacity = "1";
+        activeTBtn.style.borderColor = "var(--primary)";
+        activeTBtn.style.boxShadow = "0 0 10px rgba(0,0,0,0.15)";
+      }
+
       if (typeof google !== "undefined" && google.script && google.script.run) {
         google.script.run.applyActiveTheme(themeKey);
       }
