@@ -348,7 +348,24 @@ export default {
       }
     }
 
+    // 6. نقطة إرسال التقرير الشامل التلقائي (يدوياً أو عبر Cron Trigger)
+    if (url.pathname === "/broadcast") {
+      const targetChat = url.searchParams.get("chat_id") || env?.CHANNEL_ID || "@EgxTracker_LiveBot";
+      const targetLang = url.searchParams.get("lang") || "ar";
+      const res = await sendAutomatedDailySummary(targetChat, targetLang);
+      return new Response(JSON.stringify(res, null, 2), {
+        headers: { "content-type": "application/json; charset=utf-8" }
+      });
+    }
+
     return new Response("Not Found", { status: 404 });
+  },
+
+  // تشغيل التقرير المجدول التلقائي (Cloudflare Cron Triggers)
+  async scheduled(event, env, ctx) {
+    if (env && env.BOT_TOKEN) BOT_TOKEN = env.BOT_TOKEN;
+    const targetChat = env?.CHANNEL_ID || "@EgxTracker_LiveBot";
+    ctx.waitUntil(sendAutomatedDailySummary(targetChat, "ar"));
   }
 };
 
@@ -651,6 +668,7 @@ async function getCachedDashboardData() {
     { code: "ETH", name: "إيثيريوم (Ethereum)", name_en: "Ethereum (ETH)", usd_price: ethPrice, egp_price: Math.round(ethPrice * usdRate), change: ethChg, updated_at: liveClock },
     { code: "BRENT", name: "نفط برنت (خام)", name_en: "Brent Crude Oil", usd_price: brentPrice, egp_price: Number((brentPrice * usdRate).toFixed(2)), change: brentChg, updated_at: liveClock },
     { code: "WTI", name: "خام غرب تكساس (WTI)", name_en: "WTI Crude Oil", usd_price: wtiPrice, egp_price: Number((wtiPrice * usdRate).toFixed(2)), change: wtiChg, updated_at: liveClock },
+    { code: "GOLD_OUNCE", name: "أونصة الذهب (Gold Ounce)", name_en: "Gold (Ounce)", usd_price: goldOunce, egp_price: Math.round(goldOunce * usdRate), change: goldChg, updated_at: liveClock },
     { code: "GOLD24", name: "ذهب عيار 24 (جرام)", name_en: "Gold 24K (Gram)", usd_price: g24Usd, egp_price: Math.round(g24Usd * usdRate), change: goldChg, updated_at: liveClock },
     { code: "GOLD21", name: "ذهب عيار 21 (جرام)", name_en: "Gold 21K (Gram)", usd_price: g21Usd, egp_price: Math.round(g21Usd * usdRate), change: goldChg, updated_at: liveClock },
     { code: "GOLD18", name: "ذهب عيار 18 (جرام)", name_en: "Gold 18K (Gram)", usd_price: g18Usd, egp_price: Math.round(g18Usd * usdRate), change: goldChg, updated_at: liveClock },
@@ -1530,9 +1548,11 @@ function formatExecutiveReport(data, lang, curr) {
   const bankPeakLineEn = `\n  ▫️ <b>Top Buy Bank:</b> ${bNameEn} • Buy <b>${Number(topBank.buy).toFixed(2)}</b> • Sell <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
   const bankPeakLineAr = `\n  ▫️ <b>أعلى بنك شراء:</b> ${topBank.bank} • شراء <b>${Number(topBank.buy).toFixed(2)}</b> • بيع <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
 
-  // السلع المطلوبة: ذهب 24 وخام برنت (بالدولار الأمريكي دائماً)
+  // السلع المطلوبة: ذهب عيار 24، أونصة الذهب، أونصة الفضة، وخام برنت
   const comms = data.live_commodities || [];
   const gold24 = comms.find(c => c.code === "GOLD24") || { usd_price: 133.63 };
+  const goldOunce = comms.find(c => c.code === "GOLD_OUNCE" || c.name?.includes("أونصة الذهب")) || { usd_price: 4165.0 };
+  const silver = comms.find(c => c.code === "SILVER") || { usd_price: 61.10 };
   const brent = comms.find(c => c.code === "BRENT") || { usd_price: 101.02 };
 
   const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
@@ -1543,6 +1563,8 @@ function formatExecutiveReport(data, lang, curr) {
   let totAmountEn = "", totAmountAr = "";
   const gold24StrEn = `$${Number(gold24.usd_price).toFixed(2)}`;
   const gold24StrAr = `$${Number(gold24.usd_price).toFixed(2)}`;
+  const goldOunceStr = `$${Number(goldOunce.usd_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const silverStr = `$${Number(silver.usd_price).toFixed(2)}`;
   const brentStrEn = `$${Number(brent.usd_price).toFixed(2)}`;
   const brentStrAr = `$${Number(brent.usd_price).toFixed(2)}`;
   let breakdownEn = "", breakdownAr = "";
@@ -1625,8 +1647,9 @@ function formatExecutiveReport(data, lang, curr) {
       + `  ▫️ <b>Central Bank (CBE):</b> Buy <b>${cbeBuy.toFixed(4)}</b> • Sell <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
       + bankPeakLineEn + `\n\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `🪙 <b>Gold 24K (Gram):</b> <b>${gold24StrEn}</b>\n`
       + `🛢️ <b>Brent Crude Oil:</b> <b>${brentStrEn}</b>\n`
+      + `🪙 <b>Gold (Ounce):</b> <b>${goldOunceStr}</b> • <b>24K (Gram):</b> <b>${gold24StrEn}</b>\n`
+      + `🪙 <b>Silver (Ounce):</b> <b>${silverStr}</b>\n`
       + `\n⚡ <i>Live Executive Summary • Real-time feeds.</i>`;
   }
 
@@ -1649,8 +1672,9 @@ function formatExecutiveReport(data, lang, curr) {
     + `  ▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> • بيع <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
     + bankPeakLineAr + `\n\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `🪙 <b>ذهب عيار 24 (جرام):</b> <b>${gold24StrAr}</b>\n`
     + `🛢️ <b>خام برنت (نفط):</b> <b>${brentStrAr}</b>\n`
+    + `🪙 <b>أونصة الذهب:</b> <b>${goldOunceStr}</b> • <b>ذهب عيار 24:</b> <b>${gold24StrAr}</b>\n`
+    + `🪙 <b>أونصة الفضة:</b> <b>${silverStr}</b>\n`
     + `\n⚡ <i>تقرير تنفيذي لحظي موثق ومباشر.</i>`;
 }
 
@@ -2009,4 +2033,31 @@ function getControlHtml(originUrl) {
   </script>
 </body>
 </html>`;
+}
+
+/**
+ * إرسال التقرير الشامل التلقائي للقناة أو المجموعة أو المستخدم
+ */
+async function sendAutomatedDailySummary(targetChat, lang) {
+  lang = lang || "ar";
+  try {
+    const data = await getCachedDashboardData();
+    const text = formatExecutiveReport(data, lang, "usd");
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: "🔄 تحديث لحظي للبيانات", callback_data: `refresh_report:${lang}:usd` },
+          { text: "💵 العرض بالجنيه (EGP)", callback_data: `toggle_curr:egp:report:${lang}` }
+        ],
+        [
+          { text: "🔙 القائمة الرئيسية", callback_data: `cmd_menu:${lang}:usd` }
+        ]
+      ]
+    };
+    const res = await sendTgMessage(targetChat, text, keyboard);
+    const j = await res.json().catch(() => ({}));
+    return { status: res.ok ? "success" : "error", telegram_response: j };
+  } catch (err) {
+    return { status: "error", message: err.message };
+  }
 }
