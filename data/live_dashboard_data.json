@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-06 15:24:26",
+  "timestamp": "2026-10-06 15:27:17",
   "usd_rate": 52.32,
   "cbe_usd_buy": 52.2534,
   "cbe_usd_sell": 52.3906,
@@ -106,7 +106,7 @@
       "sell": 52.17,
       "rate_egp": 52.4,
       "change": "0.013%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "عملات رئيسية",
@@ -118,7 +118,7 @@
       "sell": 58.84,
       "rate_egp": 58.76,
       "change": "0.419%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "عملات رئيسية",
@@ -130,7 +130,7 @@
       "sell": 13.98,
       "rate_egp": 13.96,
       "change": "0.023%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "عملات رئيسية",
@@ -142,7 +142,7 @@
       "sell": 14.29,
       "rate_egp": 14.27,
       "change": "0.035%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "عملات رئيسية",
@@ -154,7 +154,7 @@
       "sell": 69.33,
       "rate_egp": 69.23,
       "change": "0.113%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "عملات رئيسية",
@@ -166,7 +166,7 @@
       "sell": 170.19,
       "rate_egp": 169.84,
       "change": "+0.10%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "عملات رئيسية",
@@ -178,7 +178,7 @@
       "sell": 14.35,
       "rate_egp": 14.31,
       "change": "+0.05%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "عملات رئيسية",
@@ -190,7 +190,7 @@
       "sell": 7.38,
       "rate_egp": 7.35,
       "change": "+0.02%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "ذهب ومعادن",
@@ -202,7 +202,7 @@
       "sell": 6136.95,
       "rate_egp": 6136.95,
       "change": "0.901%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "ذهب ومعادن",
@@ -214,7 +214,7 @@
       "sell": 7038.93,
       "rate_egp": 7038.93,
       "change": "1.004%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "ذهب ومعادن",
@@ -226,7 +226,7 @@
       "sell": 49040.0,
       "rate_egp": 49040.0,
       "change": "0.245%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "ذهب ومعادن",
@@ -238,7 +238,7 @@
       "sell": 4165.0,
       "rate_egp": 217912.8,
       "change": "+0.45%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "ذهب ومعادن",
@@ -250,55 +250,55 @@
       "sell": 61.1,
       "rate_egp": 3196.75,
       "change": "+0.80%",
-      "updated_at": "15:24:26"
+      "updated_at": "15:27:17"
     },
     {
       "category": "طاقة وبترول",
       "name": "نفط برنت (خام)",
       "code": "BRENT",
-      "usd_price": 97.7,
-      "egp_price": 5111.86,
-      "buy": 97.7,
-      "sell": 97.7,
-      "rate_egp": 5111.86,
-      "change": "-2.61%",
-      "updated_at": "15:24:26"
+      "usd_price": 97.61,
+      "egp_price": 5107.15,
+      "buy": 97.61,
+      "sell": 97.61,
+      "rate_egp": 5107.15,
+      "change": "-2.70%",
+      "updated_at": "15:27:17"
     },
     {
       "category": "طاقة وبترول",
       "name": "خام غرب تكساس (WTI)",
       "code": "WTI",
-      "usd_price": 87.19,
-      "egp_price": 4561.96,
-      "buy": 87.19,
-      "sell": 87.19,
-      "rate_egp": 4561.96,
-      "change": "-2.50%",
-      "updated_at": "15:24:26"
+      "usd_price": 87.07,
+      "egp_price": 4555.68,
+      "buy": 87.07,
+      "sell": 87.07,
+      "rate_egp": 4555.68,
+      "change": "-2.64%",
+      "updated_at": "15:27:17"
     },
     {
       "category": "عملات رقمية",
       "name": "بتكوين",
       "code": "BTC",
-      "usd_price": 86259.1,
-      "egp_price": 4513248.63,
-      "buy": 86259.1,
-      "sell": 86259.1,
-      "rate_egp": 4513248.63,
-      "change": "+0.24%",
-      "updated_at": "15:24:26"
+      "usd_price": 84400.0,
+      "egp_price": 4415976.8,
+      "buy": 84400.0,
+      "sell": 84400.0,
+      "rate_egp": 4415976.8,
+      "change": "+0.00%",
+      "updated_at": "15:27:17"
     },
     {
       "category": "عملات رقمية",
       "name": "إيثريوم",
       "code": "ETH",
-      "usd_price": 2712.13,
-      "egp_price": 141904.07,
-      "buy": 2712.13,
-      "sell": 2712.13,
-      "rate_egp": 141904.07,
-      "change": "-0.08%",
-      "updated_at": "15:24:26"
+      "usd_price": 2730.0,
+      "egp_price": 142839.06,
+      "buy": 2730.0,
+      "sell": 2730.0,
+      "rate_egp": 142839.06,
+      "change": "+0.00%",
+      "updated_at": "15:27:17"
     }
   ],
   "banks": [
@@ -363,7 +363,7 @@
       "buy": 52.28,
       "sell": 52.38,
       "avg": 52.33,
-      "updated_at": "15:21"
+      "updated_at": "15:24"
     },
     {
       "bank": "الأهلي المصري (NBE)",
@@ -405,7 +405,7 @@
       "buy": 52.27,
       "sell": 52.37,
       "avg": 52.32,
-      "updated_at": "15:21"
+      "updated_at": "15:25"
     },
     {
       "bank": "بنك الشركة المصرفية (SAIB)",
