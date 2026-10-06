@@ -1349,7 +1349,10 @@ function formatCurrenciesReport(data, lang) {
       + usdLineEn;
 
     currItems.forEach(item => {
-      const eP = Number(item.egp_price || (Number(item.usd_price || 0) * usdRate));
+      let eP = Number(item.egp_price || item.rate_egp || item.buy || item.sell || 0);
+      if (eP === 0 && item.usd_price) {
+        eP = Number(item.usd_price) * usdRate;
+      }
       const code = (item.code || "").toUpperCase();
       const name = CURRENCY_EN[code] || item.name_en || item.name;
       txt += `▫️ <b>${name} [${code}]:</b> <b>${fmt(eP, 2)} EGP</b>\n`;
@@ -1366,7 +1369,10 @@ function formatCurrenciesReport(data, lang) {
     + usdLineAr;
 
   currItems.forEach(item => {
-    const eP = Number(item.egp_price || (Number(item.usd_price || 0) * usdRate));
+    let eP = Number(item.egp_price || item.rate_egp || item.buy || item.sell || 0);
+    if (eP === 0 && item.usd_price) {
+      eP = Number(item.usd_price) * usdRate;
+    }
     const code = (item.code || "").toUpperCase();
     const name = item.name_ar || item.name;
     txtAr += `▫️ <b>${name} [${code}]:</b> <b>${fmt(eP, 2)} ج.م</b>\n`;
