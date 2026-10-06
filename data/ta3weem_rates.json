@@ -1,9 +1,9 @@
 {
-  "cached_at": 1791303580.1281903,
-  "ta3weem_scraped_at": 1791303549.4402478,
-  "updated_at": "2026-10-06 16:19:41",
+  "cached_at": 1791303693.6276855,
+  "ta3weem_scraped_at": 1791303664.9518502,
+  "updated_at": "2026-10-06 16:21:34",
   "banks_fresh": true,
-  "banks_scraped_at_str": "19:19",
+  "banks_scraped_at_str": "19:21",
   "source": "البنك المركزي المصري (CBE) + منصات الطاقة والكريبتو العالمية",
   "source_url": "https://www.cbe.org.eg/ar",
   "cbe_official": {
@@ -151,14 +151,14 @@
       "buy": 52.27,
       "sell": 52.37,
       "avg": 52.32,
-      "updated_at": "19:18"
+      "updated_at": "19:21"
     },
     {
       "bank": "كريدي أجريكول (CA)",
       "buy": 52.23,
       "sell": 52.33,
       "avg": 52.28,
-      "updated_at": "19:18"
+      "updated_at": "19:21"
     },
     {
       "bank": "أبوظبي التجاري (ADCB)",
@@ -327,23 +327,23 @@
       "name": "بتكوين",
       "code": "BTC",
       "icon": "🪙",
-      "usd_price": 85776.0,
-      "usd_price_formatted": "$85,776.00",
-      "change_24h": "+0.74%",
+      "usd_price": 86000.0,
+      "usd_price_formatted": "$86,000.00",
+      "change_24h": "+0.00%",
       "is_positive": true,
-      "egp_price": 4487971.87,
-      "egp_price_formatted": "4,487,972 ج.م"
+      "egp_price": 4499692.0,
+      "egp_price_formatted": "4,499,692 ج.م"
     },
     {
       "name": "إيثريوم",
       "code": "ETH",
       "icon": "🔷",
-      "usd_price": 2706.7,
-      "usd_price_formatted": "$2,706.70",
-      "change_24h": "+0.81%",
+      "usd_price": 2730.0,
+      "usd_price_formatted": "$2,730.00",
+      "change_24h": "+0.00%",
       "is_positive": true,
-      "egp_price": 141619.96,
-      "egp_price_formatted": "141,620 ج.م"
+      "egp_price": 142839.06,
+      "egp_price_formatted": "142,839 ج.م"
     }
   ],
   "commodities": [
@@ -352,24 +352,24 @@
       "code": "BRENT",
       "icon": "🛢️",
       "unit": "$/برميل",
-      "usd_price": 99.63,
-      "usd_price_formatted": "$99.63",
-      "change_24h": "-0.69%",
+      "usd_price": 99.68,
+      "usd_price_formatted": "$99.68",
+      "change_24h": "-0.64%",
       "is_positive": false,
-      "egp_price": 5212.84,
-      "egp_price_formatted": "5,213 ج.م"
+      "egp_price": 5215.46,
+      "egp_price_formatted": "5,215 ج.م"
     },
     {
       "name": "خام غرب تكساس (WTI)",
       "code": "WTI",
       "icon": "⚡",
       "unit": "$/برميل",
-      "usd_price": 89.02,
-      "usd_price_formatted": "$89.02",
-      "change_24h": "-0.46%",
+      "usd_price": 89.15,
+      "usd_price_formatted": "$89.15",
+      "change_24h": "-0.31%",
       "is_positive": false,
-      "egp_price": 4657.7,
-      "egp_price_formatted": "4,658 ج.م"
+      "egp_price": 4664.51,
+      "egp_price_formatted": "4,665 ج.م"
     }
   ]
 }
