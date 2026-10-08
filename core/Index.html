@@ -1178,7 +1178,7 @@
           
           <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
             <div style="background:var(--card-bg); padding:10px 20px; border-radius:10px; border:1.5px solid var(--border); text-align:center; min-width:180px; box-shadow:var(--shadow-sm);">
-              <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">صافي جلسة اليوم (الأجانب)</div>
+              <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" id="hero-fo-title">صافي جلسة اليوم (الأجانب)</div>
               <div class="num-ltr" id="hero-fo-today" style="font-size:1.45rem; font-weight:900; line-height:1.2; margin-top:2px;">--</div>
               <div class="num-ltr" id="hero-fo-today-sub" style="font-size:0.8rem; font-weight:700; color:#64748b;">--</div>
             </div>
@@ -2065,6 +2065,32 @@
       }
 
       // تحديث كارت البطل المخصص للأجانب لليوم (Foreign Hero Spotlight)
+      var dNow = new Date();
+      var cairoTodayIso = dNow.toLocaleDateString("en-CA", { timeZone: "Africa/Cairo" });
+      var isTodaySession = (refDStr === cairoTodayIso);
+
+      var heroTitleEl = document.getElementById("hero-fo-title");
+      if (heroTitleEl) {
+        if (isTodaySession) {
+          heroTitleEl.innerText = (currentLang === "en") ? "Foreign Net (Today's Session)" : "صافي جلسة اليوم (الأجانب)";
+        } else {
+          heroTitleEl.innerHTML = (currentLang === "en") 
+            ? "Foreign Net (" + refDStr + ") <span style='color:#ef4444; font-size:0.7rem;'>• Closed Today</span>"
+            : "صافي الأجانب (" + refDStr + ") <span style='color:#ef4444; font-size:0.7rem;'>• مغلق اليوم</span>";
+        }
+      }
+
+      var egxTagEl = document.getElementById("txt-egx-tag");
+      if (egxTagEl) {
+        if (isTodaySession) {
+          egxTagEl.innerText = (currentLang === "en") ? "Verified Today Session" : "جلسة اليوم الموثقة";
+          egxTagEl.className = "badge-flow badge-buyer";
+        } else {
+          egxTagEl.innerText = (currentLang === "en") ? "Market Closed / Holiday (" + refDStr + ")" : "السوق مغلق اليوم / عطلة (" + refDStr + ")";
+          egxTagEl.className = "badge-flow badge-seller";
+        }
+      }
+
       var heroTodayEl = document.getElementById("hero-fo-today");
       var heroTodaySubEl = document.getElementById("hero-fo-today-sub");
       if (heroTodayEl) {

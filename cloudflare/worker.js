@@ -1075,6 +1075,72 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
 }
 
 /**
+ * فحص وتحديد حالة البورصة المصرية اللحظية (جلسة مباشرة / عطلة رسمية / عطلة نهاية الأسبوع / قبل الافتتاح)
+ */
+function getEgxMarketStatus(sessionDate) {
+  const d = new Date();
+  const cairoDate = d.toLocaleDateString("en-CA", { timeZone: "Africa/Cairo" }); // "YYYY-MM-DD"
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Cairo", weekday: "short" }).format(d); // "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+  const time24 = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hour12: false });
+  const parts = time24.split(":");
+  const h = parseInt(parts[0], 10);
+
+  const isWeekend = (weekday === "Fri" || weekday === "Sat");
+  const isTodaySession = (sessionDate === cairoDate);
+
+  let isHolidayOrClosed = false;
+  let statusEn = "";
+  let statusAr = "";
+  let sessionTagEn = "";
+  let sessionTagAr = "";
+
+  if (isWeekend) {
+    isHolidayOrClosed = true;
+    statusEn = "🏖️ Market Status: Weekend Holiday (No Trading Today • 0 Flow)";
+    statusAr = "🏖️ حالة السوق: عطلة نهاية الأسبوع (لا يوجد تداول اليوم • صفر تداول)";
+    sessionTagEn = `(Last Session: ${sessionDate})`;
+    sessionTagAr = `(آخر جلسة معتمدة: ${sessionDate})`;
+  } else if (!isTodaySession) {
+    // أيام العمل (الأحد - الخميس) ولكن تاريخ آخر جلسة ليس اليوم
+    if (h < 10) {
+      statusEn = "⏳ Market Status: Pre-Market (Opens at 10:00 AM Cairo)";
+      statusAr = "⏳ حالة السوق: قبل افتتاح الجلسة (تبدأ 10:00 صباحاً بتوقيت القاهرة)";
+      sessionTagEn = `(Previous Close: ${sessionDate})`;
+      sessionTagAr = `(إقفال الجلسة السابقة: ${sessionDate})`;
+    } else {
+      isHolidayOrClosed = true;
+      statusEn = "🏖️ Market Status: Official Holiday / Market Closed (No Trading Today • 0 Flow)";
+      statusAr = "🏖️ حالة السوق: عطلة رسمية بالبورصة (لا يوجد تداول اليوم • صفر تداول)";
+      sessionTagEn = `(Last Session: ${sessionDate})`;
+      sessionTagAr = `(آخر جلسة معتمدة: ${sessionDate})`;
+    }
+  } else {
+    // جلسة مسجلة لتاريخ اليوم
+    if (h < 15) {
+      statusEn = "🟢 Market Status: Trading Session Active (Live)";
+      statusAr = "🟢 حالة السوق: جلسة التداول نشطة (مباشر)";
+    } else {
+      statusEn = "🔒 Market Status: Session Closed (Official Daily Close)";
+      statusAr = "🔒 حالة السوق: تم إقفال الجلسة (الإقفال الرسمي اليومي)";
+    }
+    sessionTagEn = "(Today)";
+    sessionTagAr = "(اليوم)";
+  }
+
+  return {
+    cairoDate,
+    weekday,
+    isWeekend,
+    isTodaySession,
+    isHolidayOrClosed,
+    statusEn,
+    statusAr,
+    sessionTagEn,
+    sessionTagAr
+  };
+}
+
+/**
  * 1. تقرير البورصة المصرية (EGX)
  * تركيز حصري على صافي الأجانب وصافي المؤسسات الإجمالي (يومي وأسبوعي وشهري)
  */
@@ -1118,6 +1184,8 @@ function formatEgxReport(data, lang, curr) {
     });
   }
 
+  const mStatus = getEgxMarketStatus(sessionDate);
+
   const fmtNet = (v) => {
     const n = Number(v) || 0;
     const sign = n >= 0 ? "+" : "-";
@@ -1143,8 +1211,8 @@ function formatEgxReport(data, lang, curr) {
   const updatedDateTime = getCairoFullDateTime(lang);
   const snapshotTime = getEgxSnapshotTime(data, lang);
 
-  const snapshotLineEn = snapshotTime ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
-  const snapshotLineAr = snapshotTime ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
+  const snapshotLineEn = (snapshotTime && mStatus.isTodaySession) ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
+  const snapshotLineAr = (snapshotTime && mStatus.isTodaySession) ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
 
   const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
   const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
@@ -1153,44 +1221,28 @@ function formatEgxReport(data, lang, curr) {
 
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
-  // حساب المجاميع التراكمية (الأسبوعية والشهرية)
-  const periodic = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
-
-  const fmtPeriodVal = (egpVal, usdVal) => {
-    if (curr === "usd") {
-      const uSign = usdVal >= 0 ? "+" : "-";
-      return `${LRM}${uSign}$${Math.abs(usdVal).toLocaleString("en-US")}${LRM}`;
-    }
-    const sign = egpVal >= 0 ? "+" : "-";
-    const unit = lang === "en" ? " EGP" : " ج.م";
-    return `${LRM}${sign}${Math.abs(egpVal).toLocaleString("en-US")}${LRM}${unit}`;
-  };
-
-  const getDot = (v) => v >= 0 ? "🟢" : "🔴";
-  const mParts = sessionDate.split("-");
-  const mCode = mParts[1] || "10";
-  const monthNameAr = MONTH_NAMES_AR[mCode] || "أكتوبر";
-  const monthNameEn = MONTH_NAMES_EN[mCode] || "October";
-
-  const weeklyCountAr = periodic.weekly.count === 1 ? "جلسة واحدة" : (periodic.weekly.count === 2 ? "جلستان" : `${periodic.weekly.count} جلسات`);
-  const monthlyCountAr = periodic.monthly.count === 1 ? "جلسة واحدة" : (periodic.monthly.count === 2 ? "جلستان" : `${periodic.monthly.count} جلسات`);
-  const weeklyCountEn = periodic.weekly.count === 1 ? "1 Session" : `${periodic.weekly.count} Sessions`;
-  const monthlyCountEn = periodic.monthly.count === 1 ? "1 Session" : `${periodic.monthly.count} Sessions`;
-
   if (lang === "en") {
     let txt = `🏛️ <b>Egyptian Stock Exchange (EGX) Flows</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `🕒 Query: <b>${updatedDateTime}</b>`
-      + snapshotLineEn + `\n`
-      + `📅 Session: <b>${sessionDate}</b> • Currency: <b>${currBadge}</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n\n`
-      + `🏛️ <b>Foreign Institutions (Today):</b> ${foStatusEn}\n`
+      + `🕒 Query: <b>${updatedDateTime}</b>\n`
+      + `${mStatus.statusEn}\n`
+      + snapshotLineEn
+      + `📅 Session: <b>${sessionDate}</b>${mStatus.isTodaySession ? "" : " <i>(Last Audited)</i>"} • Currency: <b>${currBadge}</b>\n`
+      + `━━━━━━━━━━━━━━━━━━\n\n`;
+
+    if (mStatus.isHolidayOrClosed) {
+      txt += `🏖️ <b>Today's Trading:</b> <b>No Session (0.00 Flow • Market Closed)</b>\n\n`;
+    } else if (!mStatus.isTodaySession) {
+      txt += `⏳ <b>Today's Session:</b> <i>Pre-Market (Opens at 10:00 AM Cairo)</i>\n\n`;
+    }
+
+    txt += `🏛️ <b>Foreign Institutions ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
       + `   ▫️ Net Flow: <b>${fmtNet(foNet)}</b>\n`;
     if (foBuy > 0 || foSell > 0) {
       txt += `   ▫️ Buy: <b>${fmtVal(foBuy)}</b> • Sell: <b>${fmtVal(foSell)}</b>\n`;
     }
 
-    txt += `\n📊 <b>Total Institutional Net (Today):</b> ${totStatusEn}\n`
+    txt += `\n📊 <b>Total Institutional Net ${mStatus.sessionTagEn}:</b> ${totStatusEn}\n`
       + `   ▪️ Net Flow: <b>${fmtNet(totNet)}</b>\n`;
 
     return txt + `\n🔒 <i>Officially audited from EGX Terminal.</i>`;
@@ -1198,17 +1250,25 @@ function formatEgxReport(data, lang, curr) {
 
   let txtAr = `🏛️ <b>صافي تعاملات البورصة المصرية (EGX)</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
-    + snapshotLineAr + `\n`
-    + `📅 تاريخ الجلسة: <b>${sessionDate}</b> • العملة: <b>${currBadge}</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `🏛️ <b>المؤسسات الأجنبية (اليوم):</b> ${foStatusAr}\n`
+    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
+    + `${mStatus.statusAr}\n`
+    + snapshotLineAr
+    + `📅 تاريخ الجلسة: <b>${sessionDate}</b>${mStatus.isTodaySession ? "" : " <i>(آخر جلسة معتمدة)</i>"} • العملة: <b>${currBadge}</b>\n`
+    + `━━━━━━━━━━━━━━━━━━\n\n`;
+
+  if (mStatus.isHolidayOrClosed) {
+    txtAr += `🏖️ <b>تداول اليوم:</b> <b>لا يوجد تداول (عطلة • صفر تداول)</b>\n\n`;
+  } else if (!mStatus.isTodaySession) {
+    txtAr += `⏳ <b>جلسة اليوم:</b> <i>قبل الافتتاح (تبدأ 10:00 ص بتوقيت القاهرة)</i>\n\n`;
+  }
+
+  txtAr += `🏛️ <b>المؤسسات الأجنبية ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
     + `   ▫️ صافي السيولة: <b>${fmtNet(foNet)}</b>\n`;
   if (foBuy > 0 || foSell > 0) {
     txtAr += `   ▫️ مشتريات: <b>${fmtVal(foBuy)}</b> • مبيعات: <b>${fmtVal(foSell)}</b>\n`;
   }
 
-  txtAr += `\n📊 <b>إجمالي صافي المؤسسات (اليوم):</b> ${totStatusAr}\n`
+  txtAr += `\n📊 <b>إجمالي صافي المؤسسات ${mStatus.sessionTagAr}:</b> ${totStatusAr}\n`
     + `   ▪️ صافي السيولة: <b>${fmtNet(totNet)}</b>\n`;
 
   return txtAr + `\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
@@ -1568,10 +1628,12 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     }
   }
 
+  const mStatus = getEgxMarketStatus(sessionDate);
+
   const updatedDateTime = getCairoFullDateTime(lang, tzKey);
   const snapshotTime = getEgxSnapshotTime(data, lang);
-  const snapshotLineEn = snapshotTime ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
-  const snapshotLineAr = snapshotTime ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
+  const snapshotLineEn = (snapshotTime && mStatus.isTodaySession) ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
+  const snapshotLineAr = (snapshotTime && mStatus.isTodaySession) ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
 
   // أسعار البنك المركزي وأعلى بنك كبديل لحظي
   const cbeBuy = Number(data.cbe_usd_buy || 52.22);
@@ -1649,43 +1711,40 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   }
 
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
-
-  // حساب المجاميع التراكمية الأسبوعية والشهرية
-  const periodic = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
-
-  const fmtPeriodVal = (egpVal, usdVal) => {
-    if (curr === "usd") {
-      const uSign = usdVal >= 0 ? "+" : "-";
-      return `${LRM}${uSign}$${Math.abs(usdVal).toLocaleString("en-US")}${LRM}`;
-    }
-    const sign = egpVal >= 0 ? "+" : "-";
-    const unit = lang === "en" ? " EGP" : " ج.م";
-    return `${LRM}${sign}${Math.abs(egpVal).toLocaleString("en-US")}${LRM}${unit}`;
-  };
-
   const getDot = (v) => v >= 0 ? "🟢" : "🔴";
-  const mParts = sessionDate.split("-");
-  const mCode = mParts[1] || "10";
-  const monthNameAr = MONTH_NAMES_AR[mCode] || "أكتوبر";
-  const monthNameEn = MONTH_NAMES_EN[mCode] || "October";
-
-  const weeklyCountAr = periodic.weekly.count === 1 ? "جلسة واحدة" : (periodic.weekly.count === 2 ? "جلستان" : `${periodic.weekly.count} جلسات`);
-  const monthlyCountAr = periodic.monthly.count === 1 ? "جلسة واحدة" : (periodic.monthly.count === 2 ? "جلستان" : `${periodic.monthly.count} جلسات`);
-  const weeklyCountEn = periodic.weekly.count === 1 ? "1 Session" : `${periodic.weekly.count} Sessions`;
-  const monthlyCountEn = periodic.monthly.count === 1 ? "1 Session" : `${periodic.monthly.count} Sessions`;
 
   if (lang === "en") {
+    let egxBlockEn = "";
+    if (mStatus.isHolidayOrClosed) {
+      egxBlockEn = `🏛️ <b>Foreign Institutional Flows:</b>\n`
+        + `  🏖️ <b>Today's Trading:</b> <b>No Session (0 Flow • Market Closed)</b>\n`
+        + `  ▫️ <b>Status ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
+        + `  ▫️ <b>Net Flow ${mStatus.sessionTagEn}:</b> <b>${foAmountEn}</b>\n`
+        + breakdownEn
+        + `  ▪️ <b>Total Inst. Net ${mStatus.sessionTagEn}:</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n\n`;
+    } else if (!mStatus.isTodaySession) {
+      egxBlockEn = `🏛️ <b>Foreign Institutional Flows:</b>\n`
+        + `  ⏳ <b>Today's Session:</b> <i>Pre-Market (Opens at 10:00 AM Cairo)</i>\n`
+        + `  ▫️ <b>Status ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
+        + `  ▫️ <b>Net Flow ${mStatus.sessionTagEn}:</b> <b>${foAmountEn}</b>\n`
+        + breakdownEn
+        + `  ▪️ <b>Total Inst. Net ${mStatus.sessionTagEn}:</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n\n`;
+    } else {
+      egxBlockEn = `🏛️ <b>Foreign Institutional Flows:</b>\n`
+        + `  ▫️ <b>Status (Today):</b> ${foStatusEn}\n`
+        + `  ▫️ <b>Today's Net Flow:</b> <b>${foAmountEn}</b>\n`
+        + breakdownEn
+        + `  ▪️ <b>Total Inst. Net (Today):</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n\n`;
+    }
+
     return `📊 <b>Executive Financial Summary</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n`
-      + `🕒 Query: <b>${updatedDateTime}</b>`
-      + snapshotLineEn + `\n`
-      + `📅 Session: <b>${sessionDate}</b> • Currency: <b>${currBadge}</b>\n`
+      + `🕒 Query: <b>${updatedDateTime}</b>\n`
+      + (mStatus.isHolidayOrClosed ? `${mStatus.statusEn}\n` : "")
+      + snapshotLineEn
+      + `📅 Session: <b>${sessionDate}</b>${mStatus.isTodaySession ? "" : " <i>(Last Verified Session)</i>"} • Currency: <b>${currBadge}</b>\n`
       + `━━━━━━━━━━━━━━━━━━\n\n`
-      + `🏛️ <b>Foreign Institutional Flows:</b>\n`
-      + `  ▫️ <b>Status (Today):</b> ${foStatusEn}\n`
-      + `  ▫️ <b>Today's Net Flow:</b> <b>${foAmountEn}</b>\n`
-      + breakdownEn
-      + `  ▪️ <b>Total Inst. Net (Today):</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n\n`
+      + egxBlockEn
       + `━━━━━━━━━━━━━━━━━━\n`
       + `💵 <b>USD Exchange Rates:</b>\n`
       + `  ▫️ <b>Central Bank (CBE):</b> Buy <b>${cbeBuy.toFixed(4)}</b> • Sell <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
@@ -1697,17 +1756,37 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
       + `\n⚡ <i>Live Executive Summary • Real-time feeds.</i>`;
   }
 
+  let egxBlockAr = "";
+  if (mStatus.isHolidayOrClosed) {
+    egxBlockAr = `🏛️ <b>صافي تدفقات المؤسسات:</b>\n`
+      + `  🏖️ <b>تداول اليوم:</b> <b>لا يوجد تداول (عطلة • صفر تداول)</b>\n`
+      + `  ▫️ <b>حالة الأجانب ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
+      + `  ▫️ <b>صافي السيولة ${mStatus.sessionTagAr}:</b> <b>${foAmountAr}</b>\n`
+      + breakdownAr
+      + `  ▪️ <b>إجمالي صافي المؤسسات ${mStatus.sessionTagAr}:</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n\n`;
+  } else if (!mStatus.isTodaySession) {
+    egxBlockAr = `🏛️ <b>صافي تدفقات المؤسسات:</b>\n`
+      + `  ⏳ <b>جلسة اليوم:</b> <i>قبل الافتتاح (تبدأ 10:00 ص بتوقيت القاهرة)</i>\n`
+      + `  ▫️ <b>حالة الأجانب ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
+      + `  ▫️ <b>صافي السيولة ${mStatus.sessionTagAr}:</b> <b>${foAmountAr}</b>\n`
+      + breakdownAr
+      + `  ▪️ <b>إجمالي صافي المؤسسات ${mStatus.sessionTagAr}:</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n\n`;
+  } else {
+    egxBlockAr = `🏛️ <b>صافي تدفقات المؤسسات:</b>\n`
+      + `  ▫️ <b>حالة الأجانب اليوم:</b> ${foStatusAr}\n`
+      + `  ▫️ <b>صافي سيولة الأجانب (اليوم):</b> <b>${foAmountAr}</b>\n`
+      + breakdownAr
+      + `  ▪️ <b>إجمالي صافي المؤسسات (اليوم):</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n\n`;
+  }
+
   return `📊 <b>التقرير المالي التنفيذي الشامل</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n`
-    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
-    + snapshotLineAr + `\n`
-    + `📅 تاريخ الجلسة: <b>${sessionDate}</b> • العملة: <b>${currBadge}</b>\n`
+    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
+    + (mStatus.isHolidayOrClosed ? `${mStatus.statusAr}\n` : "")
+    + snapshotLineAr
+    + `📅 تاريخ الجلسة: <b>${sessionDate}</b>${mStatus.isTodaySession ? "" : " <i>(آخر جلسة معتمدة)</i>"} • العملة: <b>${currBadge}</b>\n`
     + `━━━━━━━━━━━━━━━━━━\n\n`
-    + `🏛️ <b>صافي تدفقات المؤسسات:</b>\n`
-    + `  ▫️ <b>حالة الأجانب اليوم:</b> ${foStatusAr}\n`
-    + `  ▫️ <b>صافي سيولة الأجانب (اليوم):</b> <b>${foAmountAr}</b>\n`
-    + breakdownAr
-    + `  ▪️ <b>إجمالي صافي المؤسسات (اليوم):</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n\n`
+    + egxBlockAr
     + `━━━━━━━━━━━━━━━━━━\n`
     + `💵 <b>أسعار صرف الدولار:</b>\n`
     + `  ▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> • بيع <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`

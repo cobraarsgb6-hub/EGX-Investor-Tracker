@@ -22,19 +22,30 @@ def run_cloud_sync(webhook_url=None):
     print(f"🚀 [Cloud Worker] Starting EGX & Rates Cloud Sync at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
     
-    # 1. Fetch EGX data with Playwright
-    print("🏛️ [1/3] Scraping EGX Investor flows via Playwright...")
+    # 1. Fetch EGX data with Playwright (only if market is open or during business day)
+    from core.scheduler import check_egx_market_status, get_cairo_datetime
+    is_market_open, market_reason = check_egx_market_status()
+    now_cairo = get_cairo_datetime()
+    weekday = now_cairo.weekday()
+
     egx_success = False
-    try:
-        data = fetch_investors_from_egx(sb="1")
-        if data and data.get("tables", {}).get("institutions"):
-            save_institution_snapshot(data)
-            print("✅ EGX snapshot saved successfully to local database.")
-            egx_success = True
-        else:
-            print("⚠️ EGX returned empty table (Market closed or holiday).")
-    except Exception as e:
-        print(f"❌ EGX Scraping error: {e}")
+    if weekday in (4, 5):
+        print(f"⏸️ [1/3] Skipping EGX Scraping: عطلة نهاية الأسبوع (الجمعة/السبت) - البورصة مغلقة رسمياً.")
+    else:
+        print("🏛️ [1/3] Scraping EGX Investor flows via Playwright...")
+        try:
+            data = fetch_investors_from_egx(sb="1")
+            if data and data.get("tables", {}).get("institutions"):
+                saved = save_institution_snapshot(data)
+                if saved:
+                    print("✅ EGX snapshot saved successfully to local database.")
+                    egx_success = True
+                else:
+                    print("⚠️ EGX snapshot skipped by deduplication (identical to previous session - market holiday).")
+            else:
+                print("⚠️ EGX returned empty table (Market closed or holiday).")
+        except Exception as e:
+            print(f"❌ EGX Scraping error: {e}")
 
     # 2. Fetch Live Rates (Ta3weem, Oil, Crypto, Gold, Banks)
     print("💱 [2/3] Fetching live currencies, crypto, gold, and oil...")
