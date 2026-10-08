@@ -9,7 +9,7 @@ from lxml import html
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE_FILE = os.path.join(BASE_DIR, "data", "ta3weem_rates.json")
-TA3WEEM_CACHE_TTL = 300  # 5 minutes for HTML scraping of banks to avoid TLS blocks
+TA3WEEM_CACHE_TTL = 1800  # 30 minutes cache to avoid excessive scraping & TLS blocks
 
 def fetch_crypto_rates() -> List[Dict[str, Any]]:
     """

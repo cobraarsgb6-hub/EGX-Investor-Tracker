@@ -1265,28 +1265,6 @@
           </div>
         </div>
 
-        <!-- شريط التراكميات الذكي المدمج بجوار الأرشيف مباشرة -->
-        <div id="archive-cumulative-strip" style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:0.8rem; font-weight:800; color:#0284c7;"><i class="fa-solid fa-chart-pie"></i> <span id="txt-cumul-label">الرصيد التراكمي للفترة المحددة:</span></span>
-            <span class="badge-flow badge-neutral num-ltr" id="arch-cumul-period-tag" style="font-size:0.75rem; font-weight:700;">كافة الجلسات</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-            <div style="font-size:0.82rem; font-weight:700;">
-              <span style="color:#64748b;">تراكمي الأجانب (الأساس):</span>
-              <span class="num-ltr" id="arch-cumul-fo" style="font-weight:900; margin-inline-start:4px;">--</span>
-            </div>
-            <div style="font-size:0.82rem; font-weight:700;">
-              <span style="color:#64748b;">تراكمي المصريين:</span>
-              <span class="num-ltr" id="arch-cumul-eg" style="font-weight:900; margin-inline-start:4px;">--</span>
-            </div>
-            <div style="font-size:0.82rem; font-weight:700;">
-              <span style="color:#64748b;">تراكمي العرب:</span>
-              <span class="num-ltr" id="arch-cumul-ar" style="font-weight:900; margin-inline-start:4px;">--</span>
-            </div>
-          </div>
-        </div>
-
         <table>
           <thead>
             <tr>
@@ -2242,46 +2220,6 @@
       }
       if (rows.length === 0) rows = data.archive.slice(0, 1);
 
-      // حساب التراكمي للفترة المحددة وتحديث الشريط الذكي
-      var cumFo = 0, cumEg = 0, cumAr = 0;
-      rows.forEach(function(r) {
-        cumFo += Number(r.foreign_net || 0);
-        cumEg += Number(r.egypt_net || 0);
-        cumAr += Number(r.arab_net || 0);
-      });
-
-      var periodNamesMap = {
-        "all": currentLang === "en" ? "All Records" : "كافة الجلسات",
-        "daily": currentLang === "en" ? "Latest Session" : "جلسة اليوم",
-        "weekly": currentLang === "en" ? "Current Week" : "الأسبوع الحالي",
-        "october": currentLang === "en" ? "October 2026" : "أكتوبر 2026",
-        "september": currentLang === "en" ? "September 2026" : "سبتمبر 2026",
-        "yearly": currentLang === "en" ? "YTD 2026" : "سنوي 2026"
-      };
-
-      var tagEl = document.getElementById("arch-cumul-period-tag");
-      if (tagEl) tagEl.innerText = periodNamesMap[currentArchiveFilter] || periodNamesMap["all"];
-
-      var foEl = document.getElementById("arch-cumul-fo");
-      var egEl = document.getElementById("arch-cumul-eg");
-      var arEl = document.getElementById("arch-cumul-ar");
-
-      if (foEl) {
-        foEl.innerHTML = (currentCurrency === "USD") 
-          ? formatSignNum(cumFo / usdRate, "$", 0) 
-          : formatSignNum(cumFo, currEgpLabel, 0);
-      }
-      if (egEl) {
-        egEl.innerHTML = (currentCurrency === "USD") 
-          ? formatSignNum(cumEg / usdRate, "$", 0) 
-          : formatSignNum(cumEg, currEgpLabel, 0);
-      }
-      if (arEl) {
-        arEl.innerHTML = (currentCurrency === "USD") 
-          ? formatSignNum(cumAr / usdRate, "$", 0) 
-          : formatSignNum(cumAr, currEgpLabel, 0);
-      }
-
       var archHtml = "";
       rows.forEach(function(row) {
         var segmentText = (currentLang === "en") ? "Equities, Bonds & T-Bills" : (row.segment || "الأسهم والسندات والأذون");
@@ -2468,9 +2406,19 @@
       setCurrencyMode(currentCurrency);
       requestDataUpdate(false);
       connectBinanceWs();
+      // Poll every 5 minutes (300,000 ms), only when tab is visible
       setInterval(function() {
-        requestDataUpdate(false);
-      }, 30000);
+        if (!document.hidden) {
+          requestDataUpdate(false);
+        }
+      }, 300000);
+
+      // Refresh when user switches back to this tab if it's been idle
+      document.addEventListener("visibilitychange", function() {
+        if (!document.hidden) {
+          requestDataUpdate(false);
+        }
+      });
     });
   </script>
 </body>

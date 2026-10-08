@@ -105,30 +105,50 @@ def get_market_status_info() -> Dict[str, Any]:
         "total_egx_syncs": scheduler_state["total_egx_syncs"]
     }
 
-CURRENCY_SYNC_INTERVAL = 30  # 30 seconds for live streaming
+def get_adaptive_sync_interval(now_cairo: datetime) -> int:
+    """
+    Returns appropriate sync interval in seconds:
+    - During EGX & Egyptian Banking active hours (09:00 - 16:00 Sun-Thu): 300 seconds (5 minutes)
+    - Outside trading hours (evenings / nights / weekends / holidays): 3600 seconds (1 hour)
+    """
+    weekday = now_cairo.weekday()
+    # Friday (4) or Saturday (5)
+    if weekday in (4, 5):
+        return 3600  # 1 hour on weekends
+        
+    cur_time = now_cairo.time()
+    if dtime(9, 0) <= cur_time <= dtime(16, 0):
+        return 300  # 5 minutes during active banking & exchange hours
+    else:
+        return 3600  # 1 hour outside active hours
 
 def run_currency_sync_loop():
     """
-    Syncs currency, commodity, crypto, and gold rates every 30 seconds for live streaming.
+    Intelligently syncs currency, commodity, crypto, and gold rates.
+    Uses adaptive polling to avoid unnecessary requests:
+    - 5 minutes during active banking hours (09:00 - 16:00 Sun-Thu)
+    - 1 hour outside active market hours & weekends.
     """
     while True:
+        now_cairo = get_cairo_datetime()
+        interval = get_adaptive_sync_interval(now_cairo)
         try:
             now_epoch = time.time()
-            now_str = get_cairo_datetime().strftime("%Y-%m-%d %H:%M:%S")
+            now_str = now_cairo.strftime("%Y-%m-%d %H:%M:%S")
             fetch_ta3weem_data(force_refresh=False)
             scheduler_state["last_currency_sync"] = now_str
             scheduler_state["last_currency_epoch"] = now_epoch
             scheduler_state["total_currency_syncs"] += 1
             
-            next_epoch = now_epoch + CURRENCY_SYNC_INTERVAL
+            next_epoch = now_epoch + interval
             scheduler_state["next_currency_epoch"] = next_epoch
             next_sync_dt = datetime.fromtimestamp(next_epoch, tz=CAIRO_TZ)
             scheduler_state["next_currency_sync"] = next_sync_dt.strftime("%H:%M:%S")
-            print(f"[Scheduler] 💱 Live rates synced #{scheduler_state['total_currency_syncs']} at {now_str}", flush=True)
+            print(f"[Scheduler] 💱 Rates checked #{scheduler_state['total_currency_syncs']} at {now_str}. Next in {interval // 60}m ({scheduler_state['next_currency_sync']})", flush=True)
         except Exception as e:
-            print(f"[Scheduler Error] Live sync failed: {e}", flush=True)
+            print(f"[Scheduler Error] Currency sync failed: {e}", flush=True)
             
-        time.sleep(CURRENCY_SYNC_INTERVAL)
+        time.sleep(interval)
 
 
 def run_egx_sync_loop():
