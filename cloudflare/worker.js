@@ -620,7 +620,26 @@ async function getCachedDashboardData() {
             sheetCache.timestamp = now;
           }
         }
-      } catch(eGh) {}
+    // تصفية أوتوماتيكية لأي جلسات مكررة في الأرشيف (إذا كانت أرقام جلسة اليوم مطابقة تماماً للجلسة السابقة بسبب عطلة البورصة)
+    if (sheetCache.data && Array.isArray(sheetCache.data.archive) && sheetCache.data.archive.length > 1) {
+      const arch = sheetCache.data.archive;
+      const cleanArch = [arch[0]];
+      for (let i = 1; i < arch.length; i++) {
+        const prev = cleanArch[cleanArch.length - 1];
+        const curr = arch[i];
+        // If two consecutive dates have identical foreign_net and total_net, keep only the older genuine trading session
+        const prevFo = Number(prev.foreign_net !== undefined ? prev.foreign_net : prev.foreign_net_egp);
+        const currFo = Number(curr.foreign_net !== undefined ? curr.foreign_net : curr.foreign_net_egp);
+        const prevTot = Number(prev.total_net !== undefined ? prev.total_net : prev.total_net_egp);
+        const currTot = Number(curr.total_net !== undefined ? curr.total_net : curr.total_net_egp);
+        if (Math.abs(prevFo - currFo) < 1.0 && Math.abs(prevTot - currTot) < 1.0 && prev.date !== curr.date) {
+          // If first item was duplicate of second, remove first item and keep second
+          cleanArch[cleanArch.length - 1] = curr;
+        } else {
+          cleanArch.push(curr);
+        }
+      }
+      sheetCache.data.archive = cleanArch;
     }
   }
 
