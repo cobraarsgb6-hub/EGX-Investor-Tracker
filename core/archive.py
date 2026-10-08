@@ -100,8 +100,25 @@ def save_institution_snapshot(data: Dict[str, Any]) -> bool:
     tot_outflow_usd = sum(row_data[k]["sell_usd"] for k in row_data)
     tot_net_usd = sum(row_data[k]["net_usd"] for k in row_data)
 
+    # 🛑 Anti-Duplicate Validation: Prevent saving stale/yesterday numbers under today's date if market closed
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
+        cursor.execute("""
+            SELECT date, foreign_inflow_egp, foreign_outflow_egp, total_net_egp 
+            FROM institution_daily_flows 
+            WHERE sb = ? 
+            ORDER BY date DESC LIMIT 1
+        """, (sb,))
+        last_row = cursor.fetchone()
+        if last_row:
+            last_date, last_fo_in, last_fo_out, last_tot_net = last_row
+            # If the current scrape is attempting to insert a new date, but values are identical to previous session
+            if last_date != date_str:
+                curr_fo_in = row_data["foreign"]["buy_egp"]
+                curr_fo_out = row_data["foreign"]["sell_egp"]
+                if abs(curr_fo_in - (last_fo_in or 0)) < 1.0 and abs(curr_fo_out - (last_fo_out or 0)) < 1.0:
+                    print(f"[Archive Deduplication] ⚠️ Rejected stale snapshot for {date_str}: values identical to last session ({last_date}). EGX likely closed/holiday.", flush=True)
+                    return False
         cursor.execute("""
         INSERT INTO institution_daily_flows (
             date, sb, segment_name, usd_rate,

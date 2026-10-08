@@ -1171,15 +1171,6 @@ function formatEgxReport(data, lang, curr) {
     txt += `\n📊 <b>Total Institutional Net (Today):</b> ${totStatusEn}\n`
       + `   ▪️ Net Flow: <b>${fmtNet(totNet)}</b>\n`;
 
-    txt += `\n━━━━━━━━━━━━━━━━━━\n`
-      + `📈 <b>Cumulative Performance:</b>\n\n`
-      + `🗓️ <b>Weekly Total (from Sun):</b> [${weeklyCountEn}]\n`
-      + `   ▫️ Foreigners Net: ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b>\n`
-      + `   ▪️ Total Inst. Net: ${getDot(periodic.weekly.totNet)} <b>${fmtPeriodVal(periodic.weekly.totNet, periodic.weekly.totUsd)}</b>\n\n`
-      + `🗓️ <b>Monthly Total (${monthNameEn}):</b> [${monthlyCountEn}]\n`
-      + `   ▫️ Foreigners Net: ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b>\n`
-      + `   ▪️ Total Inst. Net: ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n`;
-
     return txt + `\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
 
@@ -1197,15 +1188,6 @@ function formatEgxReport(data, lang, curr) {
 
   txtAr += `\n📊 <b>إجمالي صافي المؤسسات (اليوم):</b> ${totStatusAr}\n`
     + `   ▪️ صافي السيولة: <b>${fmtNet(totNet)}</b>\n`;
-
-  txtAr += `\n━━━━━━━━━━━━━━━━━━\n`
-    + `📈 <b>الأداء التراكمي (أسبوعي وشهري):</b>\n\n`
-    + `🗓️ <b>إجمالي الأسبوع (بدءاً من الأحد):</b> [${weeklyCountAr}]\n`
-    + `   ▫️ صافي الأجانب: ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b>\n`
-    + `   ▪️ صافي المؤسسات: ${getDot(periodic.weekly.totNet)} <b>${fmtPeriodVal(periodic.weekly.totNet, periodic.weekly.totUsd)}</b>\n\n`
-    + `🗓️ <b>إجمالي شهر ${monthNameAr}:</b> [${monthlyCountAr}]\n`
-    + `   ▫️ صافي الأجانب: ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b>\n`
-    + `   ▪️ صافي المؤسسات: ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n`;
 
   return txtAr + `\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
@@ -1681,10 +1663,7 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
       + `  ▫️ <b>Status (Today):</b> ${foStatusEn}\n`
       + `  ▫️ <b>Today's Net Flow:</b> <b>${foAmountEn}</b>\n`
       + breakdownEn
-      + `  ▪️ <b>Total Inst. Net (Today):</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n`
-      + `  ▫️ <b>Weekly Total (from Sun):</b> ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b> [${weeklyCountEn}]\n`
-      + `  ▫️ <b>Monthly Total (${monthNameEn}):</b> ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b> [${monthlyCountEn}]\n`
-      + `  ▪️ <b>Total Inst. Monthly Net:</b> ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n\n`
+      + `  ▪️ <b>Total Inst. Net (Today):</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n\n`
       + `━━━━━━━━━━━━━━━━━━\n`
       + `💵 <b>USD Exchange Rates:</b>\n`
       + `  ▫️ <b>Central Bank (CBE):</b> Buy <b>${cbeBuy.toFixed(4)}</b> • Sell <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
@@ -1706,10 +1685,7 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     + `  ▫️ <b>حالة الأجانب اليوم:</b> ${foStatusAr}\n`
     + `  ▫️ <b>صافي سيولة الأجانب (اليوم):</b> <b>${foAmountAr}</b>\n`
     + breakdownAr
-    + `  ▪️ <b>إجمالي صافي المؤسسات (اليوم):</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n`
-    + `  ▫️ <b>إجمالي الأسبوع (بدءاً من الأحد):</b> ${getDot(periodic.weekly.foNet)} <b>${fmtPeriodVal(periodic.weekly.foNet, periodic.weekly.foUsd)}</b> [${weeklyCountAr}]\n`
-    + `  ▫️ <b>إجمالي شهر ${monthNameAr} التراكمي:</b> ${getDot(periodic.monthly.foNet)} <b>${fmtPeriodVal(periodic.monthly.foNet, periodic.monthly.foUsd)}</b> [${monthlyCountAr}]\n`
-    + `  ▪️ <b>صافي المؤسسات لشهر ${monthNameAr}:</b> ${getDot(periodic.monthly.totNet)} <b>${fmtPeriodVal(periodic.monthly.totNet, periodic.monthly.totUsd)}</b>\n\n`
+    + `  ▪️ <b>إجمالي صافي المؤسسات (اليوم):</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n\n`
     + `━━━━━━━━━━━━━━━━━━\n`
     + `💵 <b>أسعار صرف الدولار:</b>\n`
     + `  ▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> • بيع <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`

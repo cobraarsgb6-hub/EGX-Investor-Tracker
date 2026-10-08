@@ -105,50 +105,95 @@ def get_market_status_info() -> Dict[str, Any]:
         "total_egx_syncs": scheduler_state["total_egx_syncs"]
     }
 
-def get_adaptive_sync_interval(now_cairo: datetime) -> int:
+def get_cairo_next_action(now_cairo: datetime) -> Tuple[str, int]:
     """
-    Returns appropriate sync interval in seconds:
-    - During EGX & Egyptian Banking active hours (09:00 - 16:00 Sun-Thu): 300 seconds (5 minutes)
-    - Outside trading hours (evenings / nights / weekends / holidays): 3600 seconds (1 hour)
+    Determines next action and sleep duration in seconds:
+    - Active trading/banking window (09:00 to 16:00 Sun-Thu): 'SYNC', sleep 300s (5 min).
+    - Closing snapshot at 23:00 Cairo time: 'CLOSING_SYNC' if within [23:00 - 23:05].
+    - Otherwise (nights, weekends, holidays): 'SLEEP' (Zero requests).
     """
     weekday = now_cairo.weekday()
-    # Friday (4) or Saturday (5)
-    if weekday in (4, 5):
-        return 3600  # 1 hour on weekends
-        
     cur_time = now_cairo.time()
+
+    # Weekend: Friday (4) and Saturday (5) -> Sleep until Sunday 09:00
+    if weekday in (4, 5):
+        # Calculate seconds until next Sunday 09:00 AM
+        days_ahead = (6 - weekday) % 7
+        if days_ahead == 0 and cur_time >= dtime(9, 0):
+            days_ahead = 7
+        target_sunday = (now_cairo + timedelta(days=days_ahead)).replace(hour=9, minute=0, second=0, microsecond=0)
+        sleep_sec = max(60, int((target_sunday - now_cairo).total_seconds()))
+        return "WEEKEND_SLEEP", min(sleep_sec, 3600)  # Check at most every hour or sleep until target
+
+    # Official Holiday
+    date_md = now_cairo.strftime("%m-%d")
+    if date_md in FIXED_HOLIDAYS:
+        return "HOLIDAY_SLEEP", 3600
+
+    # Active Business Window (09:00 - 16:00)
     if dtime(9, 0) <= cur_time <= dtime(16, 0):
-        return 300  # 5 minutes during active banking & exchange hours
-    else:
-        return 3600  # 1 hour outside active hours
+        return "ACTIVE_SYNC", 300  # 5 minutes
+
+    # Evening Closing Snapshot (23:00 - 23:05 Cairo time)
+    if dtime(23, 0) <= cur_time <= dtime(23, 5):
+        return "CLOSING_SYNC", 300
+
+    # After 16:00 until 23:00 -> Sleep until 23:00
+    if dtime(16, 0) < cur_time < dtime(23, 0):
+        target_23 = now_cairo.replace(hour=23, minute=0, second=0, microsecond=0)
+        sleep_sec = max(60, int((target_23 - now_cairo).total_seconds()))
+        return "EVENING_REST", sleep_sec
+
+    # After 23:05 until tomorrow 09:00 -> Sleep until tomorrow 09:00 AM
+    if cur_time > dtime(23, 5) or cur_time < dtime(9, 0):
+        if cur_time > dtime(23, 5):
+            tomorrow = now_cairo + timedelta(days=1)
+        else:
+            tomorrow = now_cairo
+        target_09 = tomorrow.replace(hour=9, minute=0, second=0, microsecond=0)
+        sleep_sec = max(60, int((target_09 - now_cairo).total_seconds()))
+        return "NIGHT_REST", sleep_sec
+
+    return "REST", 3600
 
 def run_currency_sync_loop():
     """
     Intelligently syncs currency, commodity, crypto, and gold rates.
-    Uses adaptive polling to avoid unnecessary requests:
-    - 5 minutes during active banking hours (09:00 - 16:00 Sun-Thu)
-    - 1 hour outside active market hours & weekends.
+    ZERO REQUESTS policy outside trading hours:
+    - 5 minutes during active banking hours (09:00 - 16:00 Sun-Thu).
+    - 1 final closing snapshot at 23:00 Cairo time.
+    - Zero network queries during evenings, nights, and weekends.
     """
     while True:
         now_cairo = get_cairo_datetime()
-        interval = get_adaptive_sync_interval(now_cairo)
-        try:
-            now_epoch = time.time()
+        action, sleep_duration = get_cairo_next_action(now_cairo)
+        
+        if action in ("ACTIVE_SYNC", "CLOSING_SYNC"):
+            try:
+                now_epoch = time.time()
+                now_str = now_cairo.strftime("%Y-%m-%d %H:%M:%S")
+                is_closing = (action == "CLOSING_SYNC")
+                tag = "🌙 Final 23:00 Closing Sync" if is_closing else "💱 Active Session Sync"
+                
+                fetch_ta3weem_data(force_refresh=is_closing)
+                scheduler_state["last_currency_sync"] = now_str
+                scheduler_state["last_currency_epoch"] = now_epoch
+                scheduler_state["total_currency_syncs"] += 1
+                
+                next_epoch = now_epoch + sleep_duration
+                scheduler_state["next_currency_epoch"] = next_epoch
+                next_sync_dt = datetime.fromtimestamp(next_epoch, tz=CAIRO_TZ)
+                scheduler_state["next_currency_sync"] = next_sync_dt.strftime("%H:%M:%S")
+                print(f"[Scheduler] {tag} #{scheduler_state['total_currency_syncs']} at {now_str}. Next in {sleep_duration // 60}m ({scheduler_state['next_currency_sync']})", flush=True)
+            except Exception as e:
+                print(f"[Scheduler Error] Currency sync failed: {e}", flush=True)
+        else:
             now_str = now_cairo.strftime("%Y-%m-%d %H:%M:%S")
-            fetch_ta3weem_data(force_refresh=False)
-            scheduler_state["last_currency_sync"] = now_str
-            scheduler_state["last_currency_epoch"] = now_epoch
-            scheduler_state["total_currency_syncs"] += 1
-            
-            next_epoch = now_epoch + interval
-            scheduler_state["next_currency_epoch"] = next_epoch
-            next_sync_dt = datetime.fromtimestamp(next_epoch, tz=CAIRO_TZ)
-            scheduler_state["next_currency_sync"] = next_sync_dt.strftime("%H:%M:%S")
-            print(f"[Scheduler] 💱 Rates checked #{scheduler_state['total_currency_syncs']} at {now_str}. Next in {interval // 60}m ({scheduler_state['next_currency_sync']})", flush=True)
-        except Exception as e:
-            print(f"[Scheduler Error] Currency sync failed: {e}", flush=True)
-            
-        time.sleep(interval)
+            resume_dt = now_cairo + timedelta(seconds=sleep_duration)
+            resume_str = resume_dt.strftime("%I:%M %p").replace("AM", "صباحاً").replace("PM", "مساءً")
+            print(f"[Scheduler] 💤 Zero-Request Standby ({action}) at {now_str}. Markets closed. Sleeping for {sleep_duration // 60}m (Resuming at {resume_str}).", flush=True)
+
+        time.sleep(sleep_duration)
 
 
 def run_egx_sync_loop():
