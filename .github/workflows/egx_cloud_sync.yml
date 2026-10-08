@@ -4,8 +4,10 @@ on:
   repository_dispatch:
     types: [cron_sync]   # لازم يطابق event_type في cron-job.org
   schedule:
-    # Runs every 15 minutes during EGX market hours (10:00 AM to 2:45 PM Cairo Time, Sunday-Thursday)
-    - cron: '*/15 7-12 * * 0-4'
+    # Runs during EGX market hours (10:00 AM to 2:45 PM Cairo Time = 07:00 to 11:45 UTC, Sunday-Thursday)
+    - cron: '*/15 7-11 * * 0-4'
+    # Final 11:00 PM Cairo Time Closing Snapshot (20:00 UTC, Sunday-Thursday)
+    - cron: '0 20 * * 0-4'
   workflow_dispatch: # Allows manual trigger from GitHub UI anytime
 
 permissions:
