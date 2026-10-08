@@ -166,6 +166,30 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
+  if (action === "purge_date") {
+    var targetDate = (e && e.parameter && e.parameter.date) ? e.parameter.date : "2026-10-08";
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var s1 = findExistingSheet(ss, "🏛️ تعاملات المؤسسات - البورصة المصرية", ["تعاملات البورصة", "المؤسسات", "EGX"]);
+    var deletedCount = 0;
+    if (s1 && s1.getLastRow() >= 2) {
+      for (var r = s1.getLastRow(); r >= 2; r--) {
+        var cellVal = normalizeDateStr(s1.getRange(r, 1).getValue());
+        if (cellVal === targetDate) {
+          s1.deleteRow(r);
+          deletedCount++;
+        }
+      }
+    }
+    rebuildExecutiveTab();
+    formatAllSheetsProfessionally();
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      deleted_date: targetDate,
+      deleted_rows: deletedCount,
+      remaining_archive: getSheetArchiveRows(ss).map(function(x) { return x.date; })
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   return HtmlService.createHtmlOutputFromFile("Index")
     .setTitle("منظومة البورصة المصرية وأسواق الصرف | EGX Institutions Tracker")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -403,13 +427,24 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
   var todayTotUsd = Math.round(todayTotNet / usdRate);
 
   var topBank = (banks && banks.length > 0) ? banks[0] : { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.42, sell: 52.52 };
-  var gold24 = 0, brent = 0;
+  var gold24 = 0, goldOunce = 0, silver = 0, brent = 0, wti = 0;
   if (rates && rates.length > 0) {
     rates.forEach(function(r) {
-      if (r.code === "GOLD24") gold24 = Number(r.buy || r.sell || 0);
-      if (r.code === "BRENT") brent = Number(r.buy || r.sell || 0);
+      if (r.code === "GOLD24") gold24 = Number(r.usd_price || (r.rate_egp ? r.rate_egp / usdRate : 0));
+      if (r.code === "GOLD_OUNCE" || (r.name && r.name.indexOf("أونصة الذهب") >= 0)) goldOunce = Number(r.usd_price || r.buy || r.sell || 0);
+      if (r.code === "SILVER" || (r.name && r.name.indexOf("الفضة") >= 0)) silver = Number(r.usd_price || r.buy || r.sell || 0);
+      if (r.code === "BRENT") brent = Number(r.usd_price || r.buy || r.sell || 0);
+      if (r.code === "WTI") wti = Number(r.usd_price || r.buy || r.sell || 0);
     });
   }
+
+  if (goldOunce <= 0 && gold24 > 0) goldOunce = Number((gold24 * 31.1035).toFixed(2));
+  if (gold24 <= 0 && goldOunce > 0) gold24 = Number((goldOunce / 31.1035).toFixed(2));
+  if (goldOunce <= 0) goldOunce = 4165.0;
+  if (gold24 <= 0) gold24 = 133.90;
+  if (silver <= 0) silver = 61.10;
+  if (brent <= 0) brent = 98.33;
+  if (wti <= 0) wti = 90.25;
 
   sheet.getRange(1, 1).setValue("🏛️ منظومة البورصة المصرية وأسواق المال - التقرير المالي التنفيذي والتراكمي");
   sheet.getRange(2, 1).setValue("🕒 توقيت المزامنة: " + (ts || new Date().toLocaleString()) + " بتوقيت مصر | سعر الدولار المعتمد: " + usdRate.toFixed(2) + " ج.م");
@@ -442,13 +477,19 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
 
   sheet.getRange(4, 1, summaryRows.length, summaryHeaders.length).setValues(summaryRows);
 
-  var marketHeaders = ["الأصل / المؤشر", "سعر الشراء / العالمي", "سعر البيع / المعادل", "أفضل بنك / المصدر"];
+  var cbeBuyStr = (r0.cbe_usd_buy ? Number(r0.cbe_usd_buy).toFixed(4) : "52.2600") + " ج.م";
+  var cbeSellStr = (r0.cbe_usd_sell ? Number(r0.cbe_usd_sell).toFixed(4) : "52.3600") + " ج.م";
+
+  var marketHeaders = ["الأصل / المؤشر", "السعر العالمي ($USD)", "المعادل المحلي (EGP)", "أفضل بنك / المصدر المعتمد"];
   var marketRows = [
     marketHeaders,
-    ["أعلى سعر شراء للدولار (البنوك)", Number(topBank.buy).toFixed(2) + " ج.م", Number(topBank.sell).toFixed(2) + " ج.م", topBank.bank],
-    ["سعر البنك المركزي (CBE)", "52.3624 ج.م", "52.5006 ج.م", "البنك المركزي المصري"],
-    ["جرام الذهب عيار 24", (gold24 > 0 ? ("$" + gold24.toFixed(2)) : "$133.60"), (gold24 > 0 ? (Math.round(gold24 * usdRate) + " ج.م") : "7,005 ج.م"), "TradingView Live"],
-    ["نفط خام برنت", (brent > 0 ? ("$" + brent.toFixed(2)) : "$100.85"), (brent > 0 ? (Math.round(brent * usdRate) + " ج.م") : "5,285 ج.م"), "عقود برنت الآجلة"]
+    ["أعلى سعر شراء للدولار (البنوك)", "$" + Number(topBank.buy).toFixed(2), Number(topBank.sell).toFixed(2) + " ج.م (بيع)", topBank.bank + " • شراء " + Number(topBank.buy).toFixed(2) + " ج.م"],
+    ["سعر البنك المركزي (CBE)", "$" + cbeBuyStr.replace(" ج.م", ""), cbeSellStr + " (بيع)", "البنك المركزي المصري • رسمي"],
+    ["نفط خام برنت (Brent)", "$" + brent.toFixed(2), Math.round(brent * usdRate).toLocaleString() + " ج.م", "TradingView Futures / ICE"],
+    ["خام غرب تكساس (WTI)", "$" + wti.toFixed(2), Math.round(wti * usdRate).toLocaleString() + " ج.م", "TradingView Futures / NYMEX"],
+    ["أونصة الذهب (Gold Ounce)", "$" + goldOunce.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}), Math.round(goldOunce * usdRate).toLocaleString() + " ج.م", "TradingView Spot / COMEX"],
+    ["جرام الذهب عيار 24", "$" + gold24.toFixed(2), Math.round(gold24 * usdRate).toLocaleString() + " ج.م", "تعويم • ذهب 24"],
+    ["أونصة الفضة (Silver Ounce)", "$" + silver.toFixed(2), Math.round(silver * usdRate).toLocaleString() + " ج.م", "TradingView Spot"]
   ];
 
   sheet.getRange(10, 1, marketRows.length, marketHeaders.length).setValues(marketRows);
@@ -473,45 +514,26 @@ function updateInstitutionsArchiveSheet(ss, archive) {
     "صافي المؤسسات الإجمالي ($)"
   ];
 
-  var existingMap = {};
-  if (sheet.getLastRow() >= 2) {
-    var oldVals = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues();
-    oldVals.forEach(function(r) {
-      var dStr = normalizeDateStr(r[0]);
-      var seg = String(r[1] || "").trim();
-      if (dStr) {
-        existingMap[dStr + "_" + seg] = [
-          dStr, seg, Number(r[2] || 52.42),
-          Number(r[3] || 0), Number(r[4] || 0), Number(r[5] || 0),
-          Number(r[6] || 0), Number(r[7] || 0), Number(r[8] || 0),
-          Number(r[9] || 0), Number(r[10] || 0), Number(r[11] || 0),
-          Number(r[12] || 0), Number(r[13] || 0), Number(r[14] || 0),
-          Number(r[15] || 0)
-        ];
-      }
-    });
-  }
-
+  var outRows = [];
   archive.forEach(function(r) {
     var dStr = normalizeDateStr(r.date);
     var seg = String(r.segment || "").trim();
     if (dStr) {
-      existingMap[dStr + "_" + seg] = [
+      outRows.push([
         dStr, seg, Number(r.usd_rate || 52.42),
         Number(r.egypt_buy_egp || 0), Number(r.egypt_sell_egp || 0), Number(r.egypt_net_egp || 0),
         Number(r.arab_buy_egp || 0), Number(r.arab_sell_egp || 0), Number(r.arab_net_egp || 0),
         Number(r.foreign_buy_egp || 0), Number(r.foreign_sell_egp || 0), Number(r.foreign_net_egp || 0),
         Number(r.total_buy_egp || 0), Number(r.total_sell_egp || 0), Number(r.total_net_egp || 0),
         Number(r.total_net_usd || 0)
-      ];
+      ]);
     }
   });
 
-  var allRows = Object.values(existingMap);
-  allRows.sort(function(a, b) { return String(b[0]).localeCompare(String(a[0])); });
+  outRows.sort(function(a, b) { return String(b[0]).localeCompare(String(a[0])); });
 
   sheet.clear();
-  var out = [headers].concat(allRows);
+  var out = [headers].concat(outRows);
   sheet.getRange(1, 1, out.length, headers.length).setValues(out);
   sheet.setFrozenRows(1);
 }
@@ -608,8 +630,8 @@ function formatAllSheetsProfessionally() {
     colorNetColumn(s0, 4, nSum, th);
     colorNetColumn(s0, 5, nSum, th);
 
-    if (s0.getLastRow() >= 14) {
-      styleSheetTable(s0, 10, 1, 5, 4, th);
+    if (s0.getLastRow() >= 17) {
+      styleSheetTable(s0, 10, 1, 8, 4, th);
     }
     autoFitColumns(s0, 7);
   }

@@ -166,6 +166,30 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
+  if (action === "purge_date") {
+    var targetDate = (e && e.parameter && e.parameter.date) ? e.parameter.date : "2026-10-08";
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var s1 = findExistingSheet(ss, "🏛️ تعاملات المؤسسات - البورصة المصرية", ["تعاملات البورصة", "المؤسسات", "EGX"]);
+    var deletedCount = 0;
+    if (s1 && s1.getLastRow() >= 2) {
+      for (var r = s1.getLastRow(); r >= 2; r--) {
+        var cellVal = normalizeDateStr(s1.getRange(r, 1).getValue());
+        if (cellVal === targetDate) {
+          s1.deleteRow(r);
+          deletedCount++;
+        }
+      }
+    }
+    rebuildExecutiveTab();
+    formatAllSheetsProfessionally();
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      deleted_date: targetDate,
+      deleted_rows: deletedCount,
+      remaining_archive: getSheetArchiveRows(ss).map(function(x) { return x.date; })
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   return HtmlService.createHtmlOutputFromFile("Index")
     .setTitle("منظومة البورصة المصرية وأسواق الصرف | EGX Institutions Tracker")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -490,45 +514,26 @@ function updateInstitutionsArchiveSheet(ss, archive) {
     "صافي المؤسسات الإجمالي ($)"
   ];
 
-  var existingMap = {};
-  if (sheet.getLastRow() >= 2) {
-    var oldVals = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues();
-    oldVals.forEach(function(r) {
-      var dStr = normalizeDateStr(r[0]);
-      var seg = String(r[1] || "").trim();
-      if (dStr) {
-        existingMap[dStr + "_" + seg] = [
-          dStr, seg, Number(r[2] || 52.42),
-          Number(r[3] || 0), Number(r[4] || 0), Number(r[5] || 0),
-          Number(r[6] || 0), Number(r[7] || 0), Number(r[8] || 0),
-          Number(r[9] || 0), Number(r[10] || 0), Number(r[11] || 0),
-          Number(r[12] || 0), Number(r[13] || 0), Number(r[14] || 0),
-          Number(r[15] || 0)
-        ];
-      }
-    });
-  }
-
+  var outRows = [];
   archive.forEach(function(r) {
     var dStr = normalizeDateStr(r.date);
     var seg = String(r.segment || "").trim();
     if (dStr) {
-      existingMap[dStr + "_" + seg] = [
+      outRows.push([
         dStr, seg, Number(r.usd_rate || 52.42),
         Number(r.egypt_buy_egp || 0), Number(r.egypt_sell_egp || 0), Number(r.egypt_net_egp || 0),
         Number(r.arab_buy_egp || 0), Number(r.arab_sell_egp || 0), Number(r.arab_net_egp || 0),
         Number(r.foreign_buy_egp || 0), Number(r.foreign_sell_egp || 0), Number(r.foreign_net_egp || 0),
         Number(r.total_buy_egp || 0), Number(r.total_sell_egp || 0), Number(r.total_net_egp || 0),
         Number(r.total_net_usd || 0)
-      ];
+      ]);
     }
   });
 
-  var allRows = Object.values(existingMap);
-  allRows.sort(function(a, b) { return String(b[0]).localeCompare(String(a[0])); });
+  outRows.sort(function(a, b) { return String(b[0]).localeCompare(String(a[0])); });
 
   sheet.clear();
-  var out = [headers].concat(allRows);
+  var out = [headers].concat(outRows);
   sheet.getRange(1, 1, out.length, headers.length).setValues(out);
   sheet.setFrozenRows(1);
 }
