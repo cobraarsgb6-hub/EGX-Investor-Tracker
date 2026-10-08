@@ -620,6 +620,9 @@ async function getCachedDashboardData() {
             sheetCache.timestamp = now;
           }
         }
+      } catch(eGh) {}
+    }
+
     // تصفية أوتوماتيكية لأي جلسات مكررة في الأرشيف (إذا كانت أرقام جلسة اليوم مطابقة تماماً للجلسة السابقة بسبب عطلة البورصة)
     if (sheetCache.data && Array.isArray(sheetCache.data.archive) && sheetCache.data.archive.length > 1) {
       const arch = sheetCache.data.archive;
