@@ -2185,7 +2185,22 @@
       if (!data || !data.archive) return;
       var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
       var usdRate = Number(data.usd_rate || 52.26);
-      var rows = data.archive.slice();
+      var rawRows = data.archive.slice();
+
+      // فلترة ذكية في الواجهة: إخفاء أي جلسة مكررة الأرقام تماماً مع الجلسة السابقة بسبب عطلة البورصة
+      var rows = [];
+      for (var i = 0; i < rawRows.length; i++) {
+        if (i === 0 && rawRows.length > 1) {
+          var r0 = rawRows[0];
+          var r1 = rawRows[1];
+          if (Math.abs(Number(r0.foreign_net || 0) - Number(r1.foreign_net || 0)) < 1.0 &&
+              Math.abs(Number(r0.total_net || 0) - Number(r1.total_net || 0)) < 1.0 &&
+              r0.date !== r1.date) {
+            continue; // Skip the fake duplicate today session
+          }
+        }
+        rows.push(rawRows[i]);
+      }
 
       if (currentArchiveFilter === "daily") {
         rows = rows.slice(0, 1);
