@@ -19,6 +19,7 @@
       --bg: #f8fafc;
       --border: #e2e8f0;
       --border-subtle: #f1f5f9;
+      --input-bg: #f1f5f9;
       --text: #0f172a;
       --text-muted: #64748b;
       --green: #047857;
@@ -56,6 +57,7 @@
       --primary-card: #f1f5f9;
       --border: #e2e8f0;
       --border-subtle: #f8fafc;
+      --input-bg: #f8fafc;
       --text: #0f172a;
       --text-muted: #64748b;
       --green: #047857;
@@ -81,6 +83,7 @@
       --primary-card: #0f172a;
       --border: #1e293b;
       --border-subtle: #0f172a;
+      --input-bg: #070c18;
       --text: #f1f5f9;
       --text-muted: #94a3b8;
       --green: #22c55e;
@@ -178,6 +181,38 @@
       border-color: #38bdf8 !important;
       font-weight: 800;
     }
+    body.theme-terminal .hero-focus-badge {
+      background: rgba(56, 189, 248, 0.15) !important;
+      color: #38bdf8 !important;
+      border: 1px solid rgba(56, 189, 248, 0.35) !important;
+    }
+    body.theme-terminal .kpi-eg .kpi-icon-wrap { background: rgba(34, 197, 94, 0.15) !important; color: #22c55e !important; }
+    body.theme-terminal .kpi-ar .kpi-icon-wrap { background: rgba(56, 189, 248, 0.15) !important; color: #38bdf8 !important; }
+    body.theme-terminal .kpi-fo .kpi-icon-wrap { background: rgba(245, 158, 11, 0.15) !important; color: #f59e0b !important; }
+    body.theme-terminal .cat-tag-gold {
+      background: rgba(245, 158, 11, 0.15) !important;
+      color: #f59e0b !important;
+      border: 1px solid rgba(245, 158, 11, 0.35) !important;
+    }
+    body.theme-terminal .cat-tag-oil {
+      background: rgba(239, 68, 68, 0.15) !important;
+      color: #ef4444 !important;
+      border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    }
+    body.theme-terminal .cat-tag-curr {
+      background: rgba(56, 189, 248, 0.15) !important;
+      color: #38bdf8 !important;
+      border: 1px solid rgba(56, 189, 248, 0.35) !important;
+    }
+    body.theme-terminal .cat-tag-crypto {
+      background: rgba(34, 197, 94, 0.15) !important;
+      color: #22c55e !important;
+      border: 1px solid rgba(34, 197, 94, 0.35) !important;
+    }
+    body.theme-terminal .asset-card.card-cat-gold::before { background: #f59e0b !important; }
+    body.theme-terminal .asset-card.card-cat-oil::before  { background: #ef4444 !important; }
+    body.theme-terminal .asset-card.card-cat-curr::before { background: #38bdf8 !important; }
+    body.theme-terminal .asset-card.card-cat-crypto::before { background: #22c55e !important; }
 
     /* 📈 النمط 3: غرفة عمليات التداول المباشر (Cyber Trading Matrix) - أسود فحمي داكن مع أخضر زمردي مالي */
     body.theme-matrix {
@@ -189,6 +224,7 @@
       --primary-card: #0c1a0e;
       --border: #143518;
       --border-subtle: #0a1c0d;
+      --input-bg: #050d06;
       --text: #e1fae5;
       --text-muted: #70a67a;
       --green: #10b981;
@@ -290,6 +326,38 @@
     }
     body.theme-matrix .val-pos { color: #10b981 !important; }
     body.theme-matrix .val-neg { color: #f43f5e !important; }
+    body.theme-matrix .hero-focus-badge {
+      background: rgba(16, 185, 129, 0.15) !important;
+      color: #10b981 !important;
+      border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    }
+    body.theme-matrix .kpi-eg .kpi-icon-wrap { background: rgba(16, 185, 129, 0.2) !important; color: #10b981 !important; }
+    body.theme-matrix .kpi-ar .kpi-icon-wrap { background: rgba(16, 185, 129, 0.15) !important; color: #70a67a !important; }
+    body.theme-matrix .kpi-fo .kpi-icon-wrap { background: rgba(245, 158, 11, 0.2) !important; color: #f59e0b !important; }
+    body.theme-matrix .cat-tag-gold {
+      background: rgba(245, 158, 11, 0.15) !important;
+      color: #f59e0b !important;
+      border: 1px solid rgba(245, 158, 11, 0.35) !important;
+    }
+    body.theme-matrix .cat-tag-oil {
+      background: rgba(244, 63, 94, 0.15) !important;
+      color: #f43f5e !important;
+      border: 1px solid rgba(244, 63, 94, 0.35) !important;
+    }
+    body.theme-matrix .cat-tag-curr {
+      background: rgba(16, 185, 129, 0.15) !important;
+      color: #10b981 !important;
+      border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    }
+    body.theme-matrix .cat-tag-crypto {
+      background: rgba(16, 185, 129, 0.2) !important;
+      color: #10b981 !important;
+      border: 1px solid rgba(16, 185, 129, 0.4) !important;
+    }
+    body.theme-matrix .asset-card.card-cat-gold::before { background: #f59e0b !important; }
+    body.theme-matrix .asset-card.card-cat-oil::before  { background: #f43f5e !important; }
+    body.theme-matrix .asset-card.card-cat-curr::before { background: #10b981 !important; }
+    body.theme-matrix .asset-card.card-cat-crypto::before { background: #10b981 !important; }
 
     /* 📊 النمط 4: التقرير التنفيذي لمجالس الإدارة (C-Suite Minimalist & Luxury) - رمادي دافئ راقٍ وأناقة رصينة مع كروت Slate كحلية */
     body.theme-csuite {
@@ -301,6 +369,7 @@
       --primary-card: #f8fafc;
       --border: #d1d5db;
       --border-subtle: #e5e7eb;
+      --input-bg: #f8fafc;
       --text: #0f172a;
       --text-muted: #475569;
       --green: #15803d;
@@ -386,6 +455,7 @@
       --primary-card: #2b313a;
       --border: #2b313a;
       --border-subtle: #202630;
+      --input-bg: #0b0e11;
       --text: #eaecef;
       --text-muted: #a6b0c3;
       --green: #0ecb81;
@@ -553,6 +623,38 @@
       border-color: #0ecb81 !important;
       color: #0ecb81 !important;
     }
+    body.theme-binance .hero-focus-badge {
+      background: rgba(240, 185, 11, 0.15) !important;
+      color: #f0b90b !important;
+      border: 1px solid rgba(240, 185, 11, 0.35) !important;
+    }
+    body.theme-binance .kpi-eg .kpi-icon-wrap { background: rgba(14, 203, 129, 0.15) !important; color: #0ecb81 !important; }
+    body.theme-binance .kpi-ar .kpi-icon-wrap { background: rgba(56, 189, 248, 0.15) !important; color: #38bdf8 !important; }
+    body.theme-binance .kpi-fo .kpi-icon-wrap { background: rgba(240, 185, 11, 0.15) !important; color: #f0b90b !important; }
+    body.theme-binance .cat-tag-gold {
+      background: rgba(240, 185, 11, 0.15) !important;
+      color: #f0b90b !important;
+      border: 1px solid rgba(240, 185, 11, 0.35) !important;
+    }
+    body.theme-binance .cat-tag-oil {
+      background: rgba(246, 70, 93, 0.15) !important;
+      color: #f6465d !important;
+      border: 1px solid rgba(246, 70, 93, 0.35) !important;
+    }
+    body.theme-binance .cat-tag-curr {
+      background: rgba(56, 189, 248, 0.15) !important;
+      color: #38bdf8 !important;
+      border: 1px solid rgba(56, 189, 248, 0.35) !important;
+    }
+    body.theme-binance .cat-tag-crypto {
+      background: rgba(14, 203, 129, 0.15) !important;
+      color: #0ecb81 !important;
+      border: 1px solid rgba(14, 203, 129, 0.35) !important;
+    }
+    body.theme-binance .asset-card.card-cat-gold::before { background: #f0b90b !important; }
+    body.theme-binance .asset-card.card-cat-oil::before  { background: #f6465d !important; }
+    body.theme-binance .asset-card.card-cat-curr::before { background: #38bdf8 !important; }
+    body.theme-binance .asset-card.card-cat-crypto::before { background: #0ecb81 !important; }
 
     * {
       box-sizing: border-box;
@@ -994,6 +1096,11 @@
       color: var(--text-muted);
       border: 1px solid var(--border);
     }
+    .hero-focus-badge {
+      background: var(--blue-bg);
+      color: var(--blue);
+      border: 1px solid var(--blue-border);
+    }
 
     /* ==========================================
        كروت الأسواق الحية المدمجة (No Duplication)
@@ -1348,7 +1455,7 @@
         <div style="display:flex; align-items:center; gap:8px;">
           <i class="fa-solid fa-filter" style="color: #1d4ed8; font-size: 0.85rem;"></i>
           <span style="font-size: 0.84rem; font-weight: 800; color: var(--text);">عرض فئات التدفقات:</span>
-          <div class="pill-group" role="group" aria-label="تحديد فئة عرض التدفقات" style="padding: 4px 8px; background: #e2e8f0; border-color: #cbd5e1; align-items: center; gap: 6px;">
+          <div class="pill-group" role="group" aria-label="تحديد فئة عرض التدفقات" style="padding: 4px 8px; background: var(--input-bg); border-color: var(--border); align-items: center; gap: 6px;">
             <button class="filter-btn active" id="btn-flow-fo" onclick="setFlowDisplayCategory('foreign')" aria-pressed="true" style="border:none;">🌐 الأجانب (الأساس)</button>
             <button class="filter-btn" id="btn-flow-all" onclick="setFlowDisplayCategory('all')" aria-pressed="false" style="border:none;">🏛️ كافة الفئات (مصريين / عرب / أجانب)</button>
           </div>
@@ -1363,7 +1470,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
           <div>
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-              <span class="badge-flow badge-buyer" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">🌐 فئة التركيز الرئيسية</span>
+              <span class="badge-flow hero-focus-badge">🌐 فئة التركيز الرئيسية</span>
               <span style="font-size: 1.05rem; font-weight: 900; color: var(--text);">المؤسسات الأجنبية (Foreign Institutional Flows)</span>
             </div>
             <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">
@@ -1485,7 +1592,7 @@
           <span id="txt-markets-title">الأسواق الحية (الذهب، النفط، العملات، الكريبتو)</span>
         </div>
         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <div class="pill-group" role="group" aria-label="تصنيف الأصول والأسواق" style="padding: 4px 8px; background:#f1f5f9; border-color:#e2e8f0; align-items: center; gap: 6px;">
+          <div class="pill-group" role="group" aria-label="تصنيف الأصول والأسواق" style="padding: 4px 8px; background: var(--input-bg); border-color: var(--border); align-items: center; gap: 6px;">
             <button class="filter-btn active" style="border:none;" id="cat-btn-all" onclick="filterMarketCategory('all')" aria-pressed="true">الكل</button>
             <button class="filter-btn" style="border:none;" id="cat-btn-gold" onclick="filterMarketCategory('gold')" aria-pressed="false">معادن وذهب</button>
             <button class="filter-btn" style="border:none;" id="cat-btn-oil" onclick="filterMarketCategory('oil')" aria-pressed="false">طاقة ونفط</button>
