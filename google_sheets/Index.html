@@ -1403,6 +1403,185 @@
       color: var(--text-muted);
       margin-top: 10px;
     }
+
+    /* ==========================================
+       التكيف المتجاوب والشاشات المختلفة (Adaptation Architecture)
+       ========================================== */
+
+    /* 1. التكيف اللوحي والشاشات المتوسطة (Tablet: <= 1024px) */
+    @media (max-width: 1024px) {
+      .container {
+        padding: 0 14px;
+        margin: 16px auto;
+        gap: 16px;
+      }
+      .kpi-row-3 {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+      }
+      .bank-hero-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      .asset-grid {
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 12px;
+      }
+    }
+
+    /* 2. التكيف مع الهواتف الذكية (Mobile: <= 768px) */
+    @media (max-width: 768px) {
+      .nav-bar {
+        padding: 10px 14px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .brand {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .brand-text {
+        font-size: 0.96rem;
+      }
+      .nav-controls {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+      }
+      .pill-group {
+        padding: 3px 6px;
+      }
+      .pill-btn, .filter-btn {
+        min-height: 38px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+      }
+      .btn-action {
+        min-height: 42px;
+        padding: 8px 14px;
+        font-size: 0.84rem;
+      }
+      .select-bank {
+        min-height: 44px;
+        font-size: 16px; /* Prevents auto-zoom on iOS Safari */
+        width: 100%;
+      }
+      .bank-quick-box {
+        width: 100%;
+      }
+      .section-head {
+        padding: 12px 14px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .section-head > div:last-child {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+      }
+      .kpi-row-3 {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .asset-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .bank-hero-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .table-wrap {
+        padding: 0 10px 14px;
+        -webkit-overflow-scrolling: touch;
+      }
+      th, td {
+        padding: 9px 10px;
+        font-size: 0.8rem;
+      }
+      #foreign-hero-spotlight {
+        padding: 14px 16px;
+      }
+      #foreign-hero-spotlight > div {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      #foreign-hero-spotlight #hero-fo-today {
+        font-size: 1.35rem;
+      }
+    }
+
+    /* 3. التكيف مع الشاشات الصغيرة جداً (Compact Mobile: <= 480px) */
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 8px;
+        margin: 10px auto;
+        gap: 12px;
+      }
+      .asset-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .asset-card {
+        padding: 10px;
+      }
+      .asset-price-main {
+        font-size: 1.15rem;
+      }
+      .asset-price-sub {
+        font-size: 0.72rem;
+      }
+      .hero-bank-card {
+        padding: 10px 12px;
+      }
+      .hero-bank-rate {
+        font-size: 1.2rem;
+      }
+      .archive-filters-row {
+        width: 100%;
+      }
+      .archive-filters-row .filter-btn {
+        flex: 1 1 calc(50% - 4px);
+        text-align: center;
+      }
+    }
+
+    /* 4. تكيف الطباعة وتصدير التقارير (Executive Print & PDF) */
+    @media print {
+      .nav-controls,
+      .btn-action,
+      .filter-btn,
+      .archive-filters-row,
+      .bank-drawer-toolbar,
+      #link-bot-control,
+      #themeSelector {
+        display: none !important;
+      }
+      .container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .section-box,
+      .kpi-card,
+      .asset-card,
+      .hero-bank-card,
+      .table-wrap,
+      #foreign-hero-spotlight {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        box-shadow: none !important;
+      }
+    }
   </style>
 </head>
 <body id="main-body" class="theme-binance">
