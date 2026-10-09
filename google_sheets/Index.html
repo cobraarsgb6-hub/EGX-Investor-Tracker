@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="page-title">منظومة البورصة المصرية وأسواق الصرف والسلع الحية</title>
   
-  <!-- خطوط احترافية متباينة: Plus Jakarta Sans, IBM Plex Sans Arabic, Cairo, Roboto Mono, JetBrains Mono -->
+  <!-- خطوط احترافية متباينة: IBM Plex Sans Arabic, Cairo, JetBrains Mono, Roboto Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
@@ -21,25 +21,25 @@
       --border-subtle: #f1f5f9;
       --text: #0f172a;
       --text-muted: #64748b;
-      --green: #059669;
+      --green: #047857;
       --green-bg: #ecfdf5;
       --green-border: #a7f3d0;
-      --red: #e11d48;
+      --red: #be123c;
       --red-bg: #fff1f2;
       --red-border: #fecdd3;
-      --blue: #2563eb;
+      --blue: #1d4ed8;
       --blue-bg: #eff6ff;
       --blue-border: #bfdbfe;
-      --amber: #d97706;
+      --amber: #b45309;
       --amber-bg: #fffbeb;
       --amber-border: #fde68a;
-      --accent: #0ea5e9;
+      --accent: #0369a1;
       --radius-sm: 8px;
       --radius-md: 12px;
       --radius-lg: 16px;
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
     }
 
     /* ==========================================================================
@@ -52,23 +52,23 @@
       --card-bg: #ffffff;
       --header-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       --header-text: #ffffff;
-      --primary: #0284c7;
+      --primary: #0369a1;
       --primary-card: #f1f5f9;
       --border: #e2e8f0;
       --border-subtle: #f8fafc;
       --text: #0f172a;
       --text-muted: #64748b;
-      --green: #059669;
+      --green: #047857;
       --green-bg: #ecfdf5;
       --green-border: #a7f3d0;
-      --red: #e11d48;
+      --red: #be123c;
       --red-bg: #fff1f2;
       --red-border: #fecdd3;
-      --accent: #0284c7;
+      --accent: #0369a1;
       --card-radius: 14px;
       --table-header-bg: #0f172a;
       --table-header-color: #ffffff;
-      font-family: 'Plus Jakarta Sans', 'Cairo', sans-serif;
+      font-family: 'IBM Plex Sans Arabic', 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     /* 💻 النمط 2: شاشة بلومبرج المؤسسية (Terminal Elite Pro) - شاشة أسود داكن كحلي احترافي مع لمسات Cyan وأرقام مونو */
@@ -96,14 +96,14 @@
       font-family: 'JetBrains Mono', 'Cairo', monospace;
     }
     body.theme-terminal .section-box {
-      border: 1px solid #1e293b !important;
-      border-radius: 6px !important;
-      background: #0b1120 !important;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+      border: none !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
     }
     body.theme-terminal .section-head {
-      background: #070c18 !important;
-      border-bottom: 1px solid #1e293b !important;
+      background: transparent !important;
+      border-bottom: 1.5px solid #1e293b !important;
     }
     body.theme-terminal .section-title {
       color: #38bdf8 !important;
@@ -120,7 +120,7 @@
     body.theme-terminal .kpi-card:hover,
     body.theme-terminal .asset-card:hover {
       border-color: #38bdf8 !important;
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.15) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
     }
     body.theme-terminal .kpi-val,
     body.theme-terminal .asset-price-main,
@@ -154,7 +154,7 @@
       background: #0b1120 !important;
       color: #f1f5f9 !important;
       border-bottom: 1px solid #151e33 !important;
-      font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace !important;
+      font-family: 'JetBrains Mono', 'Segoe UI', monospace !important;
     }
     body.theme-terminal tbody tr:nth-child(even) td {
       background: #080d1a !important;
@@ -179,43 +179,43 @@
       font-weight: 800;
     }
 
-    /* 📈 النمط 3: غرفة عمليات التداول المباشر (Cyber Trading Matrix) - أسود فحمي داكن مع أخضر نيون وبوردرات حادة وأرقام نابضة */
+    /* 📈 النمط 3: غرفة عمليات التداول المباشر (Cyber Trading Matrix) - أسود فحمي داكن مع أخضر زمردي مالي */
     body.theme-matrix {
       --bg: #030704;
       --card-bg: #081109;
       --header-bg: linear-gradient(135deg, #020502 0%, #061408 100%);
-      --header-text: #00ff66;
-      --primary: #00ff66;
+      --header-text: #10b981;
+      --primary: #10b981;
       --primary-card: #0c1a0e;
       --border: #143518;
       --border-subtle: #0a1c0d;
       --text: #e1fae5;
       --text-muted: #70a67a;
-      --green: #00ff66;
-      --green-bg: rgba(0, 255, 102, 0.1);
-      --green-border: rgba(0, 255, 102, 0.4);
-      --red: #ff3344;
-      --red-bg: rgba(255, 51, 68, 0.1);
-      --red-border: rgba(255, 51, 68, 0.4);
-      --accent: #ffd700;
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.1);
+      --green-border: rgba(16, 185, 129, 0.4);
+      --red: #f43f5e;
+      --red-bg: rgba(244, 63, 94, 0.1);
+      --red-border: rgba(244, 63, 94, 0.4);
+      --accent: #f59e0b;
       --card-radius: 4px;
       --table-header-bg: #030a04;
-      --table-header-color: #00ff66;
-      font-family: 'Roboto Mono', 'Cairo', monospace;
+      --table-header-color: #10b981;
+      font-family: 'JetBrains Mono', 'Cairo', monospace;
     }
     body.theme-matrix .section-box {
-      border: 1px solid #143518 !important;
-      border-radius: 4px !important;
-      background: #081109 !important;
-      box-shadow: 0 0 20px rgba(0, 255, 102, 0.04) !important;
+      border: none !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
     }
     body.theme-matrix .section-head {
-      background: #050d06 !important;
-      border-bottom: 1px solid #143518 !important;
+      background: transparent !important;
+      border-bottom: 1.5px solid #143518 !important;
     }
     body.theme-matrix .section-title {
-      color: #00ff66 !important;
-      font-family: 'Roboto Mono', 'Cairo', monospace !important;
+      color: #10b981 !important;
+      font-family: 'JetBrains Mono', 'Cairo', monospace !important;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -228,13 +228,13 @@
     }
     body.theme-matrix .kpi-card:hover,
     body.theme-matrix .asset-card:hover {
-      border-color: #00ff66 !important;
-      box-shadow: 0 0 16px rgba(0, 255, 102, 0.2) !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
     }
     body.theme-matrix .kpi-val,
     body.theme-matrix .asset-price-main,
     body.theme-matrix .hero-bank-rate {
-      font-family: 'Roboto Mono', monospace !important;
+      font-family: 'JetBrains Mono', monospace !important;
       letter-spacing: -0.5px;
     }
     body.theme-matrix .kpi-chip,
@@ -256,15 +256,15 @@
     }
     body.theme-matrix th {
       background: #030a04 !important;
-      color: #00ff66 !important;
+      color: #10b981 !important;
       border-bottom: 2px solid #143518 !important;
-      font-family: 'Roboto Mono', monospace !important;
+      font-family: 'JetBrains Mono', monospace !important;
     }
     body.theme-matrix td {
       background: #081109 !important;
       color: #e1fae5 !important;
       border-bottom: 1px solid #0f2612 !important;
-      font-family: 'Roboto Mono', monospace !important;
+      font-family: 'JetBrains Mono', monospace !important;
     }
     body.theme-matrix tbody tr:nth-child(even) td {
       background: #050c06 !important;
@@ -283,48 +283,48 @@
       border: 1px solid #143518 !important;
     }
     body.theme-matrix .filter-btn.active {
-      background: #00ff66 !important;
+      background: #10b981 !important;
       color: #020502 !important;
-      border-color: #00ff66 !important;
+      border-color: #10b981 !important;
       font-weight: 900;
     }
-    body.theme-matrix .val-pos { color: #00ff66 !important; }
-    body.theme-matrix .val-neg { color: #ff3344 !important; }
+    body.theme-matrix .val-pos { color: #10b981 !important; }
+    body.theme-matrix .val-neg { color: #f43f5e !important; }
 
-    /* 📊 النمط 4: التقرير التنفيذي لمجالس الإدارة (C-Suite Minimalist & Luxury) - رمادي دافئ راقٍ وأناقة رصينة مع كروت بدون حدود حادة وخلفيات Slate */
+    /* 📊 النمط 4: التقرير التنفيذي لمجالس الإدارة (C-Suite Minimalist & Luxury) - رمادي دافئ راقٍ وأناقة رصينة مع كروت Slate كحلية */
     body.theme-csuite {
       --bg: #eceef2;
       --card-bg: #ffffff;
-      --header-bg: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      --header-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       --header-text: #f8fafc;
-      --primary: #4338ca;
+      --primary: #1e3a8a;
       --primary-card: #f8fafc;
       --border: #d1d5db;
       --border-subtle: #e5e7eb;
-      --text: #111827;
-      --text-muted: #4b5563;
+      --text: #0f172a;
+      --text-muted: #475569;
       --green: #15803d;
       --green-bg: #dcfce7;
       --green-border: #86efac;
       --red: #b91c1c;
       --red-bg: #fee2e2;
       --red-border: #fca5a5;
-      --accent: #4338ca;
-      --card-radius: 20px;
-      --table-header-bg: #1e293b;
+      --accent: #1e3a8a;
+      --card-radius: 16px;
+      --table-header-bg: #0f172a;
       --table-header-color: #ffffff;
-      font-family: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif;
+      font-family: 'IBM Plex Sans Arabic', 'Cairo', sans-serif;
     }
     body.theme-csuite .section-box {
-      border: 1px solid #e5e7eb !important;
-      border-radius: 20px !important;
-      background: #ffffff !important;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+      border: none !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
     }
     body.theme-csuite .section-head {
-      background: #f8fafc !important;
+      background: transparent !important;
       border-bottom: 1.5px solid #e5e7eb !important;
-      padding: 18px 24px !important;
+      padding: 14px 4px !important;
     }
     body.theme-csuite .section-title {
       font-size: 1.15rem !important;
@@ -385,14 +385,14 @@
     body {
       background-color: var(--bg);
       color: var(--text);
-      font-family: 'Cairo', sans-serif;
+      font-family: 'Cairo', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       padding-bottom: 40px;
       -webkit-font-smoothing: antialiased;
       transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     body.lang-en {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     /* أرقام لاتينية غربية إلزامية وبدون انعكاس الإشارات */
@@ -400,7 +400,7 @@
       direction: ltr !important;
       unicode-bidi: isolate;
       font-variant-numeric: tabular-nums;
-      font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, sans-serif !important;
+      font-family: 'JetBrains Mono', 'Segoe UI', Tahoma, sans-serif !important;
       font-weight: 700;
     }
     span.num-ltr {
@@ -436,14 +436,14 @@
     .brand-icon {
       width: 34px;
       height: 34px;
-      background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+      background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%);
       border-radius: 9px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #fff;
       font-size: 1rem;
-      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
     }
 
     .brand-text {
@@ -462,19 +462,20 @@
     .pill-group {
       display: inline-flex;
       background: rgba(255, 255, 255, 0.07);
-      padding: 3px;
+      padding: 6px 8px;
       border-radius: 9px;
       border: 1px solid rgba(255, 255, 255, 0.12);
-      gap: 3px;
+      gap: 6px;
+      align-items: center;
     }
 
     .pill-btn {
       background: transparent;
       border: none;
       color: #cbd5e1;
-      padding: 5px 12px;
+      padding: 6px 14px;
       border-radius: 6px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -484,9 +485,9 @@
       background: rgba(255, 255, 255, 0.08);
     }
     .pill-btn.active {
-      background: #38bdf8;
-      color: #090e1a;
-      box-shadow: 0 2px 8px rgba(56, 189, 248, 0.35);
+      background: #0369a1;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
     .live-chip {
@@ -505,16 +506,9 @@
     .pulse-dot {
       width: 8px;
       height: 8px;
-      background-color: #22c55e;
+      background-color: #047857;
       border-radius: 50%;
       display: inline-block;
-      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-      animation: pulseGreen 2s infinite;
-    }
-    @keyframes pulseGreen {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
     }
 
     /* ==========================================
@@ -530,26 +524,27 @@
     }
 
     .section-box {
-      background: var(--card-bg);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-      transition: box-shadow 0.2s;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      overflow: visible;
+      margin-bottom: 24px;
     }
     .section-box:hover {
-      box-shadow: var(--shadow-md);
+      box-shadow: none;
     }
 
     .section-head {
-      padding: 14px 20px;
+      padding: 12px 4px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid var(--border);
-      background: #fafcff;
+      border-bottom: 1.5px solid var(--border);
+      background: transparent;
       flex-wrap: wrap;
       gap: 10px;
+      margin-bottom: 16px;
     }
 
     .section-title {
@@ -574,21 +569,21 @@
       transition: all 0.2s;
     }
     .btn-blue {
-      background: #2563eb;
+      background: #1d4ed8;
       color: #fff;
-      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     }
     .btn-blue:hover {
-      background: #1d4ed8;
+      background: #1e40af;
       transform: translateY(-1px);
     }
     .btn-amber {
-      background: #d97706;
+      background: #b45309;
       color: #fff;
-      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     }
     .btn-amber:hover {
-      background: #b45309;
+      background: #92400e;
       transform: translateY(-1px);
     }
 
@@ -599,7 +594,8 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px;
-      padding: 18px 20px;
+      padding: 0;
+      margin-bottom: 16px;
     }
 
     .kpi-card {
@@ -626,9 +622,9 @@
       right: 0;
       height: 4px;
     }
-    .kpi-eg::before  { background: linear-gradient(90deg, #10b981, #059669); }
-    .kpi-ar::before  { background: linear-gradient(90deg, #06b6d4, #0284c7); }
-    .kpi-fo::before  { background: linear-gradient(90deg, #f43f5e, #e11d48); }
+    .kpi-eg::before  { background: linear-gradient(90deg, #10b981, #047857); }
+    .kpi-ar::before  { background: linear-gradient(90deg, #0284c7, #0369a1); }
+    .kpi-fo::before  { background: linear-gradient(90deg, #f43f5e, #be123c); }
 
     .kpi-header {
       display: flex;
@@ -735,9 +731,9 @@
       color: #0f172a;
     }
     .filter-btn.active {
-      background: #0284c7;
+      background: #0369a1;
       color: #ffffff;
-      border-color: #0284c7;
+      border-color: #0369a1;
     }
 
     table {
@@ -812,8 +808,9 @@
     .asset-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
-      padding: 16px 20px;
+      gap: 14px;
+      padding: 0;
+      margin-bottom: 24px;
     }
 
     .asset-card {
@@ -836,24 +833,24 @@
       right: 0;
       height: 3.5px;
     }
-    .asset-card.card-cat-gold::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .asset-card.card-cat-gold::before { background: linear-gradient(90deg, #d97706, #b45309); }
     .asset-card.card-cat-oil::before  { background: linear-gradient(90deg, #ef4444, #dc2626); }
-    .asset-card.card-cat-curr::before { background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
-    .asset-card.card-cat-crypto::before { background: linear-gradient(90deg, #8b5cf6, #6d28d9); }
+    .asset-card.card-cat-curr::before { background: linear-gradient(90deg, #2563eb, #1d4ed8); }
+    .asset-card.card-cat-crypto::before { background: linear-gradient(90deg, #475569, #334155); }
 
     .asset-card.card-cat-gold { border-color: #fde68a; }
     .asset-card.card-cat-oil  { border-color: #fca5a5; }
     .asset-card.card-cat-curr { border-color: #bfdbfe; }
-    .asset-card.card-cat-crypto { border-color: #ddd6fe; }
+    .asset-card.card-cat-crypto { border-color: #cbd5e1; }
 
     .asset-card:hover {
       transform: translateY(-2px);
       box-shadow: var(--shadow-md);
     }
-    .asset-card.card-cat-gold:hover { border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.18); }
-    .asset-card.card-cat-oil:hover  { border-color: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.18); }
-    .asset-card.card-cat-curr:hover { border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.18); }
-    .asset-card.card-cat-crypto:hover { border-color: #8b5cf6; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.18); }
+    .asset-card.card-cat-gold:hover { border-color: #d97706; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+    .asset-card.card-cat-oil:hover  { border-color: #dc2626; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+    .asset-card.card-cat-curr:hover { border-color: #1d4ed8; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+    .asset-card.card-cat-crypto:hover { border-color: #475569; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
 
     .cat-tag-pill {
       font-size: 0.68rem;
@@ -866,7 +863,7 @@
     .cat-tag-gold { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
     .cat-tag-oil  { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
     .cat-tag-curr { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-    .cat-tag-crypto { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+    .cat-tag-crypto { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
 
     .asset-head {
       display: flex;
@@ -932,10 +929,10 @@
     .bank-hero-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      padding: 16px 20px;
-      background: #fcfdfe;
-      border-bottom: 1px solid var(--border);
+      gap: 14px;
+      padding: 0;
+      background: transparent;
+      margin-bottom: 16px;
     }
 
     .hero-bank-card {
@@ -997,7 +994,7 @@
     .hero-bank-buy-top .hero-bank-rate { color: #15803d; }
     .hero-bank-buy-low .hero-bank-rate { color: #64748b; }
     .hero-bank-sell-low .hero-bank-rate { color: #2563eb; }
-    .hero-bank-sell-top .hero-bank-rate { color: #d97706; }
+    .hero-bank-sell-top .hero-bank-rate { color: #b45309; }
 
     .market-spread-bar {
       padding: 10px 20px;
@@ -1021,7 +1018,11 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 12px;
-      background: #ffffff;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 16px;
     }
 
     .bank-quick-box {
@@ -1089,7 +1090,7 @@
       </div>
 
       <!-- قائمة اختيار التصميم (4 Themes) -->
-      <div class="pill-group" style="padding: 2px 8px; align-items: center; gap: 6px;">
+      <div class="pill-group" style="padding: 6px 12px; align-items: center; gap: 8px;">
         <i class="fa-solid fa-palette" style="color: #38bdf8; font-size: 0.85rem;"></i>
         <select id="themeSelector" onchange="switchTheme(this.value)" style="background: transparent; color: #fff; border: none; font-family: inherit; font-size: 0.82rem; font-weight: 700; outline: none; cursor: pointer;">
           <option value="swiss" style="background: #0f172a; color: #fff;">🏦 النمط السويسري (Swiss)</option>
@@ -1149,11 +1150,11 @@
       </div>
 
       <!-- شريط تصفية فئات المؤسسات: تركيز أساسي على الأجانب مع خيار إظهار الكل -->
-      <div style="padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div style="padding: 10px 20px; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
         <div style="display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-filter" style="color: #2563eb; font-size: 0.85rem;"></i>
+          <i class="fa-solid fa-filter" style="color: #1d4ed8; font-size: 0.85rem;"></i>
           <span style="font-size: 0.84rem; font-weight: 800; color: #1e293b;">عرض فئات التدفقات:</span>
-          <div class="pill-group" style="background: #e2e8f0; border-color: #cbd5e1;">
+          <div class="pill-group" style="padding: 4px 8px; background: #e2e8f0; border-color: #cbd5e1; align-items: center; gap: 6px;">
             <button class="filter-btn active" id="btn-flow-fo" onclick="setFlowDisplayCategory('foreign')" style="border:none;">🌐 الأجانب (الأساس)</button>
             <button class="filter-btn" id="btn-flow-all" onclick="setFlowDisplayCategory('all')" style="border:none;">🏛️ كافة الفئات (مصريين / عرب / أجانب)</button>
           </div>
@@ -1164,7 +1165,7 @@
       </div>
 
       <!-- كارت البطل الرئيسي للمؤسسات الأجنبية (مباشر وأنيق دون تكرار) -->
-      <div id="foreign-hero-spotlight" style="padding: 16px 20px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, rgba(2,132,199,0.04) 0%, rgba(37,99,235,0.03) 100%);">
+      <div id="foreign-hero-spotlight" style="padding: 18px 20px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card-bg); box-shadow: var(--shadow-sm); margin-bottom: 16px;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
           <div>
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
@@ -1177,7 +1178,7 @@
           </div>
           
           <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-            <div style="background:var(--card-bg); padding:10px 20px; border-radius:10px; border:1.5px solid var(--border); text-align:center; min-width:180px; box-shadow:var(--shadow-sm);">
+            <div style="text-align:center; min-width:160px; padding:4px 12px;">
               <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" id="hero-fo-title">صافي جلسة اليوم (الأجانب)</div>
               <div class="num-ltr" id="hero-fo-today" style="font-size:1.45rem; font-weight:900; line-height:1.2; margin-top:2px;">--</div>
               <div class="num-ltr" id="hero-fo-today-sub" style="font-size:0.8rem; font-weight:700; color:#64748b;">--</div>
@@ -1217,16 +1218,16 @@
       </div>
 
       <!-- شريط توضيح صافي السيولة -->
-      <div class="formula-banner">
-        <span id="txt-formula-explain"><i class="fa-solid fa-calculator" style="color:#0284c7;"></i> صافي تدفقات المؤسسات = (شراء المؤسسات - بيع المؤسسات) لكل فئة موثقة رسمياً</span>
-        <span id="txt-base-note" style="color:#059669;"><i class="fa-solid fa-circle-check"></i> البيانات مطابقة لشاشة البورصة المصرية الرسمية</span>
+      <div class="formula-banner" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 16px;">
+        <span id="txt-formula-explain"><i class="fa-solid fa-calculator" style="color:#0369a1;"></i> صافي تدفقات المؤسسات = (شراء المؤسسات - بيع المؤسسات) لكل فئة موثقة رسمياً</span>
+        <span id="txt-base-note" style="color:#047857;"><i class="fa-solid fa-circle-check"></i> البيانات مطابقة لشاشة البورصة المصرية الرسمية</span>
       </div>
 
       <!-- جدول تفاصيل تدفقات المؤسسات لليوم -->
-      <div class="table-wrap" id="inst-today-table-wrap" style="display: none;">
+      <div class="table-wrap" id="inst-today-table-wrap" style="display: none; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); padding: 18px; margin-bottom: 16px;">
         <div class="table-title-bar" id="txt-inst-table-title">
           <div style="display:flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-layer-group" style="color:#2563eb;"></i>
+            <i class="fa-solid fa-layer-group" style="color:#1d4ed8;"></i>
             <span>تفاصيل تدفقات المؤسسات (شراء / بيع / صافي السيولة):</span>
           </div>
         </div>
@@ -1249,10 +1250,10 @@
       </div>
 
       <!-- جدول الأرشيف التاريخي لجلسات البورصة -->
-      <div class="table-wrap" style="border-top: 1px dashed var(--border); padding-top: 16px;">
+      <div class="table-wrap" id="archive-table-card" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); padding: 18px; margin-bottom: 16px;">
         <div class="table-title-bar">
           <div style="display:flex; align-items:center; gap:6px;" id="txt-archive-table-title">
-            <i class="fa-solid fa-clock-rotate-left" style="color:#0ea5e9;"></i>
+            <i class="fa-solid fa-clock-rotate-left" style="color:#0369a1;"></i>
             <span>أرشيف الجلسات السابقة للمؤسسات:</span>
           </div>
           <div class="archive-filters-row">
@@ -1270,7 +1271,7 @@
             <tr>
               <th id="th-arch-date">التاريخ</th>
               <th id="th-arch-usd">سعر الدولار</th>
-              <th id="th-arch-fo-net" style="background:#0284c7; color:#fff;">صافي أجانب (الأساس)</th>
+              <th id="th-arch-fo-net" style="background:#0369a1; color:#fff;">صافي أجانب (الأساس)</th>
               <th id="th-arch-eg-net">صافي مصريين</th>
               <th id="th-arch-ar-net">صافي عرب</th>
             </tr>
@@ -1286,11 +1287,11 @@
     <div class="section-box">
       <div class="section-head">
         <div class="section-title">
-          <i class="fa-solid fa-coins" style="color: #d97706;"></i>
+          <i class="fa-solid fa-coins" style="color: #b45309;"></i>
           <span id="txt-markets-title">الأسواق الحية (الذهب، النفط، العملات، الكريبتو)</span>
         </div>
         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <div class="pill-group" style="background:#f1f5f9; border-color:#e2e8f0;">
+          <div class="pill-group" style="padding: 4px 8px; background:#f1f5f9; border-color:#e2e8f0; align-items: center; gap: 6px;">
             <button class="filter-btn active" style="border:none;" id="cat-btn-all" onclick="filterMarketCategory('all')">الكل</button>
             <button class="filter-btn" style="border:none;" id="cat-btn-gold" onclick="filterMarketCategory('gold')">معادن وذهب</button>
             <button class="filter-btn" style="border:none;" id="cat-btn-oil" onclick="filterMarketCategory('oil')">طاقة ونفط</button>
@@ -1312,7 +1313,7 @@
     <div class="section-box">
       <div class="section-head">
         <div class="section-title">
-          <i class="fa-solid fa-building-columns" style="color: #059669;"></i>
+          <i class="fa-solid fa-building-columns" style="color: #047857;"></i>
           <span id="txt-banks-title">تقرير أسعار صرف الدولار في 25 بنكاً مصرياً</span>
         </div>
         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
@@ -1320,7 +1321,7 @@
             <i class="fa-solid fa-table-list"></i>
             <span id="txt-toggle-banks-label">عرض كافة الـ 25 بنكاً ▾</span>
           </button>
-          <button class="btn-action btn-blue" onclick="refreshBanksWidget()" style="background:#059669;" id="btn-banks-refresh">
+          <button class="btn-action btn-blue" onclick="refreshBanksWidget()" style="background:#047857;" id="btn-banks-refresh">
             <i class="fa-solid fa-rotate"></i>
             <span id="txt-banks-refresh-btn">تحديث البنوك</span>
           </button>
@@ -1360,7 +1361,7 @@
         <div class="hero-bank-card hero-bank-sell-low">
           <div class="hero-bank-info">
             <div class="hero-bank-label">
-              <i class="fa-solid fa-gem" style="color:#2563eb;"></i>
+              <i class="fa-solid fa-gem" style="color:#1d4ed8;"></i>
               <span id="low-sell-bank-label">أقل بيع (أفضل بنك للشراء):</span>
             </div>
             <div class="hero-bank-name" id="low-sell-bank-name">--</div>
@@ -1374,7 +1375,7 @@
         <div class="hero-bank-card hero-bank-sell-top">
           <div class="hero-bank-info">
             <div class="hero-bank-label">
-              <i class="fa-solid fa-arrow-up-wide-short" style="color:#d97706;"></i>
+              <i class="fa-solid fa-arrow-up-wide-short" style="color:#b45309;"></i>
               <span id="top-sell-bank-label">أعلى سعر بيع للدولار:</span>
             </div>
             <div class="hero-bank-name" id="top-sell-bank-name">--</div>
@@ -1398,7 +1399,7 @@
       </div>
 
       <!-- جدول البنوك الـ 25 القابل للطي (مغلق افتراضياً لتقليل حجم الصفحة) -->
-      <div class="table-wrap" id="banks-full-drawer" style="display: none; padding-top: 10px; border-top: 1px solid var(--border);">
+      <div class="table-wrap" id="banks-full-drawer" style="display: none; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); padding: 18px; margin-top: 14px;">
         <table>
           <thead>
             <tr>
@@ -2313,8 +2314,8 @@
         detailsBox.innerHTML = '<i class="fa-solid fa-building-columns"></i> '
           + '<strong>' + bName + '</strong> | '
           + (currentLang === "en" ? "Buy: " : "شراء: ") + '<span class="num-ltr" style="color:#15803d; font-weight:900;">' + bBuy.toFixed(2) + ' ' + currEgpLabel + '</span> | '
-          + (currentLang === "en" ? "Sell: " : "بيع: ") + '<span class="num-ltr" style="color:#d97706; font-weight:900;">' + bSell.toFixed(2) + ' ' + currEgpLabel + '</span> | '
-          + (currentLang === "en" ? "Margin: " : "الفارق: ") + '<span class="num-ltr" style="color:#2563eb; font-weight:800;">' + spread + ' ' + currEgpLabel + '</span> | '
+          + (currentLang === "en" ? "Sell: " : "بيع: ") + '<span class="num-ltr" style="color:#b45309; font-weight:900;">' + bSell.toFixed(2) + ' ' + currEgpLabel + '</span> | '
+          + (currentLang === "en" ? "Margin: " : "الفارق: ") + '<span class="num-ltr" style="color:#1d4ed8; font-weight:800;">' + spread + ' ' + currEgpLabel + '</span> | '
           + (cleanTime !== "--" ? ('<span style="color:#64748b;">' + cleanTime + '</span>') : '');
         detailsBox.style.display = "inline-flex";
       }
@@ -2373,7 +2374,7 @@
         bHtml += '<tr>'
           + '<td class="num-ltr" style="font-weight:800; color: #64748b;">#' + (idx + 1) + '</td>'
           + '<td style="font-weight: 800; color: #0f172a;">' + bName + '</td>'
-          + '<td class="num-ltr" style="' + (isTop ? 'font-weight:900;color:#059669;' : 'font-weight:700;') + '">' + bBuy.toFixed(2) + ' ' + currEgpLabel + '</td>'
+          + '<td class="num-ltr" style="' + (isTop ? 'font-weight:900;color:#047857;' : 'font-weight:700;') + '">' + bBuy.toFixed(2) + ' ' + currEgpLabel + '</td>'
           + '<td class="num-ltr" style="font-weight:700;">' + bSell.toFixed(2) + ' ' + currEgpLabel + '</td>'
           + '<td class="num-ltr" style="color:#2563eb; font-weight:700;">' + spread + ' ' + currEgpLabel + '</td>'
           + '<td class="num-ltr" style="color:#64748b;">' + cleanTime + '</td>'
