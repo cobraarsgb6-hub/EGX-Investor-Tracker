@@ -1413,35 +1413,35 @@
       <div class="brand-icon">
         <i class="fa-solid fa-chart-line"></i>
       </div>
-      <div class="brand-text" id="nav-title">منظومة البورصة المصرية وأسواق الصرف الحية</div>
+      <div class="brand-text" id="nav-title">منظومة البورصة المصرية والسيولة المؤسسية وأسواق الصرف الحية</div>
     </div>
 
     <div class="nav-controls">
-      <div class="pill-group" role="group" aria-label="اختيار عملة العرض">
-        <button class="pill-btn active" id="btn-curr-egp" onclick="setCurrencyMode('EGP')" aria-pressed="true" aria-label="عرض بالجنيه المصري">ج.م (EGP)</button>
-        <button class="pill-btn" id="btn-curr-usd" onclick="setCurrencyMode('USD')" aria-pressed="false" aria-label="عرض بالدولار الأمريكي">$ (USD)</button>
-        <button class="pill-btn" id="btn-curr-mix" onclick="setCurrencyMode('MIX')" aria-pressed="false" aria-label="عرض مزدوج">$ + ج.م</button>
+      <div class="pill-group" role="group" aria-label="اختيار عملة عرض المؤشرات والأسعار">
+        <button class="pill-btn active" id="btn-curr-egp" onclick="setCurrencyMode('EGP')" aria-pressed="true" aria-label="عرض كافة الأسعار والقيم بالجنيه المصري">ج.م (EGP)</button>
+        <button class="pill-btn" id="btn-curr-usd" onclick="setCurrencyMode('USD')" aria-pressed="false" aria-label="عرض كافة الأسعار والقيم بالدولار الأمريكي">$ (USD)</button>
+        <button class="pill-btn" id="btn-curr-mix" onclick="setCurrencyMode('MIX')" aria-pressed="false" aria-label="عرض مزدوج بالدولار والجنيه">مزدوج ($ + ج.م)</button>
       </div>
 
       <!-- قائمة اختيار التصميم (5 Themes) -->
       <div class="pill-group" style="padding: 6px 12px; align-items: center; gap: 8px;">
         <i class="fa-solid fa-palette" style="color: #f0b90b; font-size: 0.85rem;" aria-hidden="true"></i>
         <select id="themeSelector" onchange="switchTheme(this.value)" aria-label="اختيار مظهر الواجهة" style="background: transparent; color: #fff; border: none; font-family: inherit; font-size: 0.82rem; font-weight: 700; outline: none; cursor: pointer;">
-          <option value="binance" style="background: #181a20; color: #f0b90b;" selected>🟡 بينانس للمحترفين (Binance Pro)</option>
-          <option value="swiss" style="background: #0f172a; color: #fff;">🏦 النمط السويسري (Swiss)</option>
-          <option value="terminal" style="background: #0f172a; color: #fff;">💻 بلومبرج المؤسسي (Terminal)</option>
-          <option value="matrix" style="background: #0f172a; color: #fff;">📈 منصة التداول (Matrix)</option>
-          <option value="csuite" style="background: #0f172a; color: #fff;">📊 التقرير التنفيذي (C-Suite)</option>
+          <option value="binance" style="background: #181a20; color: #f0b90b;" selected>🟡 بينانس الاحترافي (Binance Pro Dark)</option>
+          <option value="swiss" style="background: #0f172a; color: #fff;">🏦 النمط السويسري (Swiss Banking Clean)</option>
+          <option value="terminal" style="background: #0f172a; color: #fff;">💻 بلومبرج المؤسسي (Terminal Elite)</option>
+          <option value="matrix" style="background: #0f172a; color: #fff;">📈 منصة التداول (Trading Matrix)</option>
+          <option value="csuite" style="background: #0f172a; color: #fff;">📊 التقرير التنفيذي (C-Suite Minimal)</option>
         </select>
       </div>
 
       <div class="pill-group" role="group" aria-label="اختيار لغة الواجهة">
-        <button class="pill-btn active" id="btn-lang-ar" onclick="setLanguage('ar')" aria-pressed="true" aria-label="العربية">عربي</button>
-        <button class="pill-btn" id="btn-lang-en" onclick="setLanguage('en')" aria-pressed="false" aria-label="English">English</button>
+        <button class="pill-btn active" id="btn-lang-ar" onclick="setLanguage('ar')" aria-pressed="true" aria-label="واجهة باللغة العربية">عربي</button>
+        <button class="pill-btn" id="btn-lang-en" onclick="setLanguage('en')" aria-pressed="false" aria-label="Switch to English interface">English</button>
       </div>
 
       <!-- سعر البنك المركزي الفعلي المعلن بدون متوسط -->
-      <div class="live-chip">
+      <div class="live-chip" aria-label="سعر صرف الدولار الرسمي بالبنك المركزي المصري">
         <span class="pulse-dot"></span>
         <span id="nav-usd-label">المركزي (CBE):</span>
         <span style="color:#86efac; font-size:0.76rem;" id="nav-buy-tag">شراء</span>
@@ -1451,16 +1451,16 @@
         <span id="nav-usd-curr">ج.م</span>
       </div>
 
-      <!-- الساعة اللحظية -->
-      <div class="live-chip">
+      <!-- الساعة اللحظية بتوقيت القاهرة -->
+      <div class="live-chip" title="توقيت القاهرة الفعلي (توقيت جلسات البورصة المصرية)" aria-label="توقيت القاهرة الفعلي">
         <i class="fa-regular fa-clock" style="color:#38bdf8;"></i>
         <span id="nav-clock" class="num-ltr">--:--:--</span>
       </div>
 
-      <!-- زر لوحة تحكم وتخصيص بوت تلجرام -->
-      <a href="?page=tg_control" class="pill-btn" style="background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.4); color:#38bdf8; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+      <!-- زر إعدادات وتخصيص تنبيهات بوت تلجرام -->
+      <a href="?page=tg_control" class="pill-btn" id="link-bot-control" title="إعداد وتخصيص تنبيهات البوت اللحظية عبر تلجرام" style="background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.4); color:#38bdf8; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
         <i class="fa-brands fa-telegram"></i>
-        <span id="txt-bot-control">تحكم البوت</span>
+        <span id="txt-bot-control">إعدادات التنبيهات</span>
       </a>
     </div>
   </div>
@@ -1472,14 +1472,14 @@
       <div class="section-head">
         <div class="section-title">
           <i class="fa-solid fa-landmark" style="color: #2563eb;"></i>
-          <span id="txt-egx-title">تعاملات المؤسسات في البورصة المصرية (EGX)</span>
+          <span id="txt-egx-title">تعاملات المؤسسات وصافي السيولة بالبورصة المصرية (EGX)</span>
           <span class="badge-flow badge-buyer" id="txt-egx-tag">جلسة رسمية موثقة</span>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
           <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);" id="egx-update-status" aria-live="polite">تحديث سحابي مباشر</span>
-          <button class="btn-action btn-blue" onclick="refreshEgxWidget()">
+          <button class="btn-action btn-blue" onclick="refreshEgxWidget()" id="btn-egx-refresh" aria-label="تحديث بيانات تدفقات البورصة اللحظية">
             <i class="fa-solid fa-rotate"></i>
-            <span id="txt-egx-refresh-btn">تحديث البورصة</span>
+            <span id="txt-egx-refresh-btn">تحديث التدفقات</span>
           </button>
         </div>
       </div>
@@ -1488,14 +1488,14 @@
       <div style="padding: 10px 20px; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <i class="fa-solid fa-filter" style="color: #1d4ed8; font-size: 0.85rem;"></i>
-          <span style="font-size: 0.84rem; font-weight: 800; color: var(--text);">عرض فئات التدفقات:</span>
-          <div class="pill-group" role="group" aria-label="تحديد فئة عرض التدفقات" style="padding: 4px 8px; background: var(--input-bg); border-color: var(--border); align-items: center; gap: 6px;">
-            <button class="filter-btn active" id="btn-flow-fo" onclick="setFlowDisplayCategory('foreign')" aria-pressed="true" style="border:none;">🌐 الأجانب (الأساس)</button>
+          <span style="font-size: 0.84rem; font-weight: 800; color: var(--text);" id="txt-flow-filter-label">عرض فئات التدفقات:</span>
+          <div class="pill-group" role="group" aria-label="تحديد فئة عرض تدفقات المؤسسات" style="padding: 4px 8px; background: var(--input-bg); border-color: var(--border); align-items: center; gap: 6px;">
+            <button class="filter-btn active" id="btn-flow-fo" onclick="setFlowDisplayCategory('foreign')" aria-pressed="true" style="border:none;">🌐 المؤسسات الأجنبية (مؤشر السيولة)</button>
             <button class="filter-btn" id="btn-flow-all" onclick="setFlowDisplayCategory('all')" aria-pressed="false" style="border:none;">🏛️ كافة الفئات (مصريين / عرب / أجانب)</button>
           </div>
         </div>
         <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);" id="flow-display-note">
-          ⚡ التركيز الاستثماري: صافي تعاملات المؤسسات الأجنبية وتراكماتها
+          ⚡ التركيز الاستثماري: صافي تعاملات المؤسسات الأجنبية وتراكماتها (المؤشر الحقيقي للسيولة الذكية)
         </div>
       </div>
 
@@ -1504,10 +1504,10 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
           <div>
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-              <span class="badge-flow hero-focus-badge">🌐 فئة التركيز الرئيسية</span>
-              <span style="font-size: 1.05rem; font-weight: 900; color: var(--text);">المؤسسات الأجنبية (Foreign Institutional Flows)</span>
+              <span class="badge-flow hero-focus-badge" id="hero-fo-badge">🌐 فئة التركيز الرئيسية</span>
+              <span style="font-size: 1.05rem; font-weight: 900; color: var(--text);" id="hero-fo-heading">المؤسسات الأجنبية (Foreign Institutional Flows)</span>
             </div>
-            <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">
+            <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;" id="hero-fo-desc">
               المؤشر الحقيقي لدخول وخروج العملة الأجنبية والسيولة المؤسسية بالبورصة المصرية
             </div>
           </div>
@@ -1554,8 +1554,8 @@
 
       <!-- شريط توضيح صافي السيولة -->
       <div class="formula-banner" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 16px;">
-        <span id="txt-formula-explain"><i class="fa-solid fa-calculator" style="color:#0369a1;"></i> صافي تدفقات المؤسسات = (شراء المؤسسات - بيع المؤسسات) لكل فئة موثقة رسمياً</span>
-        <span id="txt-base-note" style="color:var(--green);"><i class="fa-solid fa-circle-check"></i> البيانات مطابقة لشاشة البورصة المصرية الرسمية</span>
+        <span id="txt-formula-explain"><i class="fa-solid fa-calculator" style="color:#0369a1;"></i> صافي تدفقات المؤسسات = (قيمة الشراء - قيمة البيع) لكل فئة | القيمة الإيجابية تعني دخول سيولة، والسالبة تعني خروج سيولة</span>
+        <span id="txt-base-note" style="color:var(--green);"><i class="fa-solid fa-circle-check"></i> البيانات مطابقة بنسبة 100% لشاشة البورصة المصرية الرسمية (EGX)</span>
       </div>
 
       <!-- جدول تفاصيل تدفقات المؤسسات لليوم -->
@@ -1573,7 +1573,7 @@
               <th id="th-inst-buy">قيمة الشراء</th>
               <th id="th-inst-sell">قيمة البيع</th>
               <th id="th-inst-net">صافي السيولة</th>
-              <th id="th-inst-dual">المعادل بالعملة البديلة</th>
+              <th id="th-inst-dual">المعادل البديل ($ / ج.م)</th>
               <th id="th-inst-trend">اتجاه السيولة</th>
               <th id="th-inst-updated">آخر تحديث</th>
             </tr>
@@ -1589,15 +1589,15 @@
         <div class="table-title-bar">
           <div style="display:flex; align-items:center; gap:6px;" id="txt-archive-table-title">
             <i class="fa-solid fa-clock-rotate-left" style="color:#0369a1;"></i>
-            <span>أرشيف الجلسات السابقة للمؤسسات:</span>
+            <span>أرشيف الجلسات السابقة وتراكمات السيولة:</span>
           </div>
           <div class="archive-filters-row" role="group" aria-label="تصفية أرشيف الجلسات حسب الفترة الزمنية">
-            <button class="filter-btn active" id="btn-filter-all" onclick="filterArchiveByPeriod('all')" aria-pressed="true">الكل (All)</button>
-            <button class="filter-btn" id="btn-filter-daily" onclick="filterArchiveByPeriod('daily')" aria-pressed="false">جلسة اليوم (Latest)</button>
-            <button class="filter-btn" id="btn-filter-weekly" onclick="filterArchiveByPeriod('weekly')" aria-pressed="false">الأسبوع الحالي (Current Week)</button>
-            <button class="filter-btn" id="btn-filter-october" onclick="filterArchiveByPeriod('october')" aria-pressed="false">أكتوبر 2026 (الحالي)</button>
+            <button class="filter-btn active" id="btn-filter-all" onclick="filterArchiveByPeriod('all')" aria-pressed="true">جميع الجلسات</button>
+            <button class="filter-btn" id="btn-filter-daily" onclick="filterArchiveByPeriod('daily')" aria-pressed="false">أحدث جلسة</button>
+            <button class="filter-btn" id="btn-filter-weekly" onclick="filterArchiveByPeriod('weekly')" aria-pressed="false">الأسبوع الحالي</button>
+            <button class="filter-btn" id="btn-filter-october" onclick="filterArchiveByPeriod('october')" aria-pressed="false">أكتوبر 2026</button>
             <button class="filter-btn" id="btn-filter-september" onclick="filterArchiveByPeriod('september')" aria-pressed="false">سبتمبر 2026</button>
-            <button class="filter-btn" id="btn-filter-yearly" onclick="filterArchiveByPeriod('yearly')" aria-pressed="false">سنوي (YTD 2026)</button>
+            <button class="filter-btn" id="btn-filter-yearly" onclick="filterArchiveByPeriod('yearly')" aria-pressed="false">سنوي 2026 (YTD)</button>
           </div>
         </div>
 
@@ -1605,8 +1605,8 @@
           <thead>
             <tr>
               <th id="th-arch-date">التاريخ</th>
-              <th id="th-arch-usd">سعر الدولار</th>
-              <th id="th-arch-fo-net" style="background:#0369a1; color:#fff;">صافي أجانب (الأساس)</th>
+              <th id="th-arch-usd">سعر صرف الدولار (ج.م)</th>
+              <th id="th-arch-fo-net" style="background:#0369a1; color:#fff;">صافي أجانب (المؤشر الأساسي)</th>
               <th id="th-arch-eg-net">صافي مصريين</th>
               <th id="th-arch-ar-net">صافي عرب</th>
             </tr>
@@ -1627,15 +1627,15 @@
         </div>
         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
           <div class="pill-group" role="group" aria-label="تصنيف الأصول والأسواق" style="padding: 4px 8px; background: var(--input-bg); border-color: var(--border); align-items: center; gap: 6px;">
-            <button class="filter-btn active" style="border:none;" id="cat-btn-all" onclick="filterMarketCategory('all')" aria-pressed="true">الكل</button>
-            <button class="filter-btn" style="border:none;" id="cat-btn-gold" onclick="filterMarketCategory('gold')" aria-pressed="false">معادن وذهب</button>
-            <button class="filter-btn" style="border:none;" id="cat-btn-oil" onclick="filterMarketCategory('oil')" aria-pressed="false">طاقة ونفط</button>
-            <button class="filter-btn" style="border:none;" id="cat-btn-curr" onclick="filterMarketCategory('curr')" aria-pressed="false">عملات رئيسية</button>
-            <button class="filter-btn" style="border:none;" id="cat-btn-crypto" onclick="filterMarketCategory('crypto')" aria-pressed="false">كريبتو</button>
+            <button class="filter-btn active" style="border:none;" id="cat-btn-all" onclick="filterMarketCategory('all')" aria-pressed="true">كافة الأسواق</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-gold" onclick="filterMarketCategory('gold')" aria-pressed="false">الذهب والمعادن</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-oil" onclick="filterMarketCategory('oil')" aria-pressed="false">النفط والطاقة</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-curr" onclick="filterMarketCategory('curr')" aria-pressed="false">العملات الأجنبية</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-crypto" onclick="filterMarketCategory('crypto')" aria-pressed="false">العملات الرقمية</button>
           </div>
-          <button class="btn-action btn-amber" onclick="refreshMarketsWidget()">
+          <button class="btn-action btn-amber" onclick="refreshMarketsWidget()" id="btn-markets-refresh" aria-label="تحديث أسعار السلع والعملات">
             <i class="fa-solid fa-rotate"></i>
-            <span id="txt-markets-refresh-btn">تحديث</span>
+            <span id="txt-markets-refresh-btn">تحديث الأسعار</span>
           </button>
         </div>
       </div>
@@ -1652,11 +1652,11 @@
           <span id="txt-banks-title">تقرير أسعار صرف الدولار في 25 بنكاً مصرياً</span>
         </div>
         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <button class="btn-action btn-blue" id="btn-toggle-banks" onclick="toggleBanksDrawer()">
+          <button class="btn-action btn-blue" id="btn-toggle-banks" onclick="toggleBanksDrawer()" aria-label="فتح أو طي قائمة البنوك الـ 25">
             <i class="fa-solid fa-table-list"></i>
-            <span id="txt-toggle-banks-label">عرض كافة الـ 25 بنكاً ▾</span>
+            <span id="txt-toggle-banks-label">عرض قائمة كافة الـ 25 بنكاً ▾</span>
           </button>
-          <button class="btn-action btn-blue" onclick="refreshBanksWidget()" id="btn-banks-refresh">
+          <button class="btn-action btn-blue" onclick="refreshBanksWidget()" id="btn-banks-refresh" aria-label="تحديث أسعار صرف البنوك اللحظية">
             <i class="fa-solid fa-rotate"></i>
             <span id="txt-banks-refresh-btn">تحديث البنوك</span>
           </button>
@@ -1669,7 +1669,7 @@
           <div class="hero-bank-info">
             <div class="hero-bank-label">
               <i class="fa-solid fa-trophy" style="color:#15803d;"></i>
-              <span id="top-buy-bank-label">أعلى شراء (أفضل بنك للبيع):</span>
+              <span id="top-buy-bank-label">أعلى سعر شراء (أفضل عائد لبيعك الدولار):</span>
             </div>
             <div class="hero-bank-name" id="top-buy-bank-name">--</div>
           </div>
@@ -1683,7 +1683,7 @@
           <div class="hero-bank-info">
             <div class="hero-bank-label">
               <i class="fa-solid fa-arrow-down-wide-short" style="color:var(--text-muted);"></i>
-              <span id="low-buy-bank-label">أقل سعر شراء للدولار:</span>
+              <span id="low-buy-bank-label">أقل سعر شراء للدولار بالسوق:</span>
             </div>
             <div class="hero-bank-name" id="low-buy-bank-name">--</div>
           </div>
@@ -1697,7 +1697,7 @@
           <div class="hero-bank-info">
             <div class="hero-bank-label">
               <i class="fa-solid fa-gem" style="color:#1d4ed8;"></i>
-              <span id="low-sell-bank-label">أقل بيع (أفضل بنك للشراء):</span>
+              <span id="low-sell-bank-label">أقل سعر بيع (أفضل سعر لشرائك الدولار):</span>
             </div>
             <div class="hero-bank-name" id="low-sell-bank-name">--</div>
           </div>
@@ -1711,7 +1711,7 @@
           <div class="hero-bank-info">
             <div class="hero-bank-label">
               <i class="fa-solid fa-arrow-up-wide-short" style="color:#b45309;"></i>
-              <span id="top-sell-bank-label">أعلى سعر بيع للدولار:</span>
+              <span id="top-sell-bank-label">أعلى سعر بيع للدولار بالسوق:</span>
             </div>
             <div class="hero-bank-name" id="top-sell-bank-name">--</div>
           </div>
@@ -1726,8 +1726,8 @@
       <div class="bank-drawer-toolbar">
         <div class="bank-quick-box">
           <span style="font-size:0.84rem; font-weight:700; color:var(--text-muted);" id="txt-quick-label">اختر بنكاً للمعاينة الفورية:</span>
-          <select id="bank-quick-select" class="select-bank" onchange="onBankQuickSelect(this.value)">
-            <option value="">-- اختر من قائمة الـ 25 بنكاً --</option>
+          <select id="bank-quick-select" class="select-bank" onchange="onBankQuickSelect(this.value)" aria-label="اختيار بنك للمعاينة السريعة">
+            <option value="">-- اختر بنكاً من قائمة الـ 25 بنكاً للاطلاع الفوري --</option>
           </select>
         </div>
         <div class="selected-bank-details" id="selected-bank-card"></div>
@@ -1740,10 +1740,10 @@
             <tr>
               <th id="th-bank-rank">الترتيب</th>
               <th id="th-bank-name">اسم البنك</th>
-              <th id="th-bank-buy">سعر الشراء للبنك (ج.م)</th>
-              <th id="th-bank-sell">سعر البيع من البنك (ج.م)</th>
-              <th id="th-bank-spread">الفارق / الهامش (ج.م)</th>
-              <th id="th-bank-updated">آخر تحديث للبنك</th>
+              <th id="th-bank-buy">شراء البنك (يدفعه لك)</th>
+              <th id="th-bank-sell">بيع البنك (تدفعه للبنك)</th>
+              <th id="th-bank-spread">فارق السعر / هامش الربح</th>
+              <th id="th-bank-updated">آخر تحديث</th>
               <th id="th-bank-status">الحالة</th>
             </tr>
           </thead>
@@ -1757,7 +1757,7 @@
   </div>
 
   <div class="footer-bar" id="txt-footer">
-    منظومة تتبع البورصة المصرية ومؤشرات الأسواق الحية | متصلة بسيرفرات جوجل وتعمل 24 ساعة ذاتياً
+    منصة الاستثمار والسيولة المؤسسية للبورصة المصرية وأسواق المال الحية | تحديث سحابي مستقل وآمن على مدار الساعة
   </div>
 
   <script>
@@ -1766,142 +1766,182 @@
     // ==========================================
     var i18n = {
       ar: {
-        page_title: "منظومة البورصة المصرية وأسواق الصرف والسلع الحية",
-        nav_title: "منظومة البورصة المصرية وأسواق الصرف الحية",
+        page_title: "منظومة البورصة المصرية والسيولة المؤسسية وأسواق الصرف الحية",
+        nav_title: "منظومة البورصة المصرية والسيولة المؤسسية وأسواق الصرف الحية",
         btn_curr_egp: "ج.م (EGP)",
         btn_curr_usd: "$ (USD)",
-        btn_curr_mix: "ميكس (مزدوج)",
+        btn_curr_mix: "مزدوج ($ + ج.م)",
         btn_lang_ar: "عربي",
         btn_lang_en: "English",
         official_cbe_label: "المركزي (CBE):",
         curr_egp_symbol: "ج.م",
         curr_usd_symbol: "$",
-        egx_title: "تعاملات المؤسسات في البورصة المصرية (EGX)",
-        egx_tag: "جلسة رسمية موثقة",
-        egx_refresh_btn: "تحديث البورصة",
+        bot_control: "إعدادات التنبيهات",
+        egx_title: "تعاملات المؤسسات وصافي السيولة بالبورصة المصرية (EGX)",
+        egx_tag_live: "جلسة رسمية موثقة",
+        egx_tag_closed: "السوق مغلق اليوم (عطلة رسمية)",
+        egx_refresh_btn: "تحديث التدفقات",
         live_status: "تحديث سحابي مباشر",
+        flow_filter_label: "عرض فئات التدفقات:",
+        btn_flow_fo: "🌐 المؤسسات الأجنبية (مؤشر السيولة)",
+        btn_flow_all: "🏛️ كافة الفئات (مصريين / عرب / أجانب)",
+        flow_note_fo: "⚡ التركيز الاستثماري: صافي تعاملات المؤسسات الأجنبية وتراكماتها (المؤشر الحقيقي للسيولة الذكية)",
+        flow_note_all: "🏛️ العرض الشامل لكافة فئات المؤسسات (مصريين، عرب، أجانب)",
+        hero_fo_badge: "🌐 فئة التركيز الرئيسية",
+        hero_fo_heading: "المؤسسات الأجنبية (Foreign Institutional Flows)",
+        hero_fo_desc: "المؤشر الحقيقي لدخول وخروج العملة الأجنبية والسيولة المؤسسية بالبورصة المصرية",
+        hero_fo_today_title: "صافي جلسة اليوم (الأجانب)",
+        hero_fo_closed_title: "صافي الأجانب (آخر جلسة مسجلة)",
         kpi_eg: "صافي المؤسسات المصرية",
         kpi_ar: "صافي المؤسسات العربية",
         kpi_fo: "صافي المؤسسات الأجنبية",
-        formula_explain: "صافي تدفقات المؤسسات = (شراء المؤسسات - بيع المؤسسات) لكل فئة موثقة رسمياً",
-        base_note: "البيانات مطابقة لشاشة البورصة المصرية الرسمية",
+        formula_explain: "صافي تدفقات المؤسسات = (قيمة الشراء - قيمة البيع) لكل فئة | القيمة الإيجابية تعني دخول سيولة، والسالبة تعني خروج سيولة",
+        base_note: "البيانات مطابقة بنسبة 100% لشاشة البورصة المصرية الرسمية (EGX)",
         inst_table_title: "تفاصيل تدفقات المؤسسات (شراء / بيع / صافي السيولة):",
         th_inst_type: "فئة المؤسسة",
         th_inst_buy: "قيمة الشراء",
         th_inst_sell: "قيمة البيع",
         th_inst_net: "صافي السيولة",
-        th_inst_dual: "المعادل بالعملة البديلة",
+        th_inst_dual: "المعادل البديل ($ / ج.م)",
         th_inst_trend: "اتجاه السيولة",
         th_inst_updated: "آخر تحديث",
         inst_egypt: "مؤسسات مصرية",
         inst_arab: "مؤسسات عربية",
         inst_foreign: "مؤسسات أجنبية",
-        badge_net_buy: "شراء صافي",
-        badge_net_sell: "بيع صافي",
-        archive_table_title: "أرشيف الجلسات السابقة للمؤسسات:",
-        filter_all: "الكل (All)",
-        filter_daily: "جلسة اليوم (Latest)",
-        filter_weekly: "الأسبوع الحالي (Current Week)",
-        filter_october: "أكتوبر 2026 (الحالي)",
+        badge_net_buy: "صافي شراء (دخول سيولة)",
+        badge_net_sell: "صافي بيع (خروج سيولة)",
+        archive_table_title: "أرشيف الجلسات السابقة وتراكمات السيولة:",
+        filter_all: "جميع الجلسات",
+        filter_daily: "أحدث جلسة",
+        filter_weekly: "الأسبوع الحالي",
+        filter_october: "أكتوبر 2026",
         filter_september: "سبتمبر 2026",
-        filter_yearly: "سنوي (YTD 2026)",
+        filter_yearly: "سنوي 2026 (YTD)",
         th_arch_date: "التاريخ",
         th_arch_segment: "القطاع",
-        th_arch_usd: "سعر الدولار",
+        th_arch_usd: "سعر صرف الدولار (ج.م)",
         th_arch_eg_net: "صافي مصريين",
         th_arch_ar_net: "صافي عرب",
-        th_arch_fo_net: "صافي أجانب",
+        th_arch_fo_net: "صافي أجانب (المؤشر الأساسي)",
+        archive_empty_msg: "لا توجد جلسات مسجلة ضمن هذه الفترة الزمنية. اختر \"جميع الجلسات\" لعرض الأرشيف بالكامل.",
         markets_title: "الأسواق الحية (الذهب، النفط، العملات، الكريبتو)",
         markets_refresh_btn: "تحديث الأسعار",
+        cat_all: "كافة الأسواق",
+        cat_gold: "الذهب والمعادن",
+        cat_oil: "النفط والطاقة",
+        cat_curr: "العملات الأجنبية",
+        cat_crypto: "العملات الرقمية",
+        market_empty_msg: "لا توجد أصول متاحة في هذا التصنيف حالياً. اختر \"كافة الأسواق\" لعرض كافة السلع والعملات.",
         banks_title: "تقرير أسعار صرف الدولار في 25 بنكاً مصرياً",
-        top_buy_label: "أعلى شراء (أفضل بنك للبيع):",
-        low_buy_label: "أقل سعر شراء للدولار:",
-        low_sell_label: "أقل بيع (أفضل بنك للشراء):",
-        top_sell_label: "أعلى سعر بيع للدولار:",
+        top_buy_label: "أعلى سعر شراء (أفضل عائد لبيعك الدولار):",
+        low_buy_label: "أقل سعر شراء للدولار بالسوق:",
+        low_sell_label: "أقل سعر بيع (أفضل سعر لشرائك الدولار):",
+        top_sell_label: "أعلى سعر بيع للدولار بالسوق:",
         quick_select_label: "اختر بنكاً للمعاينة الفورية:",
-        quick_select_default: "-- اختر من قائمة الـ 25 بنكاً --",
-        toggle_banks_show: "عرض كافة الـ 25 بنكاً ▾",
-        toggle_banks_hide: "طي جدول البنوك ▴",
+        quick_select_default: "-- اختر بنكاً من قائمة الـ 25 بنكاً للاطلاع الفوري --",
+        toggle_banks_show: "عرض قائمة كافة الـ 25 بنكاً ▾",
+        toggle_banks_hide: "إخفاء قائمة البنوك ▴",
         th_bank_rank: "الترتيب",
         th_bank_name: "اسم البنك",
-        th_bank_buy: "سعر الشراء للبنك (ج.م)",
-        th_bank_sell: "سعر البيع من البنك (ج.م)",
-        th_bank_spread: "الفارق / الهامش (ج.م)",
-        th_bank_updated: "آخر تحديث للبنك",
+        th_bank_buy: "شراء البنك (يدفعه لك)",
+        th_bank_sell: "بيع البنك (تدفعه للبنك)",
+        th_bank_spread: "فارق السعر / هامش الربح",
+        th_bank_updated: "آخر تحديث",
         th_bank_status: "الحالة",
         badge_top_buy: "أعلى شراء",
-        badge_active: "نشط",
-        footer_text: "منظومة تتبع البورصة المصرية ومؤشرات الأسواق الحية | متصلة بسيرفرات جوجل وتعمل 24 ساعة ذاتياً",
+        badge_active: "سعر نشط",
+        banks_empty_msg: "لا توجد بيانات أسعار صرف للبنوك متاحة حالياً. اضغط على \"تحديث البنوك\" لإعادة التحميل.",
+        footer_text: "منصة الاستثمار والسيولة المؤسسية للبورصة المصرية وأسواق المال الحية | تحديث سحابي مستقل وآمن على مدار الساعة",
         session_today: "جلسة اليوم",
         loading: "جاري التحميل..."
       },
       en: {
-        page_title: "Egyptian Stock Exchange (EGX) & Live Global Markets",
-        nav_title: "Egyptian Stock Exchange (EGX) & Live Global Markets",
-        btn_curr_egp: "EGP",
+        page_title: "EGX Institutional Liquidity & Live Financial Markets",
+        nav_title: "EGX Institutional Liquidity & Live Financial Markets",
+        btn_curr_egp: "EGP (ج.م)",
         btn_curr_usd: "USD ($)",
-        btn_curr_mix: "Dual (MIX)",
+        btn_curr_mix: "Dual ($ + EGP)",
         btn_lang_ar: "عربي",
         btn_lang_en: "English",
         official_cbe_label: "Official CBE:",
         curr_egp_symbol: "EGP",
         curr_usd_symbol: "$",
-        egx_title: "Institutional Trading in Egyptian Stock Exchange (EGX)",
-        egx_tag: "Verified Official Session",
-        egx_refresh_btn: "Refresh EGX",
+        bot_control: "Alert Settings",
+        egx_title: "EGX Institutional Net Flows & Liquidity Radar",
+        egx_tag_live: "Verified Today Session",
+        egx_tag_closed: "Market Closed (Official Holiday)",
+        egx_refresh_btn: "Refresh Flows",
         live_status: "Cloud Real-Time Sync",
+        flow_filter_label: "Flows Display:",
+        btn_flow_fo: "🌐 Foreign Institutions (Smart Money)",
+        btn_flow_all: "🏛️ All Institutions (EG / Arab / Foreign)",
+        flow_note_fo: "⚡ Priority Metric: Foreign Institutional Flows (Key indicator of sovereign hard-currency movement)",
+        flow_note_all: "🏛️ Comprehensive Overview: Real-time institutional liquidity across Egyptian, Arab, and Foreign entities",
+        hero_fo_badge: "🌐 Core Focus Segment",
+        hero_fo_heading: "Foreign Institutional Flows (Foreign Capital)",
+        hero_fo_desc: "Primary benchmark tracking hard currency inflows, exits, and sovereign liquidity direction",
+        hero_fo_today_title: "Foreign Net (Today's Session)",
+        hero_fo_closed_title: "Foreign Net (Last Verified Session)",
         kpi_eg: "Egyptian Institutions Net",
         kpi_ar: "Arab Institutions Net",
         kpi_fo: "Foreign Institutions Net",
-        formula_explain: "Institutional Net = (Institutions Buy - Institutions Sell) for each verified group",
-        base_note: "Data matches the official Egyptian Stock Exchange (EGX) terminal",
+        formula_explain: "Institutional Net = (Buy Value - Sell Value) | Positive indicates net capital inflow, negative indicates outflow",
+        base_note: "100% synchronized with official Egyptian Stock Exchange (EGX) terminal data",
         inst_table_title: "Institutional Flows Breakdown (Buy / Sell / Net Liquidity):",
         th_inst_type: "Institution Category",
         th_inst_buy: "Buy Value",
         th_inst_sell: "Sell Value",
         th_inst_net: "Net Liquidity",
-        th_inst_dual: "Dual Currency Equiv.",
+        th_inst_dual: "Equivalent ($ / EGP)",
         th_inst_trend: "Flow Direction",
         th_inst_updated: "Last Updated",
         inst_egypt: "Egyptian Institutions",
         inst_arab: "Arab Institutions",
         inst_foreign: "Foreign Institutions",
-        badge_net_buy: "Net Buyer",
-        badge_net_sell: "Net Seller",
-        archive_table_title: "Institutional Historical Archive:",
-        filter_all: "All Records",
+        badge_net_buy: "Net Buyer (Inflow)",
+        badge_net_sell: "Net Seller (Outflow)",
+        archive_table_title: "Institutional Historical Archive & Cumulative Flows:",
+        filter_all: "All Sessions",
         filter_daily: "Latest Session",
         filter_weekly: "Current Week",
         filter_october: "October 2026",
         filter_september: "September 2026",
-        filter_yearly: "YTD (2026)",
+        filter_yearly: "YTD 2026",
         th_arch_date: "Date",
         th_arch_segment: "Market Segment",
-        th_arch_usd: "USD Rate",
+        th_arch_usd: "USD/EGP Rate",
         th_arch_eg_net: "Egyptian Net",
         th_arch_ar_net: "Arab Net",
-        th_arch_fo_net: "Foreign Net",
+        th_arch_fo_net: "Foreign Net (Primary)",
+        archive_empty_msg: "No trading sessions found for this period. Click \"All Sessions\" to browse complete historical records.",
         markets_title: "Live Global Markets (Gold, Oil, Currencies, Crypto)",
-        markets_refresh_btn: "Refresh",
-        banks_title: "USD Exchange Rates Across 25 Egyptian Banks",
-        top_buy_label: "Highest Buy (Best to Sell USD):",
-        low_buy_label: "Lowest USD Buy Rate:",
-        low_sell_label: "Lowest Sell (Best to Buy USD):",
-        top_sell_label: "Highest USD Sell Rate:",
-        quick_select_label: "Quick Bank Lookup:",
-        quick_select_default: "-- Select from 25 Banks --",
+        markets_refresh_btn: "Refresh Markets",
+        cat_all: "All Markets",
+        cat_gold: "Gold & Metals",
+        cat_oil: "Oil & Energy",
+        cat_curr: "Foreign Currencies",
+        cat_crypto: "Cryptocurrency",
+        market_empty_msg: "No assets found in this category. Select \"All Markets\" to view all commodities and currencies.",
+        banks_title: "USD Exchange Rates Across 25 Egyptian Commercial Banks",
+        top_buy_label: "Highest Buy (Best rate to sell USD):",
+        low_buy_label: "Lowest Buy Rate in Market:",
+        low_sell_label: "Lowest Sell (Best rate to buy USD):",
+        top_sell_label: "Highest Sell Rate in Market:",
+        quick_select_label: "Select a Bank for Instant Lookup:",
+        quick_select_default: "-- Select a bank for instant rate preview --",
         toggle_banks_show: "Show All 25 Banks ▾",
-        toggle_banks_hide: "Collapse Banks Directory ▴",
+        toggle_banks_hide: "Hide Banks Directory ▴",
         th_bank_rank: "Rank",
         th_bank_name: "Bank Name",
-        th_bank_buy: "Bank Buy Rate",
-        th_bank_sell: "Bank Sell Rate",
+        th_bank_buy: "Bank Buys (Pays you)",
+        th_bank_sell: "Bank Sells (Charges you)",
         th_bank_spread: "Spread / Margin",
         th_bank_updated: "Last Updated",
         th_bank_status: "Status",
         badge_top_buy: "Top Buy",
-        badge_active: "Active",
-        footer_text: "EGX Institutional Flow & Global Markets Intelligence | Cloud-powered 24/7 on Google Cloud",
+        badge_active: "Active Rate",
+        banks_empty_msg: "No bank exchange rate data available. Click \"Refresh Banks\" to reload.",
+        footer_text: "EGX Institutional Liquidity & Live Financial Markets Platform | Cloud-native real-time feeds operating 24/7",
         session_today: "Today's Session",
         loading: "Loading data..."
       }
@@ -2107,12 +2147,24 @@
       setTxt("nav-buy-tag", (currentLang === "en") ? "Buy" : "شراء");
       setTxt("nav-sell-tag", (currentLang === "en") ? "Sell" : "بيع");
       setTxt("nav-usd-curr", (currentLang === "en") ? "EGP" : "ج.م");
+      setTxt("txt-bot-control", t.bot_control);
 
       // EGX
       setTxt("txt-egx-title", t.egx_title);
-      setTxt("txt-egx-tag", t.egx_tag);
+      setTxt("txt-egx-tag", t.egx_tag_live);
       setTxt("txt-egx-refresh-btn", t.egx_refresh_btn);
       setTxt("egx-update-status", t.live_status);
+      setTxt("txt-flow-filter-label", t.flow_filter_label);
+      setTxt("btn-flow-fo", t.btn_flow_fo);
+      setTxt("btn-flow-all", t.btn_flow_all);
+      var note = document.getElementById("flow-display-note");
+      if (note) {
+        note.innerText = (currentFlowCategory === "foreign") ? t.flow_note_fo : t.flow_note_all;
+      }
+      setTxt("hero-fo-badge", t.hero_fo_badge);
+      setTxt("hero-fo-heading", t.hero_fo_heading);
+      setTxt("hero-fo-desc", t.hero_fo_desc);
+
       setTxt("txt-kpi-eg", t.kpi_eg);
       setTxt("txt-kpi-ar", t.kpi_ar);
       setTxt("txt-kpi-fo", t.kpi_fo);
@@ -2130,8 +2182,6 @@
 
       // Archive
       setTxt("txt-archive-table-title", t.archive_table_title);
-      setTxt("txt-cumul-label", (currentLang === "en") ? "Period Cumulative Net:" : "الرصيد التراكمي للفترة المحددة:");
-      setTxt("txt-bot-control", (currentLang === "en") ? "Bot Control" : "تحكم البوت");
       setTxt("btn-filter-all", t.filter_all);
       setTxt("btn-filter-daily", t.filter_daily);
       setTxt("btn-filter-weekly", t.filter_weekly);
@@ -2140,13 +2190,18 @@
       setTxt("btn-filter-yearly", t.filter_yearly);
       setTxt("th-arch-date", t.th_arch_date);
       setTxt("th-arch-usd", t.th_arch_usd);
-      setTxt("th-arch-fo-net", (currentLang === "en") ? "Foreign Net (Primary)" : "صافي أجانب (الأساس)");
+      setTxt("th-arch-fo-net", t.th_arch_fo_net);
       setTxt("th-arch-eg-net", t.th_arch_eg_net);
       setTxt("th-arch-ar-net", t.th_arch_ar_net);
 
       // Markets
       setTxt("txt-markets-title", t.markets_title);
       setTxt("txt-markets-refresh-btn", t.markets_refresh_btn);
+      setTxt("cat-btn-all", t.cat_all);
+      setTxt("cat-btn-gold", t.cat_gold);
+      setTxt("cat-btn-oil", t.cat_oil);
+      setTxt("cat-btn-curr", t.cat_curr);
+      setTxt("cat-btn-crypto", t.cat_crypto);
 
       // Banks
       setTxt("txt-banks-title", t.banks_title);
@@ -2205,9 +2260,8 @@
 
       var note = document.getElementById("flow-display-note");
       if (note) {
-        note.innerText = (cat === "foreign") 
-          ? "⚡ التركيز الاستثماري: صافي تعاملات المؤسسات الأجنبية وتراكماتها"
-          : "🏛️ العرض الشامل لكافة فئات المؤسسات (مصريين، عرب، أجانب)";
+        var t = i18n[currentLang] || i18n.ar;
+        note.innerText = (cat === "foreign") ? t.flow_note_fo : t.flow_note_all;
       }
     }
 
@@ -2285,14 +2339,14 @@
           renderDashboard(cached);
           if (elStatus) {
             elStatus.innerHTML = (currentLang === "en")
-              ? '<span style="color:#f59e0b;">⚠️ Offline (Cached Data)</span>'
-              : '<span style="color:#f59e0b;">⚠️ وضع دون اتصال (بيانات محفوظة)</span>';
+              ? '<span style="color:#f59e0b;">⚠️ Offline (Local Cache)</span>'
+              : '<span style="color:#f59e0b;">⚠️ وضع غير متصل (بيانات محفوظة محلياً)</span>';
           }
         } else {
           if (elStatus) {
             elStatus.innerHTML = (currentLang === "en")
-              ? '<span style="color:#ef4444;">❌ Offline. <a href="javascript:void(0)" onclick="requestDataUpdate(true)" style="color:var(--primary);text-decoration:underline;">Retry</a></span>'
-              : '<span style="color:#ef4444;">❌ تعذر التحديث. <a href="javascript:void(0)" onclick="requestDataUpdate(true)" style="color:var(--primary);text-decoration:underline;">إعادة المحاولة</a></span>';
+              ? '<span style="color:#ef4444;">❌ Connection Failed. <a href="javascript:void(0)" onclick="requestDataUpdate(true)" style="color:var(--primary);text-decoration:underline;">Retry</a></span>'
+              : '<span style="color:#ef4444;">❌ تعذر الاتصال بالخادم. <a href="javascript:void(0)" onclick="requestDataUpdate(true)" style="color:var(--primary);text-decoration:underline;">إعادة المحاولة</a></span>';
           }
         }
       }
@@ -2490,21 +2544,21 @@
       var heroTitleEl = document.getElementById("hero-fo-title");
       if (heroTitleEl) {
         if (isTodaySession) {
-          heroTitleEl.innerText = (currentLang === "en") ? "Foreign Net (Today's Session)" : "صافي جلسة اليوم (الأجانب)";
+          heroTitleEl.innerText = t.hero_fo_today_title;
         } else {
           heroTitleEl.innerHTML = (currentLang === "en") 
-            ? "Foreign Net (" + refDStr + ") <span style='color:#ef4444; font-size:0.7rem;'>• Closed Today</span>"
-            : "صافي الأجانب (" + refDStr + ") <span style='color:#ef4444; font-size:0.7rem;'>• مغلق اليوم</span>";
+            ? t.hero_fo_closed_title + " (" + refDStr + ") <span style='color:#ef4444; font-size:0.7rem;'>• Closed Today</span>"
+            : t.hero_fo_closed_title + " (" + refDStr + ") <span style='color:#ef4444; font-size:0.7rem;'>• مغلق اليوم</span>";
         }
       }
 
       var egxTagEl = document.getElementById("txt-egx-tag");
       if (egxTagEl) {
         if (isTodaySession) {
-          egxTagEl.innerText = (currentLang === "en") ? "Verified Today Session" : "جلسة اليوم الموثقة";
+          egxTagEl.innerText = t.egx_tag_live;
           egxTagEl.className = "badge-flow badge-buyer";
         } else {
-          egxTagEl.innerText = (currentLang === "en") ? "Market Closed / Holiday (" + refDStr + ")" : "السوق مغلق اليوم / عطلة (" + refDStr + ")";
+          egxTagEl.innerText = (currentLang === "en") ? ("Market Closed (" + refDStr + ")") : ("السوق مغلق (عطلة رسمية: " + refDStr + ")");
           egxTagEl.className = "badge-flow badge-seller";
         }
       }
@@ -2585,6 +2639,9 @@
         var catTagLabel = (currentLang === "en") ? (assetMeta.cat_en || "Asset") : (assetMeta.cat_ar || "أصل");
         var catTagClass = "cat-tag-" + catKey;
 
+        var pUsd = "$" + formatNum(uPrice, (catKey === "crypto" && uPrice < 10) ? 4 : 2);
+        var pEgp = formatNum(ePrice, 2) + " " + currEgpLabel;
+
         var mainVal, subVal;
         if (catKey === "curr") {
           // أسعار العملات مقابل الجنيه المصري فقط مع سعر الشراء والبيع للبنك
@@ -2622,7 +2679,8 @@
           + '</div>';
       });
 
-      document.getElementById("market-cards-grid").innerHTML = cardsHtml || '<div style="padding:20px; color:var(--text-muted);">لا توجد عناصر في هذا التصنيف.</div>';
+      var t = i18n[currentLang] || i18n.ar;
+      document.getElementById("market-cards-grid").innerHTML = cardsHtml || ('<div style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--text-muted); font-weight: 600;">' + t.market_empty_msg + '</div>');
     }
 
     function renderArchiveTable(data) {
@@ -2676,7 +2734,11 @@
         var currYear = new Date().getFullYear();
         rows = rows.filter(function(r) { return String(r.date).indexOf(String(currYear)) >= 0; });
       }
-      if (rows.length === 0) rows = data.archive.slice(0, 1);
+      if (rows.length === 0) {
+        var t = i18n[currentLang] || i18n.ar;
+        document.getElementById("egx-archive-tbody").innerHTML = '<tr><td colspan="5" style="padding: 24px; text-align: center; color: var(--text-muted); font-weight: 600;">' + t.archive_empty_msg + '</td></tr>';
+        return;
+      }
 
       var archHtml = "";
       rows.forEach(function(row) {
@@ -2730,21 +2792,21 @@
 
         detailsBox.innerHTML = '<i class="fa-solid fa-building-columns"></i> '
           + '<strong>' + bName + '</strong> | '
-          + (currentLang === "en" ? "Buy: " : "شراء: ") + '<span class="num-ltr" style="color:#15803d; font-weight:900;">' + bBuy.toFixed(2) + ' ' + currEgpLabel + '</span> | '
-          + (currentLang === "en" ? "Sell: " : "بيع: ") + '<span class="num-ltr" style="color:#b45309; font-weight:900;">' + bSell.toFixed(2) + ' ' + currEgpLabel + '</span> | '
-          + (currentLang === "en" ? "Margin: " : "الفارق: ") + '<span class="num-ltr" style="color:#1d4ed8; font-weight:800;">' + spread + ' ' + currEgpLabel + '</span> | '
+          + (currentLang === "en" ? "Bank Buy: " : "شراء البنك: ") + '<span class="num-ltr" style="color:#15803d; font-weight:900;">' + bBuy.toFixed(2) + ' ' + currEgpLabel + '</span> | '
+          + (currentLang === "en" ? "Bank Sell: " : "بيع البنك: ") + '<span class="num-ltr" style="color:#b45309; font-weight:900;">' + bSell.toFixed(2) + ' ' + currEgpLabel + '</span> | '
+          + (currentLang === "en" ? "Bank Margin: " : "هامش الربح: ") + '<span class="num-ltr" style="color:#1d4ed8; font-weight:800;">' + spread + ' ' + currEgpLabel + '</span> | '
           + (cleanTime !== "--" ? ('<span style="color:var(--text-muted);">' + cleanTime + '</span>') : '');
         detailsBox.style.display = "inline-flex";
       }
     }
 
     function renderBanksTable(banks) {
-      var t = i18n[currentLang];
+      var t = i18n[currentLang] || i18n.ar;
       var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
       var tbody = document.getElementById("banks-table-tbody");
       if (!banks || banks.length === 0) {
         if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="padding:24px; color:var(--text-muted); text-align:center;">'
-          + ((currentLang === "en") ? "No bank currency data available." : "لا توجد بيانات أسعار صرف للبنوك متاحة حالياً.")
+          + (t.banks_empty_msg || ((currentLang === "en") ? "No bank exchange rate data available. Click \"Refresh Banks\" to reload." : "لا توجد بيانات أسعار صرف للبنوك متاحة حالياً. اضغط على \"تحديث البنوك\" لإعادة التحميل."))
           + '</td></tr>';
         return;
       }
