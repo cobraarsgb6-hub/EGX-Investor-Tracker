@@ -560,6 +560,21 @@
       padding: 0;
     }
 
+    /* تعزيز إمكانية الوصول والتنقل بلوحة المفاتيح وحساسية الحركة */
+    :focus-visible {
+      outline: 2px solid var(--primary) !important;
+      outline-offset: 2px !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     body {
       background-color: var(--bg);
       color: var(--text);
@@ -1261,16 +1276,16 @@
     </div>
 
     <div class="nav-controls">
-      <div class="pill-group">
-        <button class="pill-btn active" id="btn-curr-egp" onclick="setCurrencyMode('EGP')">ج.م (EGP)</button>
-        <button class="pill-btn" id="btn-curr-usd" onclick="setCurrencyMode('USD')">$ (USD)</button>
-        <button class="pill-btn" id="btn-curr-mix" onclick="setCurrencyMode('MIX')">ميكس (مزدوج)</button>
+      <div class="pill-group" role="group" aria-label="اختيار عملة العرض">
+        <button class="pill-btn active" id="btn-curr-egp" onclick="setCurrencyMode('EGP')" aria-pressed="true" aria-label="عرض بالجنيه المصري">ج.م (EGP)</button>
+        <button class="pill-btn" id="btn-curr-usd" onclick="setCurrencyMode('USD')" aria-pressed="false" aria-label="عرض بالدولار الأمريكي">$ (USD)</button>
+        <button class="pill-btn" id="btn-curr-mix" onclick="setCurrencyMode('MIX')" aria-pressed="false" aria-label="عرض مزدوج">$ + ج.م</button>
       </div>
 
       <!-- قائمة اختيار التصميم (5 Themes) -->
       <div class="pill-group" style="padding: 6px 12px; align-items: center; gap: 8px;">
-        <i class="fa-solid fa-palette" style="color: #f0b90b; font-size: 0.85rem;"></i>
-        <select id="themeSelector" onchange="switchTheme(this.value)" style="background: transparent; color: #fff; border: none; font-family: inherit; font-size: 0.82rem; font-weight: 700; outline: none; cursor: pointer;">
+        <i class="fa-solid fa-palette" style="color: #f0b90b; font-size: 0.85rem;" aria-hidden="true"></i>
+        <select id="themeSelector" onchange="switchTheme(this.value)" aria-label="اختيار مظهر الواجهة" style="background: transparent; color: #fff; border: none; font-family: inherit; font-size: 0.82rem; font-weight: 700; outline: none; cursor: pointer;">
           <option value="binance" style="background: #181a20; color: #f0b90b;" selected>🟡 بينانس للمحترفين (Binance Pro)</option>
           <option value="swiss" style="background: #0f172a; color: #fff;">🏦 النمط السويسري (Swiss)</option>
           <option value="terminal" style="background: #0f172a; color: #fff;">💻 بلومبرج المؤسسي (Terminal)</option>
@@ -1279,9 +1294,9 @@
         </select>
       </div>
 
-      <div class="pill-group">
-        <button class="pill-btn active" id="btn-lang-ar" onclick="setLanguage('ar')">عربي</button>
-        <button class="pill-btn" id="btn-lang-en" onclick="setLanguage('en')">English</button>
+      <div class="pill-group" role="group" aria-label="اختيار لغة الواجهة">
+        <button class="pill-btn active" id="btn-lang-ar" onclick="setLanguage('ar')" aria-pressed="true" aria-label="العربية">عربي</button>
+        <button class="pill-btn" id="btn-lang-en" onclick="setLanguage('en')" aria-pressed="false" aria-label="English">English</button>
       </div>
 
       <!-- سعر البنك المركزي الفعلي المعلن بدون متوسط -->
@@ -1333,9 +1348,9 @@
         <div style="display:flex; align-items:center; gap:8px;">
           <i class="fa-solid fa-filter" style="color: #1d4ed8; font-size: 0.85rem;"></i>
           <span style="font-size: 0.84rem; font-weight: 800; color: var(--text);">عرض فئات التدفقات:</span>
-          <div class="pill-group" style="padding: 4px 8px; background: #e2e8f0; border-color: #cbd5e1; align-items: center; gap: 6px;">
-            <button class="filter-btn active" id="btn-flow-fo" onclick="setFlowDisplayCategory('foreign')" style="border:none;">🌐 الأجانب (الأساس)</button>
-            <button class="filter-btn" id="btn-flow-all" onclick="setFlowDisplayCategory('all')" style="border:none;">🏛️ كافة الفئات (مصريين / عرب / أجانب)</button>
+          <div class="pill-group" role="group" aria-label="تحديد فئة عرض التدفقات" style="padding: 4px 8px; background: #e2e8f0; border-color: #cbd5e1; align-items: center; gap: 6px;">
+            <button class="filter-btn active" id="btn-flow-fo" onclick="setFlowDisplayCategory('foreign')" aria-pressed="true" style="border:none;">🌐 الأجانب (الأساس)</button>
+            <button class="filter-btn" id="btn-flow-all" onclick="setFlowDisplayCategory('all')" aria-pressed="false" style="border:none;">🏛️ كافة الفئات (مصريين / عرب / أجانب)</button>
           </div>
         </div>
         <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);" id="flow-display-note">
@@ -1435,13 +1450,13 @@
             <i class="fa-solid fa-clock-rotate-left" style="color:#0369a1;"></i>
             <span>أرشيف الجلسات السابقة للمؤسسات:</span>
           </div>
-          <div class="archive-filters-row">
-            <button class="filter-btn active" id="btn-filter-all" onclick="filterArchiveByPeriod('all')">الكل (All)</button>
-            <button class="filter-btn" id="btn-filter-daily" onclick="filterArchiveByPeriod('daily')">جلسة اليوم (Latest)</button>
-            <button class="filter-btn" id="btn-filter-weekly" onclick="filterArchiveByPeriod('weekly')">الأسبوع الحالي (Current Week)</button>
-            <button class="filter-btn" id="btn-filter-october" onclick="filterArchiveByPeriod('october')">أكتوبر 2026 (الحالي)</button>
-            <button class="filter-btn" id="btn-filter-september" onclick="filterArchiveByPeriod('september')">سبتمبر 2026</button>
-            <button class="filter-btn" id="btn-filter-yearly" onclick="filterArchiveByPeriod('yearly')">سنوي (YTD 2026)</button>
+          <div class="archive-filters-row" role="group" aria-label="تصفية أرشيف الجلسات حسب الفترة الزمنية">
+            <button class="filter-btn active" id="btn-filter-all" onclick="filterArchiveByPeriod('all')" aria-pressed="true">الكل (All)</button>
+            <button class="filter-btn" id="btn-filter-daily" onclick="filterArchiveByPeriod('daily')" aria-pressed="false">جلسة اليوم (Latest)</button>
+            <button class="filter-btn" id="btn-filter-weekly" onclick="filterArchiveByPeriod('weekly')" aria-pressed="false">الأسبوع الحالي (Current Week)</button>
+            <button class="filter-btn" id="btn-filter-october" onclick="filterArchiveByPeriod('october')" aria-pressed="false">أكتوبر 2026 (الحالي)</button>
+            <button class="filter-btn" id="btn-filter-september" onclick="filterArchiveByPeriod('september')" aria-pressed="false">سبتمبر 2026</button>
+            <button class="filter-btn" id="btn-filter-yearly" onclick="filterArchiveByPeriod('yearly')" aria-pressed="false">سنوي (YTD 2026)</button>
           </div>
         </div>
 
@@ -1470,12 +1485,12 @@
           <span id="txt-markets-title">الأسواق الحية (الذهب، النفط، العملات، الكريبتو)</span>
         </div>
         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <div class="pill-group" style="padding: 4px 8px; background:#f1f5f9; border-color:#e2e8f0; align-items: center; gap: 6px;">
-            <button class="filter-btn active" style="border:none;" id="cat-btn-all" onclick="filterMarketCategory('all')">الكل</button>
-            <button class="filter-btn" style="border:none;" id="cat-btn-gold" onclick="filterMarketCategory('gold')">معادن وذهب</button>
-            <button class="filter-btn" style="border:none;" id="cat-btn-oil" onclick="filterMarketCategory('oil')">طاقة ونفط</button>
-            <button class="filter-btn" style="border:none;" id="cat-btn-curr" onclick="filterMarketCategory('curr')">عملات رئيسية</button>
-            <button class="filter-btn" style="border:none;" id="cat-btn-crypto" onclick="filterMarketCategory('crypto')">كريبتو</button>
+          <div class="pill-group" role="group" aria-label="تصنيف الأصول والأسواق" style="padding: 4px 8px; background:#f1f5f9; border-color:#e2e8f0; align-items: center; gap: 6px;">
+            <button class="filter-btn active" style="border:none;" id="cat-btn-all" onclick="filterMarketCategory('all')" aria-pressed="true">الكل</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-gold" onclick="filterMarketCategory('gold')" aria-pressed="false">معادن وذهب</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-oil" onclick="filterMarketCategory('oil')" aria-pressed="false">طاقة ونفط</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-curr" onclick="filterMarketCategory('curr')" aria-pressed="false">عملات رئيسية</button>
+            <button class="filter-btn" style="border:none;" id="cat-btn-crypto" onclick="filterMarketCategory('crypto')" aria-pressed="false">كريبتو</button>
           </div>
           <button class="btn-action btn-amber" onclick="refreshMarketsWidget()">
             <i class="fa-solid fa-rotate"></i>
@@ -1925,8 +1940,10 @@
       if (lang === "en") body.classList.add("lang-en");
       else body.classList.remove("lang-en");
 
-      document.getElementById("btn-lang-ar").classList.toggle("active", lang === "ar");
-      document.getElementById("btn-lang-en").classList.toggle("active", lang === "en");
+      var bAr = document.getElementById("btn-lang-ar");
+      var bEn = document.getElementById("btn-lang-en");
+      if (bAr) { bAr.classList.toggle("active", lang === "ar"); bAr.setAttribute("aria-pressed", lang === "ar" ? "true" : "false"); }
+      if (bEn) { bEn.classList.toggle("active", lang === "en"); bEn.setAttribute("aria-pressed", lang === "en" ? "true" : "false"); }
 
       applyStaticTranslations();
       if (globalData) renderDashboard(globalData);
@@ -2017,9 +2034,12 @@
     function setCurrencyMode(mode) {
       currentCurrency = mode;
       localStorage.setItem("market_currency", mode);
-      document.getElementById("btn-curr-egp").classList.toggle("active", mode === "EGP");
-      document.getElementById("btn-curr-usd").classList.toggle("active", mode === "USD");
-      document.getElementById("btn-curr-mix").classList.toggle("active", mode === "MIX");
+      var bEgp = document.getElementById("btn-curr-egp");
+      var bUsd = document.getElementById("btn-curr-usd");
+      var bMix = document.getElementById("btn-curr-mix");
+      if (bEgp) { bEgp.classList.toggle("active", mode === "EGP"); bEgp.setAttribute("aria-pressed", mode === "EGP" ? "true" : "false"); }
+      if (bUsd) { bUsd.classList.toggle("active", mode === "USD"); bUsd.setAttribute("aria-pressed", mode === "USD" ? "true" : "false"); }
+      if (bMix) { bMix.classList.toggle("active", mode === "MIX"); bMix.setAttribute("aria-pressed", mode === "MIX" ? "true" : "false"); }
       if (globalData) renderDashboard(globalData);
     }
 
@@ -2032,8 +2052,8 @@
       var kpiAllRow = document.getElementById("kpi-all-institutions-row");
       var instTableWrap = document.getElementById("inst-today-table-wrap");
 
-      if (btnFo) btnFo.classList.toggle("active", cat === "foreign");
-      if (btnAll) btnAll.classList.toggle("active", cat === "all");
+      if (btnFo) { btnFo.classList.toggle("active", cat === "foreign"); btnFo.setAttribute("aria-pressed", cat === "foreign" ? "true" : "false"); }
+      if (btnAll) { btnAll.classList.toggle("active", cat === "all"); btnAll.setAttribute("aria-pressed", cat === "all" ? "true" : "false"); }
 
       if (kpiAllRow) {
         kpiAllRow.style.display = (cat === "all") ? "grid" : "none";
@@ -2052,17 +2072,29 @@
 
     function filterArchiveByPeriod(period) {
       currentArchiveFilter = period;
-      document.querySelectorAll(".archive-filters-row .filter-btn").forEach(function(b) { b.classList.remove("active"); });
+      document.querySelectorAll(".archive-filters-row .filter-btn").forEach(function(b) { 
+        b.classList.remove("active"); 
+        b.setAttribute("aria-pressed", "false");
+      });
       var activeBtn = document.getElementById("btn-filter-" + period);
-      if (activeBtn) activeBtn.classList.add("active");
+      if (activeBtn) {
+        activeBtn.classList.add("active");
+        activeBtn.setAttribute("aria-pressed", "true");
+      }
       if (globalData) renderArchiveTable(globalData);
     }
 
     function filterMarketCategory(cat) {
       currentMarketCategory = cat;
-      document.querySelectorAll(".section-head .filter-btn").forEach(function(b) { b.classList.remove("active"); });
+      document.querySelectorAll(".section-head .filter-btn").forEach(function(b) { 
+        b.classList.remove("active"); 
+        b.setAttribute("aria-pressed", "false");
+      });
       var b = document.getElementById("cat-btn-" + cat);
-      if (b) b.classList.add("active");
+      if (b) {
+        b.classList.add("active");
+        b.setAttribute("aria-pressed", "true");
+      }
       if (globalData && globalData.rates) renderMarketCards(globalData.rates);
     }
 
