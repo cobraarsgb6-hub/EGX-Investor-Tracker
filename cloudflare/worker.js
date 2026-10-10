@@ -1251,12 +1251,18 @@ function formatEgxReport(data, lang, curr) {
   const arFoNet = arNet + foNet;
   const mStatus = getEgxMarketStatus(sessionDate);
 
-  const fmtNet = (v) => {
+  // حساب التراكمي الشهري (حصرياً لصافي الأجانب بدءاً من 01 أكتوبر ويقفل شهرياً)
+  const { monthly } = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
+  const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
+  const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
+  const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
+
+  const fmtNet = (v, usdOverride) => {
     const n = Number(v) || 0;
     const sign = n >= 0 ? "+" : "-";
     const absVal = Math.abs(n).toLocaleString("en-US");
     if (curr === "usd") {
-      const u = Math.round(n / usdRate);
+      const u = (usdOverride !== undefined && usdOverride !== null) ? Number(usdOverride) : Math.round(n / usdRate);
       const uSign = u >= 0 ? "+" : "-";
       return `${uSign}$${Math.abs(u).toLocaleString("en-US")}`;
     }
@@ -1287,11 +1293,16 @@ function formatEgxReport(data, lang, curr) {
       + snapshotLineEn
       + `<code>─────────────────────────────</code>\n\n`;
 
+    // 1. Session Breakdown
     txt += `🏛 <b>Institutional Flows ${mStatus.sessionTagEn}:</b>\n`
       + `   ▫️ Egyptians Net:     ${egDot} <code>${fmtNet(egNet)}</code>\n`
       + `   ▫️ Arabs Net:         ${arDot} <code>${fmtNet(arNet)}</code>\n`
       + `   ▫️ Foreigners Net:    ${foDot} <code>${fmtNet(foNet)}</code>\n`
-      + `   ▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n`;
+      + `   ▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
+
+    // 2. Monthly Accumulative (Foreigners Only)
+    txt += `📈 <b>Monthly Foreigners Net (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
+      + `   ▫️ Accumulative:     ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`;
 
     return txt + `\n<code>─────────────────────────────</code>\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
@@ -1306,11 +1317,16 @@ function formatEgxReport(data, lang, curr) {
     + snapshotLineAr
     + `<code>─────────────────────────────</code>\n\n`;
 
+  // 1. تفصيل الجلسة
   txtAr += `🏛 <b>تدفقات الجلسة ${mStatus.sessionTagAr}:</b>\n`
     + `   ▫️ صافي المصريين:      ${egDot} <code>${fmtNet(egNet)}</code>\n`
     + `   ▫️ صافي العرب:         ${arDot} <code>${fmtNet(arNet)}</code>\n`
     + `   ▫️ صافي الأجانب:       ${foDot} <code>${fmtNet(foNet)}</code>\n`
-    + `   ▪️ صافي العرب + الأجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n`;
+    + `   ▪️ صافي العرب + الأجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
+
+  // 2. التراكمي الشهري (للأجانب فقط)
+  txtAr += `📈 <b>صافي الأجانب التراكمي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
+    + `   ▫️ إجمالي تعاملات الشهر: ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`;
 
   return txtAr + `\n<code>─────────────────────────────</code>\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
@@ -1721,35 +1737,43 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   const brentStrAr = `$${Number(brent.usd_price).toFixed(2)}`;
   let breakdownEn = "", breakdownAr = "";
 
+  // حساب التراكمي الشهري (حصرياً لصافي الأجانب بدءاً من 01 أكتوبر ويقفل شهرياً)
+  const { monthly } = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
+  const mFoStatusEn = monthly.foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
+  const mFoStatusAr = monthly.foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
+  const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
+  let mFoAmountEn = "", mFoAmountAr = "";
+
   if (curr === "usd") {
     const foUsd = Math.round(foNet / usdRate);
     const foSign = foUsd >= 0 ? "+" : "-";
     foAmountEn = `${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}`;
     foAmountAr = `${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}`;
 
-    const totUsd = Math.round(totNet / usdRate);
-    const totSign = totUsd >= 0 ? "+" : "-";
-    totAmountEn = `${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}`;
-    totAmountAr = `${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}`;
+    const mUsd = monthly.foUsd;
+    const mSign = mUsd >= 0 ? "+" : "-";
+    mFoAmountEn = `${mSign}$${Math.abs(mUsd).toLocaleString("en-US")}`;
+    mFoAmountAr = `${mSign}$${Math.abs(mUsd).toLocaleString("en-US")}`;
   } else {
     const foSign = foNet >= 0 ? "+" : "-";
     const absNet = Math.abs(foNet).toLocaleString("en-US");
     foAmountEn = `${foSign}${absNet} EGP`;
     foAmountAr = `${foSign}${absNet} ج.م`;
 
-    const totSign = totNet >= 0 ? "+" : "-";
-    const absTot = Math.abs(totNet).toLocaleString("en-US");
-    totAmountEn = `${totSign}${absTot} EGP`;
-    totAmountAr = `${totSign}${absTot} ج.م`;
+    const mSign = monthly.foNet >= 0 ? "+" : "-";
+    const mAbs = Math.abs(monthly.foNet).toLocaleString("en-US");
+    mFoAmountEn = `${mSign}${mAbs} EGP`;
+    mFoAmountAr = `${mSign}${mAbs} ج.م`;
   }
 
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
   if (lang === "en") {
     let egxBlockEn = `🏛 <b>Foreign Institutions ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
-      + `   ▫️ Net Flow: <code>${foAmountEn}</code>\n\n`
-      + `📊 <b>Total Institutional Net ${mStatus.sessionTagEn}:</b> ${totStatusEn}\n`
-      + `   ▪️ Net Flow: <code>${totAmountEn}</code>\n\n`;
+      + `   ▫️ Session Net: <code>${foAmountEn}</code>\n\n`
+      + `📈 <b>Monthly Foreigners Net (${monthLabelEn} • ${monthly.count} Sessions):</b> ${mFoStatusEn}\n`
+      + `   ▪️ Accumulative: <code>${mFoAmountEn}</code>\n\n`;
 
     return `📊 <b>Executive Financial Summary</b>\n`
       + `<code>─────────────────────────────</code>\n`
@@ -1772,9 +1796,9 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   }
 
   let egxBlockAr = `🏛 <b>المؤسسات الأجنبية ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
-    + `   ▫️ صافي السيولة: <code>${foAmountAr}</code>\n\n`
-    + `📊 <b>إجمالي المؤسسات ${mStatus.sessionTagAr}:</b> ${totStatusAr}\n`
-    + `   ▪️ صافي السيولة: <code>${totAmountAr}</code>\n\n`;
+    + `   ▫️ صافي الجلسة: <code>${foAmountAr}</code>\n\n`
+    + `📈 <b>صافي الأجانب التراكمي (${monthLabelAr} • ${monthly.count} جلسات):</b> ${mFoStatusAr}\n`
+    + `   ▪️ إجمالي تعاملات الشهر: <code>${mFoAmountAr}</code>\n\n`;
 
   return `📊 <b>التقرير المالي التنفيذي الشامل</b>\n`
     + `<code>─────────────────────────────</code>\n`
