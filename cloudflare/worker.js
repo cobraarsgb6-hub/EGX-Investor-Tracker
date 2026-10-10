@@ -27,7 +27,7 @@ let botConfig = {
   hide_currencies: false,
   hide_report: false,
   hide_lang_toggle: false,
-  banks_count: 8,
+  banks_count: 5,
   show_cbe_in_banks: true,
   show_best_banks: true,
   default_lang: "en",
@@ -315,7 +315,7 @@ export default {
       const commands = [
         { command: "start", description: "Main menu / القائمة الرئيسية" },
         { command: "egx", description: "Institutional flows / تعاملات المؤسسات بالبورصة" },
-        { command: "banks", description: "USD rates in 25 banks / أسعار الدولار بالبنوك والمركزي" },
+        { command: "banks", description: "USD rates in Egyptian banks / أسعار الدولار بالبنوك والمركزي" },
         { command: "commodities", description: "Gold, oil & crypto / الذهب والنفط والكريبتو" },
         { command: "currencies", description: "Foreign currency rates / أسعار العملات" },
         { command: "report", description: "Full executive report / التقرير الشامل" }
@@ -1624,7 +1624,7 @@ function formatAllBanksReport(data, lang) {
   const snapshotLineAr = bankSnapshot ? `\n📸 لقطة الأسعار: <b>[${bankSnapshot}]</b>` : "";
 
   if (lang === "en") {
-    return `🏦 <b>All 25 Egyptian Banks - USD Rates</b>\n`
+    return `🏦 <b>All Egyptian Banks (${banks.length}) - USD Rates</b>\n`
       + `<code>─────────────────────────────</code>\n`
       + `🕒 Query: <b>${updatedDateTime}</b>`
       + snapshotLineEn + `\n`
@@ -1632,7 +1632,7 @@ function formatAllBanksReport(data, lang) {
       + banks.map((b, idx) => `${idx + 1}. <b>${getBankName(b.bank, "en")}:</b> Buy <code>${Number(b.buy).toFixed(2)}</code> • Sell <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
       + `\n\n<code>─────────────────────────────</code>\n⚡ <i>Live feed via Ta3weem.</i>`;
   }
-  return `🏦 <b>قائمة الـ 25 بنكاً مصرياً بالكامل - أسعار الدولار</b>\n`
+  return `🏦 <b>قائمة كافة البنوك المصرية (${banks.length} بنكاً) - أسعار الدولار</b>\n`
     + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
     + snapshotLineAr + `\n`
@@ -1868,7 +1868,7 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
     rows.push([{ text: (lang === "en" ? "🏛 Back to Live Flows" : "🏛 العودة للبورصة اللحظية"), callback_data: `cmd_egx:${lang}:${curr}` }]);
     rows.push([{ text: currToggleText, callback_data: currToggleData }]);
   } else if (cmdType === "banks") {
-    rows.push([{ text: (lang === "en" ? "📋 Show All Banks (25)" : "📋 إظهار الكل (كافة الـ 25 بنكاً)"), callback_data: `cmd_banks_all:${lang}` }]);
+    rows.push([{ text: (lang === "en" ? "📋 Show All Banks" : "📋 إظهار كافة البنوك"), callback_data: `cmd_banks_all:${lang}` }]);
   } else if (cmdType === "banks_all") {
     rows.push([{ text: (lang === "en" ? "« Top 5 Banks Only" : "« أعلى 5 بنوك فقط"), callback_data: `cmd_banks:${lang}` }]);
   }
@@ -1888,7 +1888,7 @@ function getMenuKeyboard(lang, originUrl, cfg) {
 
   const r1 = [];
   if (!cfg.hide_egx) r1.push({ text: (lang === "en" ? "🏛️ Institutional Flows (EGX)" : "🏛️ تعاملات المؤسسات (EGX)"), callback_data: `cmd_egx:${lang}` });
-  if (!cfg.hide_banks) r1.push({ text: (lang === "en" ? "🏦 25 Banks & CBE" : "🏦 أسعار البنوك والمركزي"), callback_data: `cmd_banks:${lang}` });
+  if (!cfg.hide_banks) r1.push({ text: (lang === "en" ? "🏦 Egyptian Banks & CBE" : "🏦 أسعار البنوك والمركزي"), callback_data: `cmd_banks:${lang}` });
   if (r1.length > 0) rows.push(r1);
 
   const r2 = [];
@@ -2128,10 +2128,10 @@ function getControlHtml(originUrl) {
       <div style="display: flex; flex-direction: column; gap: 8px;">
         <label style="font-size: 0.85rem; font-weight: 700;">عدد البنوك المعروضة في التقرير السريع:</label>
         <select id="banks_count">
-          <option value="5">أعلى 5 بنوك</option>
-          <option value="8" selected>أعلى 8 بنوك (افتراضي مثالي)</option>
+          <option value="5" selected>أعلى 5 بنوك (افتراضي)</option>
+          <option value="8">أعلى 8 بنوك</option>
           <option value="10">أعلى 10 بنوك</option>
-          <option value="25">عرض كافة الـ 25 بنكاً</option>
+          <option value="25">عرض كافة البنوك</option>
         </select>
       </div>
 
@@ -2179,7 +2179,7 @@ function getControlHtml(originUrl) {
         hide_commodities: !document.getElementById("btn_commodities").checked,
         hide_currencies: !document.getElementById("btn_currencies").checked,
         hide_report: !document.getElementById("btn_report").checked,
-        banks_count: parseInt(document.getElementById("banks_count").value) || 8,
+        banks_count: parseInt(document.getElementById("banks_count").value) || 5,
         show_cbe_in_banks: document.getElementById("show_cbe").checked,
         show_best_banks: document.getElementById("show_best").checked
       };
