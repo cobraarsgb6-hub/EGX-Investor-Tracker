@@ -1343,17 +1343,18 @@ function formatEgxHistoryReport(data, lang, curr) {
   // الأرشيف المعتمد يبدأ حصراً من بداية شهر أكتوبر 2026 فصاعداً
   const archive = rawArchive.filter(s => s && s.date && s.date >= "2026-10-01");
 
-  const fmtNet = (v, sessionUsd) => {
+  const fmtNet = (v, sessionRate, usdOverride) => {
     const n = Number(v) || 0;
-    const rate = Number(sessionUsd) || usdRate;
     const sign = n >= 0 ? "+" : "-";
     if (curr === "usd") {
-      const u = Math.round(n / rate);
+      const u = (usdOverride !== undefined && usdOverride !== null)
+        ? Number(usdOverride)
+        : Math.round(n / (Number(sessionRate) || usdRate));
       const uSign = u >= 0 ? "+" : "-";
-      return `${LRM}${uSign}$${Math.abs(u).toLocaleString("en-US")}${LRM}`;
+      return `${uSign}$${Math.abs(u).toLocaleString("en-US")}`;
     }
     const unit = lang === "en" ? " EGP" : " ج.م";
-    return `${LRM}${sign}${Math.abs(n).toLocaleString("en-US")}${LRM}${unit}`;
+    return `${sign}${Math.abs(n).toLocaleString("en-US")}${unit}`;
   };
 
   if (archive.length === 0) {
@@ -1372,29 +1373,27 @@ function formatEgxHistoryReport(data, lang, curr) {
   }
 
   const sessions = archive.slice(0, 7);
+  const { monthly } = calculatePeriodicTotals(archive, archive[0]?.date, usdRate);
+  const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
+  const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
+  const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
 
   if (lang === "en") {
     let txt = `📜 <b>EGX Daily Closings Archive</b>\n`
       + `<code>─────────────────────────────</code>\n`
       + `🕒 Query: <b>${updatedDateTime}</b>\n`
-      + `📅 Archive: <b>Last ${sessions.length} Sessions</b> • Currency: <b>${currBadge}</b>\n`
+      + `📅 Archive: <b>${monthLabelEn} (${sessions.length} Sessions)</b> • Currency: <b>${currBadge}</b>\n`
+      + `📈 <b>Monthly Foreigners Net:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code>\n`
       + `<code>─────────────────────────────</code>\n\n`;
 
     sessions.forEach((s, idx) => {
-      const e = s.egypt_net !== undefined ? s.egypt_net : (s.egypt_net_egp || 0);
-      const a = s.arab_net !== undefined ? s.arab_net : (s.arab_net_egp || 0);
       const f = s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0);
-      const tot = s.total_net !== undefined ? s.total_net : (s.total_net_egp || (Number(e) + Number(a) + Number(f)));
       const sUsd = Number(s.usd_rate || usdRate);
-
       const fDot = Number(f) >= 0 ? "🟢" : "🔴";
-      const totDot = Number(tot) >= 0 ? "🟢" : "🔴";
-
       const sessionTag = idx === 0 ? " <i>(Latest)</i>" : "";
 
       txt += `📅 <b>Session: <code>${s.date}</code></b>${sessionTag}\n`
-        + `   ▫️ Foreigners: ${fDot} <code>${fmtNet(f, sUsd)}</code>\n`
-        + `   ▪️ Total Net:   ${totDot} <code>${fmtNet(tot, sUsd)}</code>\n\n`;
+        + `   ▫️ Foreigners: ${fDot} <code>${fmtNet(f, sUsd)}</code>\n\n`;
     });
 
     return txt + `<code>─────────────────────────────</code>\n🔒 <i>Officially recorded historical closing flows from EGX Terminal.</i>`;
@@ -1403,24 +1402,18 @@ function formatEgxHistoryReport(data, lang, curr) {
   let txtAr = `📜 <b>أرشيف الإقفالات اليومية - البورصة المصرية</b>\n`
     + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
-    + `📅 السجل: <b>آخر ${sessions.length} جلسات</b> • العملة: <b>${currBadge}</b>\n`
+    + `📅 السجل: <b>${monthLabelAr} (${sessions.length} جلسات)</b> • العملة: <b>${currBadge}</b>\n`
+    + `📈 <b>صافي الأجانب التراكمي:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code>\n`
     + `<code>─────────────────────────────</code>\n\n`;
 
   sessions.forEach((s, idx) => {
-    const e = s.egypt_net !== undefined ? s.egypt_net : (s.egypt_net_egp || 0);
-    const a = s.arab_net !== undefined ? s.arab_net : (s.arab_net_egp || 0);
     const f = s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0);
-    const tot = s.total_net !== undefined ? s.total_net : (s.total_net_egp || (Number(e) + Number(a) + Number(f)));
     const sUsd = Number(s.usd_rate || usdRate);
-
     const fDot = Number(f) >= 0 ? "🟢" : "🔴";
-    const totDot = Number(tot) >= 0 ? "🟢" : "🔴";
-
     const sessionTag = idx === 0 ? " <i>(الأحدث)</i>" : "";
 
     txtAr += `📅 <b>جلسة: <code>${s.date}</code></b>${sessionTag}\n`
-      + `   ▫️ الأجانب:     ${fDot} <code>${fmtNet(f, sUsd)}</code>\n`
-      + `   ▪️ صافي المؤسسات: ${totDot} <code>${fmtNet(tot, sUsd)}</code>\n\n`;
+      + `   ▫️ صافي الأجانب: ${fDot} <code>${fmtNet(f, sUsd)}</code>\n\n`;
   });
 
   return txtAr + `<code>─────────────────────────────</code>\n🔒 <i>أرشيف رسمي موثق لجلسات الإقفال من شاشة البورصة المصرية.</i>`;
