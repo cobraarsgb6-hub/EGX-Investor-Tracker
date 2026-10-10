@@ -672,6 +672,68 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) var(--bg);
+    }
+
+    /* أشرطة التمرير وتحديد النصوص الاحترافية (Browser Surface Polish) */
+    ::selection {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+    body.theme-binance ::selection {
+      background-color: #f0b90b;
+      color: #181a20;
+    }
+    body.theme-matrix ::selection {
+      background-color: #10b981;
+      color: #020502;
+    }
+    body.theme-terminal ::selection {
+      background-color: #38bdf8;
+      color: #050811;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+    body.theme-binance ::-webkit-scrollbar-track {
+      background: #181a20;
+    }
+    body.theme-binance ::-webkit-scrollbar-thumb {
+      background: #2b313a;
+    }
+    body.theme-binance ::-webkit-scrollbar-thumb:hover {
+      background: #f0b90b;
+    }
+    body.theme-matrix ::-webkit-scrollbar-track {
+      background: #020502;
+    }
+    body.theme-matrix ::-webkit-scrollbar-thumb {
+      background: #143518;
+    }
+    body.theme-matrix ::-webkit-scrollbar-thumb:hover {
+      background: #10b981;
+    }
+    body.theme-terminal ::-webkit-scrollbar-track {
+      background: #050811;
+    }
+    body.theme-terminal ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+    }
+    body.theme-terminal ::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
     }
 
     /* تعزيز إمكانية الوصول والتنقل بلوحة المفاتيح وحساسية الحركة */
@@ -791,6 +853,9 @@
       color: #fff;
       background: rgba(255, 255, 255, 0.08);
     }
+    .pill-btn:active {
+      transform: scale(0.97);
+    }
     .pill-btn.active {
       background: #0369a1;
       color: #ffffff;
@@ -892,6 +957,9 @@
     .btn-amber:hover {
       background: #92400e;
       transform: translateY(-1px);
+    }
+    .btn-action:active {
+      transform: translateY(0);
     }
 
     /* ==========================================
@@ -1043,6 +1111,9 @@
     .filter-btn:hover {
       background: #e2e8f0;
       color: #0f172a;
+    }
+    .filter-btn:active {
+      transform: scale(0.97);
     }
     .filter-btn.active {
       background: #0369a1;
