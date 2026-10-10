@@ -1731,11 +1731,6 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     const totSign = totUsd >= 0 ? "+" : "-";
     totAmountEn = `${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}`;
     totAmountAr = `${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}`;
-
-    if (foBuy > 0 || foSell > 0) {
-      breakdownEn = `   ▫️ Buy: <code>$${Math.round(foBuy / usdRate).toLocaleString("en-US")}</code> • Sell: <code>$${Math.round(foSell / usdRate).toLocaleString("en-US")}</code>\n`;
-      breakdownAr = `   ▫️ مشتريات: <code>$${Math.round(foBuy / usdRate).toLocaleString("en-US")}</code> • مبيعات: <code>$${Math.round(foSell / usdRate).toLocaleString("en-US")}</code>\n`;
-    }
   } else {
     const foSign = foNet >= 0 ? "+" : "-";
     const absNet = Math.abs(foNet).toLocaleString("en-US");
@@ -1746,20 +1741,14 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     const absTot = Math.abs(totNet).toLocaleString("en-US");
     totAmountEn = `${totSign}${absTot} EGP`;
     totAmountAr = `${totSign}${absTot} ج.م`;
-
-    if (foBuy > 0 || foSell > 0) {
-      breakdownEn = `   ▫️ Buy: <code>${foBuy.toLocaleString("en-US")}</code> • Sell: <code>${foSell.toLocaleString("en-US")}</code>\n`;
-      breakdownAr = `   ▫️ مشتريات: <code>${foBuy.toLocaleString("en-US")}</code> • مبيعات: <code>${foSell.toLocaleString("en-US")}</code>\n`;
-    }
   }
 
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
   if (lang === "en") {
     let egxBlockEn = `🏛 <b>Foreign Institutions ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
-      + `   ▫️ Net Flow: <code>${foAmountEn}</code>\n`
-      + breakdownEn
-      + `\n📊 <b>Total Institutional Net ${mStatus.sessionTagEn}:</b> ${totStatusEn}\n`
+      + `   ▫️ Net Flow: <code>${foAmountEn}</code>\n\n`
+      + `📊 <b>Total Institutional Net ${mStatus.sessionTagEn}:</b> ${totStatusEn}\n`
       + `   ▪️ Net Flow: <code>${totAmountEn}</code>\n\n`;
 
     return `📊 <b>Executive Financial Summary</b>\n`
@@ -1783,9 +1772,8 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   }
 
   let egxBlockAr = `🏛 <b>المؤسسات الأجنبية ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
-    + `   ▫️ صافي السيولة: <code>${foAmountAr}</code>\n`
-    + breakdownAr
-    + `\n📊 <b>إجمالي المؤسسات ${mStatus.sessionTagAr}:</b> ${totStatusAr}\n`
+    + `   ▫️ صافي السيولة: <code>${foAmountAr}</code>\n\n`
+    + `📊 <b>إجمالي المؤسسات ${mStatus.sessionTagAr}:</b> ${totStatusAr}\n`
     + `   ▪️ صافي السيولة: <code>${totAmountAr}</code>\n\n`;
 
   return `📊 <b>التقرير المالي التنفيذي الشامل</b>\n`
