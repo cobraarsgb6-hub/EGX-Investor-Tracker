@@ -1843,12 +1843,21 @@
           </div>
           <div class="archive-filters-row" role="group" aria-label="تصفية أرشيف الجلسات حسب الفترة الزمنية">
             <button class="filter-btn active" id="btn-filter-all" onclick="filterArchiveByPeriod('all')" aria-pressed="true">جميع الجلسات</button>
-            <button class="filter-btn" id="btn-filter-daily" onclick="filterArchiveByPeriod('daily')" aria-pressed="false">أحدث جلسة</button>
             <button class="filter-btn" id="btn-filter-weekly" onclick="filterArchiveByPeriod('weekly')" aria-pressed="false">الأسبوع الحالي</button>
-            <button class="filter-btn" id="btn-filter-october" onclick="filterArchiveByPeriod('october')" aria-pressed="false">أكتوبر 2026</button>
-            <button class="filter-btn" id="btn-filter-september" onclick="filterArchiveByPeriod('september')" aria-pressed="false">سبتمبر 2026</button>
-            <button class="filter-btn" id="btn-filter-yearly" onclick="filterArchiveByPeriod('yearly')" aria-pressed="false">سنوي 2026 (YTD)</button>
+            <button class="filter-btn" id="btn-filter-prev_week" onclick="filterArchiveByPeriod('prev_week')" aria-pressed="false">الأسبوع الماضي</button>
+            <button class="filter-btn" id="btn-filter-monthly" onclick="filterArchiveByPeriod('monthly')" aria-pressed="false">الشهر الحالي</button>
+            <button class="filter-btn" id="btn-filter-prev_month" onclick="filterArchiveByPeriod('prev_month')" aria-pressed="false">الشهر الماضي</button>
+            <button class="filter-btn" id="btn-filter-custom" onclick="toggleCustomArchivePicker()" aria-pressed="false">مخصص 🎯</button>
           </div>
+        </div>
+
+        <div id="custom-archive-picker-bar" style="display: none; align-items: center; gap: 8px; margin-top: 10px; margin-bottom: 10px; flex-wrap: wrap; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);">
+          <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);"><i class="fa-solid fa-calendar-days"></i> نطاق مخصص:</span>
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">من:</label>
+          <input type="date" id="arch-start-date" style="background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-family: inherit; font-size: 0.8rem;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">إلى:</label>
+          <input type="date" id="arch-end-date" style="background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-family: inherit; font-size: 0.8rem;">
+          <button class="filter-btn active" style="padding: 4px 14px; cursor: pointer;" onclick="applyCustomArchiveFilter()">تطبيق</button>
         </div>
 
         <table>
@@ -2062,11 +2071,11 @@
         badge_net_sell: "صافي بيع (خروج سيولة)",
         archive_table_title: "أرشيف الجلسات السابقة وتراكمات السيولة:",
         filter_all: "جميع الجلسات",
-        filter_daily: "أحدث جلسة",
         filter_weekly: "الأسبوع الحالي",
-        filter_october: "أكتوبر 2026",
-        filter_september: "سبتمبر 2026",
-        filter_yearly: "سنوي 2026 (YTD)",
+        filter_prev_week: "الأسبوع الماضي",
+        filter_monthly: "الشهر الحالي",
+        filter_prev_month: "الشهر الماضي",
+        filter_custom: "مخصص 🎯",
         th_arch_date: "التاريخ",
         th_arch_segment: "القطاع",
         th_arch_usd: "سعر صرف الدولار (ج.م)",
@@ -2152,11 +2161,11 @@
         badge_net_sell: "Net Seller (Outflow)",
         archive_table_title: "Institutional Historical Archive & Cumulative Flows:",
         filter_all: "All Sessions",
-        filter_daily: "Latest Session",
-        filter_weekly: "Current Week",
-        filter_october: "October 2026",
-        filter_september: "September 2026",
-        filter_yearly: "YTD 2026",
+        filter_weekly: "This Week",
+        filter_prev_week: "Last Week",
+        filter_monthly: "This Month",
+        filter_prev_month: "Last Month",
+        filter_custom: "Custom 🎯",
         th_arch_date: "Date",
         th_arch_segment: "Market Segment",
         th_arch_usd: "USD/EGP Rate",
@@ -2433,11 +2442,11 @@
       // Archive
       setTxt("txt-archive-table-title", t.archive_table_title);
       setTxt("btn-filter-all", t.filter_all);
-      setTxt("btn-filter-daily", t.filter_daily);
       setTxt("btn-filter-weekly", t.filter_weekly);
-      setTxt("btn-filter-october", t.filter_october);
-      setTxt("btn-filter-september", t.filter_september);
-      setTxt("btn-filter-yearly", t.filter_yearly);
+      setTxt("btn-filter-prev_week", t.filter_prev_week);
+      setTxt("btn-filter-monthly", t.filter_monthly);
+      setTxt("btn-filter-prev_month", t.filter_prev_month);
+      setTxt("btn-filter-custom", t.filter_custom);
       setTxt("th-arch-date", t.th_arch_date);
       setTxt("th-arch-usd", t.th_arch_usd);
       setTxt("th-arch-fo-net", t.th_arch_fo_net);
@@ -2515,6 +2524,28 @@
       }
     }
 
+    var customArchStart = "";
+    var customArchEnd = "";
+
+    function toggleCustomArchivePicker() {
+      var bar = document.getElementById("custom-archive-picker-bar");
+      if (!bar) return;
+      var isHidden = (bar.style.display === "none" || bar.style.display === "");
+      bar.style.display = isHidden ? "flex" : "none";
+    }
+
+    function applyCustomArchiveFilter() {
+      var s = document.getElementById("arch-start-date").value;
+      var e = document.getElementById("arch-end-date").value;
+      if (!s || !e) {
+        alert(currentLang === "en" ? "Please select both start and end dates." : "يرجى تحديد تاريخي البداية والنهاية.");
+        return;
+      }
+      customArchStart = s <= e ? s : e;
+      customArchEnd = s <= e ? e : s;
+      filterArchiveByPeriod("custom");
+    }
+
     function filterArchiveByPeriod(period) {
       currentArchiveFilter = period;
       document.querySelectorAll(".archive-filters-row .filter-btn").forEach(function(b) { 
@@ -2525,6 +2556,10 @@
       if (activeBtn) {
         activeBtn.classList.add("active");
         activeBtn.setAttribute("aria-pressed", "true");
+      }
+      if (period !== "custom") {
+        var bar = document.getElementById("custom-archive-picker-bar");
+        if (bar) bar.style.display = "none";
       }
       if (globalData) renderArchiveTable(globalData);
     }
@@ -2954,35 +2989,53 @@
         rows.push(rawRows[i]);
       }
 
-      if (currentArchiveFilter === "daily") {
-        rows = rows.slice(0, 1);
-      } else if (currentArchiveFilter === "weekly") {
-        // فلترة دقيقة للأسبوع الحالي بدءاً من آخر أحد (الأسبوع التداولي المصري من الأحد للخميس)
+      if (currentArchiveFilter === "weekly") {
         var latestDateStr = rows.length > 0 ? formatArchiveDate(rows[0].date) : "2026-10-06";
-        var refD = new Date(latestDateStr);
-        var dayOfWeek = refD.getDay(); // 0 is Sunday
+        var refD = new Date(latestDateStr + "T12:00:00Z");
+        var dayOfWeek = refD.getUTCDay();
         var sundayD = new Date(refD);
-        sundayD.setDate(refD.getDate() - dayOfWeek);
+        sundayD.setUTCDate(refD.getUTCDate() - dayOfWeek);
         var sundayIso = sundayD.toISOString().substring(0, 10);
         rows = rows.filter(function(r) {
           var dStr = formatArchiveDate(r.date);
-          return dStr >= sundayIso;
+          return dStr >= sundayIso && dStr <= latestDateStr;
         });
-      } else if (currentArchiveFilter === "october") {
-        // جلسات شهر أكتوبر 2026 حصراً بدون أي تداخل مع سبتمبر
+      } else if (currentArchiveFilter === "prev_week") {
+        var latestDateStr = rows.length > 0 ? formatArchiveDate(rows[0].date) : "2026-10-06";
+        var refD = new Date(latestDateStr + "T12:00:00Z");
+        var dayOfWeek = refD.getUTCDay();
+        var sundayD = new Date(refD);
+        sundayD.setUTCDate(refD.getUTCDate() - dayOfWeek);
+        var prevSun = new Date(sundayD); prevSun.setUTCDate(sundayD.getUTCDate() - 7);
+        var prevThu = new Date(sundayD); prevThu.setUTCDate(sundayD.getUTCDate() - 3);
+        var pSunIso = prevSun.toISOString().substring(0, 10);
+        var pThuIso = prevThu.toISOString().substring(0, 10);
         rows = rows.filter(function(r) {
           var dStr = formatArchiveDate(r.date);
-          return dStr.indexOf("2026-10") === 0;
+          return dStr >= pSunIso && dStr <= pThuIso;
         });
-      } else if (currentArchiveFilter === "september") {
-        // جلسات شهر سبتمبر 2026 حصراً
+      } else if (currentArchiveFilter === "monthly") {
+        var latestDateStr = rows.length > 0 ? formatArchiveDate(rows[0].date) : "2026-10-06";
+        var currMo = latestDateStr.substring(0, 7);
         rows = rows.filter(function(r) {
           var dStr = formatArchiveDate(r.date);
-          return dStr.indexOf("2026-09") === 0;
+          return dStr.indexOf(currMo) === 0;
         });
-      } else if (currentArchiveFilter === "yearly") {
-        var currYear = new Date().getFullYear();
-        rows = rows.filter(function(r) { return String(r.date).indexOf(String(currYear)) >= 0; });
+      } else if (currentArchiveFilter === "prev_month") {
+        var latestDateStr = rows.length > 0 ? formatArchiveDate(rows[0].date) : "2026-10-06";
+        var refD = new Date(latestDateStr + "T12:00:00Z");
+        refD.setUTCDate(1);
+        refD.setUTCMonth(refD.getUTCMonth() - 1);
+        var prevMo = refD.toISOString().substring(0, 7);
+        rows = rows.filter(function(r) {
+          var dStr = formatArchiveDate(r.date);
+          return dStr.indexOf(prevMo) === 0;
+        });
+      } else if (currentArchiveFilter === "custom" && customArchStart && customArchEnd) {
+        rows = rows.filter(function(r) {
+          var dStr = formatArchiveDate(r.date);
+          return dStr >= customArchStart && dStr <= customArchEnd;
+        });
       }
       if (rows.length === 0) {
         var t = i18n[currentLang] || i18n.ar;

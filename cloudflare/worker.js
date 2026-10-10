@@ -916,12 +916,45 @@ async function handleTelegramUpdate(update, originUrl) {
       return;
     }
 
+    if (text.startsWith("hist_p:")) {
+      const parts = text.split(":");
+      const period = parts[1] || "curr_month";
+      const targetLang = parts[2] || lang;
+      const targetCurr = parts[3] || curr;
+      const data = await getCachedDashboardData();
+      const content = formatEgxPeriodicReport(data, period, targetLang, targetCurr);
+      const kb = getHistoryKeyboard(targetLang, targetCurr, period);
+      if (callbackId) {
+        try { await answerCallback(callbackId); } catch(e) {}
+      }
+      await reply(content, kb);
+      return;
+    }
+
+    if (text.startsWith("hist_curr:")) {
+      const parts = text.split(":");
+      const newCurr = parts[1] || "usd";
+      const period = parts[2] || "curr_month";
+      const targetLang = parts[3] || lang;
+      userCurrPreferences[chatId] = newCurr;
+      const data = await getCachedDashboardData();
+      const content = formatEgxPeriodicReport(data, period, targetLang, newCurr);
+      const kb = getHistoryKeyboard(targetLang, newCurr, period);
+      if (callbackId) {
+        const toast = targetLang === "en" ? `💱 Switched to ${newCurr.toUpperCase()}!` : `💱 تم التحويل إلى ${newCurr === "usd" ? "الدولار" : "الجنيه"}!`;
+        try { await answerCallback(callbackId, toast); } catch(e) {}
+      }
+      await reply(content, kb);
+      return;
+    }
+
     if (text === "cmd_egx") {
       const data = await getCachedDashboardData();
       await reply(formatEgxReport(data, lang, curr), getReportKeyboard("egx", lang, cfg, curr));
-    } else if (text === "cmd_history" || text === "cmd_archive") {
+    } else if (text === "cmd_history" || text === "cmd_archive" || text.startsWith("cmd_history:")) {
       const data = await getCachedDashboardData();
-      await reply(formatEgxHistoryReport(data, lang, curr), getReportKeyboard("history", lang, cfg, curr));
+      await reply(formatEgxPeriodicReport(data, "curr_month", lang, curr), getHistoryKeyboard(lang, curr, "curr_month"));
+      return;
     } else if (text === "cmd_banks") {
       const data = await getCachedDashboardData();
       await reply(formatBanksReport(data, lang, cfg), getReportKeyboard("banks", lang, cfg, curr));
@@ -964,7 +997,7 @@ async function handleTelegramUpdate(update, originUrl) {
   }
 
   const lower = text.toLowerCase();
-  const isHistory = lower === "/history" || lower === "/archive" || lower.includes("ارشيف") || lower.includes("أرشيف") || lower.includes("اقفال") || lower.includes("إقفال");
+  const isHistory = lower === "/history" || lower === "/archive" || lower.startsWith("/history ") || lower.startsWith("/archive ") || lower.includes("ارشيف") || lower.includes("أرشيف") || lower.includes("اقفال") || lower.includes("إقفال");
   const isCommodities = lower === "/commodities" || lower === "/gold" || lower === "/oil" || lower === "/crypto" ||
     lower.includes("ذهب") || lower.includes("نفط") || lower.includes("بنزين") || lower.includes("بترول") || lower.includes("كريبتو") || lower.includes("سلع");
   const isCurrencies = lower === "/currencies" || lower === "/rates" || lower.includes("عملات") || lower.includes("عملة") || lower.includes("اسعار الصرف");
@@ -981,8 +1014,29 @@ async function handleTelegramUpdate(update, originUrl) {
     const title = lang === "en" ? "🌍 <b>Select Your Preferred Timezone:</b>" : "🌍 <b>اختر منطقتك الزمنية المفضلة لعرض الأوقات:</b>";
     await sendTgMessage(chatId, title, getTimezoneKeyboard(lang, userTz));
   } else if (isHistory) {
+    const rawTokens = text.split(/\s+/).slice(1);
+    let period = "curr_month";
+    let customParam = null;
+    if (rawTokens.length >= 2 && /^\d{4}-\d{2}-\d{2}$/.test(rawTokens[0]) && /^\d{4}-\d{2}-\d{2}$/.test(rawTokens[1])) {
+      period = "custom";
+      customParam = {
+        start: rawTokens[0] <= rawTokens[1] ? rawTokens[0] : rawTokens[1],
+        end: rawTokens[0] <= rawTokens[1] ? rawTokens[1] : rawTokens[0]
+      };
+    } else if (rawTokens.length >= 1) {
+      const t0 = rawTokens[0].toLowerCase();
+      if (t0 === "week" || t0 === "w" || t0 === "curr_week" || t0.includes("اسبوع") || t0.includes("أسبوع")) period = "curr_week";
+      else if (t0 === "prev_week" || t0 === "last_week" || t0 === "lw" || t0.includes("ماضي")) period = "prev_week";
+      else if (t0 === "month" || t0 === "m" || t0 === "curr_month" || t0.includes("شهر")) period = "curr_month";
+      else if (t0 === "prev_month" || t0 === "last_month" || t0 === "lm") period = "prev_month";
+      else if (t0 === "3") period = "last3";
+      else if (t0 === "5") period = "last5";
+      else if (t0 === "10") period = "last10";
+    }
     const data = await getCachedDashboardData();
-    await sendTgMessage(chatId, formatEgxHistoryReport(data, lang, curr), getReportKeyboard("history", lang, cfg, curr));
+    const content = formatEgxPeriodicReport(data, period, lang, curr, customParam);
+    const kb = getHistoryKeyboard(lang, curr, period);
+    await sendTgMessage(chatId, content, kb);
   } else if (isCommodities) {
     const data = await getCachedDashboardData();
     await sendTgMessage(chatId, formatCommoditiesReport(data, lang, curr), getReportKeyboard("commodities", lang, cfg, curr));
@@ -1335,16 +1389,16 @@ function formatEgxReport(data, lang, curr) {
 }
 
 /**
- * 1.1 تقرير أرشيف الإقفالات اليومية للبورصة المصرية (EGX Historical Closings)
+ * 1.1 تقرير الأرشيف الزمني للبورصة المصرية (أسبوعي، شهري، فترات مخصصة)
  */
-function formatEgxHistoryReport(data, lang, curr) {
+function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
+  periodType = periodType || "curr_month";
   curr = curr || "usd";
   const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
   const updatedDateTime = getCairoFullDateTime(lang);
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
-  const rawArchive = (data.archive && Array.isArray(data.archive)) ? data.archive : [];
-  // الأرشيف المعتمد يبدأ حصراً من بداية شهر أكتوبر 2026 فصاعداً
-  const archive = rawArchive.filter(s => s && s.date && s.date >= "2026-10-01");
+  const rawArchive = (data.archive && Array.isArray(data.archive)) ? data.archive.slice() : [];
+  rawArchive.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   const fmtNet = (v, sessionRate, usdOverride) => {
     const n = Number(v) || 0;
@@ -1360,45 +1414,138 @@ function formatEgxHistoryReport(data, lang, curr) {
     return `${sign}${Math.abs(n).toLocaleString("en-US")}${unit}`;
   };
 
-  if (archive.length === 0) {
-    if (lang === "en") {
-      return `📜 <b>EGX Daily Closings Archive</b>\n`
-        + `━━━━━━━━━━━━━━━━━━\n`
-        + `🕒 Query: <b>${updatedDateTime}</b>\n\n`
-        + `⚠️ <i>No archived sessions recorded yet for October 2026.</i>\n`
-        + `Sessions will appear automatically upon market closing.`;
-    }
-    return `📜 <b>أرشيف الإقفالات اليومية - البورصة المصرية</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n`
-      + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n\n`
-      + `⚠️ <i>لا توجد جلسات إقفال مؤرشفة لشهر أكتوبر حتى الآن.</i>\n`
-      + `سيتم تسجيل الجلسات تلقائياً فور اعتماد الإقفال اليومي.`;
+  const latestDate = rawArchive[0]?.date || new Date().toISOString().split("T")[0];
+  const currSunday = getWeekSunday(latestDate);
+  const cSun = new Date(currSunday + "T12:00:00Z");
+  const pSun = new Date(cSun); pSun.setUTCDate(cSun.getUTCDate() - 7);
+  const pThu = new Date(cSun); pThu.setUTCDate(cSun.getUTCDate() - 3);
+  const pSunStr = pSun.toISOString().split("T")[0];
+  const pThuStr = pThu.toISOString().split("T")[0];
+
+  const currMo = latestDate.slice(0, 7);
+  const dMo = new Date(latestDate + "T12:00:00Z");
+  dMo.setUTCDate(1);
+  dMo.setUTCMonth(dMo.getUTCMonth() - 1);
+  const prevMo = dMo.toISOString().slice(0, 7);
+
+  let sessions = [];
+  let titleEn = "";
+  let titleAr = "";
+  let periodDescEn = "";
+  let periodDescAr = "";
+  let isDefaultMonth = false;
+
+  if (periodType === "curr_week") {
+    sessions = rawArchive.filter(s => s && s.date && s.date >= currSunday && s.date <= latestDate);
+    titleEn = "EGX Closings - Current Week";
+    titleAr = "إقفال البورصة - الأسبوع الحالي";
+    periodDescEn = `Current Week [${currSunday} ➔ ${latestDate}]`;
+    periodDescAr = `الأسبوع الحالي [${currSunday} ➔ ${latestDate}]`;
+  } else if (periodType === "prev_week") {
+    sessions = rawArchive.filter(s => s && s.date && s.date >= pSunStr && s.date <= pThuStr);
+    titleEn = "EGX Closings - Previous Week";
+    titleAr = "إقفال البورصة - الأسبوع الماضي";
+    periodDescEn = `Previous Week [${pSunStr} ➔ ${pThuStr}]`;
+    periodDescAr = `الأسبوع الماضي [${pSunStr} ➔ ${pThuStr}]`;
+  } else if (periodType === "prev_month") {
+    sessions = rawArchive.filter(s => s && s.date && s.date.startsWith(prevMo));
+    const pmNameEn = getMonthLabel(prevMo, "en");
+    const pmNameAr = getMonthLabel(prevMo, "ar");
+    titleEn = `EGX Closings - Previous Month (${pmNameEn})`;
+    titleAr = `إقفال البورصة - الشهر الماضي (${pmNameAr})`;
+    periodDescEn = `${pmNameEn} [${prevMo}]`;
+    periodDescAr = `${pmNameAr} [${prevMo}]`;
+  } else if (periodType === "last3") {
+    sessions = rawArchive.slice(0, 3);
+    titleEn = "EGX Closings - Last 3 Sessions";
+    titleAr = "إقفال البورصة - آخر 3 جلسات";
+    const range = sessions.length > 0 ? `[${sessions[sessions.length - 1].date} ➔ ${sessions[0].date}]` : "";
+    periodDescEn = `Last 3 Sessions ${range}`;
+    periodDescAr = `آخر 3 جلسات ${range}`;
+  } else if (periodType === "last5") {
+    sessions = rawArchive.slice(0, 5);
+    titleEn = "EGX Closings - Last 5 Sessions";
+    titleAr = "إقفال البورصة - آخر 5 جلسات";
+    const range = sessions.length > 0 ? `[${sessions[sessions.length - 1].date} ➔ ${sessions[0].date}]` : "";
+    periodDescEn = `Last 5 Sessions ${range}`;
+    periodDescAr = `آخر 5 جلسات ${range}`;
+  } else if (periodType === "last10") {
+    sessions = rawArchive.slice(0, 10);
+    titleEn = "EGX Closings - Last 10 Sessions";
+    titleAr = "إقفال البورصة - آخر 10 جلسات";
+    const range = sessions.length > 0 ? `[${sessions[sessions.length - 1].date} ➔ ${sessions[0].date}]` : "";
+    periodDescEn = `Last 10 Sessions ${range}`;
+    periodDescAr = `آخر 10 جلسات ${range}`;
+  } else if (periodType === "custom" && customParam && customParam.start && customParam.end) {
+    sessions = rawArchive.filter(s => s && s.date && s.date >= customParam.start && s.date <= customParam.end);
+    titleEn = "EGX Closings - Custom Period";
+    titleAr = "إقفال البورصة - فترة مخصصة";
+    periodDescEn = `Custom [${customParam.start} ➔ ${customParam.end}]`;
+    periodDescAr = `فترة مخصصة [${customParam.start} ➔ ${customParam.end}]`;
+  } else {
+    // default: curr_month
+    isDefaultMonth = true;
+    sessions = rawArchive.filter(s => s && s.date && s.date.startsWith(currMo));
+    if (sessions.length === 0) sessions = rawArchive.slice(0, 25);
+    const mNameEn = getMonthLabel(currMo, "en");
+    const mNameAr = getMonthLabel(currMo, "ar");
+    titleEn = "EGX Daily Closings Archive";
+    titleAr = "أرشيف الإقفالات اليومية - البورصة المصرية";
+    periodDescEn = `${mNameEn} (${sessions.length} Sessions)`;
+    periodDescAr = `${mNameAr} (${sessions.length} جلسات)`;
   }
 
-  const { weekly, monthly } = calculatePeriodicTotals(archive, archive[0]?.date, usdRate);
-  const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
-  const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
+  if (sessions.length === 0) {
+    if (lang === "en") {
+      return `📜 <b>${titleEn}</b>\n`
+        + `<code>─────────────────────────────</code>\n`
+        + `🕒 Query: <b>${updatedDateTime}</b>\n`
+        + `📅 Period: <b>${periodDescEn}</b>\n\n`
+        + `⚠️ <i>No archived sessions found in the database for this specific period.</i>`;
+    }
+    return `📜 <b>${titleAr}</b>\n`
+      + `<code>─────────────────────────────</code>\n`
+      + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
+      + `📅 الفترة: <b>${periodDescAr}</b>\n\n`
+      + `⚠️ <i>لا توجد جلسات مؤرشفة مسجلة في قاعدة البيانات لهذه الفترة المحددة.</i>`;
+  }
+
+  // حساب إجمالي تدفقات الأجانب للفترة المحددة
+  let totalFoNet = 0;
+  let totalFoUsd = 0;
+  sessions.forEach(s => {
+    const fo = Number(s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0));
+    const sUsd = Number(s.usd_rate || usdRate);
+    totalFoNet += fo;
+    totalFoUsd += Math.round(fo / sUsd);
+  });
+  const foDot = totalFoNet >= 0 ? "🟢" : "🔴";
+
+  // حساب التراكمي الأسبوعي والشهري الرسمي (لحالة الشهر الحالي)
+  const { weekly, monthly } = calculatePeriodicTotals(rawArchive, latestDate, usdRate);
   const wFoDot = weekly.foNet >= 0 ? "🟢" : "🔴";
   const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
 
-  // عرض جلسات الشهر الحالي بالكامل (تصل إلى 22-25 جلسة شهرياً وتتسع بكل أريحية في رسالة التيليجرام)
-  const currentMonthSessions = archive.filter(s => s && s.date && s.date.startsWith(monthly.monthPrefix));
-  const sessions = currentMonthSessions.length > 0 ? currentMonthSessions.slice(0, 25) : archive.slice(0, 15);
-
   if (lang === "en") {
-    let txt = `📜 <b>EGX Daily Closings Archive</b>\n`
+    let txt = `📜 <b>${titleEn}</b>\n`
       + `<code>─────────────────────────────</code>\n`
       + `🕒 Query: <b>${updatedDateTime}</b>\n`
-      + `📅 Archive: <b>${monthLabelEn} (${sessions.length} Sessions)</b> • Currency: <b>${currBadge}</b>\n`
-      + `🗓 <b>Weekly Foreigners Net:</b> ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code> <i>(${weekly.count} sessions)</i>\n`
-      + `📈 <b>Monthly Foreigners Net:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code> <i>(${monthly.count} sessions)</i>\n`
-      + `<code>─────────────────────────────</code>\n\n`;
+      + `📅 Period: <b>${periodDescEn}</b> • Currency: <b>${currBadge}</b>\n`;
+
+    if (isDefaultMonth) {
+      txt += `🗓 <b>Weekly Foreigners Net:</b> ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code> <i>(${weekly.count} sessions)</i>\n`
+        + `📈 <b>Monthly Foreigners Net:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code> <i>(${monthly.count} sessions)</i>\n`;
+    } else {
+      txt += `🎯 <b>Foreigners Period Net:</b> ${foDot} <code>${fmtNet(totalFoNet, usdRate, totalFoUsd)}</code> <i>(${sessions.length} sessions)</i>\n`;
+    }
+
+    txt += `<code>─────────────────────────────</code>\n\n`;
 
     sessions.forEach((s, idx) => {
       const f = s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0);
       const sUsd = Number(s.usd_rate || usdRate);
       const fDot = Number(f) >= 0 ? "🟢" : "🔴";
-      const sessionTag = idx === 0 ? " <i>(Latest)</i>" : "";
+      const sessionTag = (idx === 0 && s.date === latestDate) ? " <i>(Latest)</i>" : "";
 
       txt += `📅 <b>Session: <code>${s.date}</code></b>${sessionTag}\n`
         + `   ▫️ Foreigners: ${fDot} <code>${fmtNet(f, sUsd)}</code>\n\n`;
@@ -1407,25 +1554,82 @@ function formatEgxHistoryReport(data, lang, curr) {
     return txt + `<code>─────────────────────────────</code>\n🔒 <i>Officially recorded historical closing flows from EGX Terminal.</i>`;
   }
 
-  let txtAr = `📜 <b>أرشيف الإقفالات اليومية - البورصة المصرية</b>\n`
+  // Arabic
+  let txtAr = `📜 <b>${titleAr}</b>\n`
     + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
-    + `📅 السجل: <b>${monthLabelAr} (${sessions.length} جلسات)</b> • العملة: <b>${currBadge}</b>\n`
-    + `🗓 <b>الإقفال الأسبوعي لصافي الأجانب:</b> ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code> <i>(${weekly.count} جلسات)</i>\n`
-    + `📈 <b>صافي الأجانب التراكمي الشهري:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code> <i>(${monthly.count} جلسات)</i>\n`
-    + `<code>─────────────────────────────</code>\n\n`;
+    + `📅 الفترة: <b>${periodDescAr}</b> • العملة: <b>${currBadge}</b>\n`;
+
+  if (isDefaultMonth) {
+    txtAr += `🗓 <b>الإقفال الأسبوعي لصافي الأجانب:</b> ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code> <i>(${weekly.count} جلسات)</i>\n`
+      + `📈 <b>صافي الأجانب التراكمي الشهري:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code> <i>(${monthly.count} جلسات)</i>\n`;
+  } else {
+    txtAr += `🎯 <b>صافي تعاملات الأجانب للفترة:</b> ${foDot} <code>${fmtNet(totalFoNet, usdRate, totalFoUsd)}</code> <i>(${sessions.length} جلسات)</i>\n`;
+  }
+
+  txtAr += `<code>─────────────────────────────</code>\n\n`;
 
   sessions.forEach((s, idx) => {
     const f = s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0);
     const sUsd = Number(s.usd_rate || usdRate);
     const fDot = Number(f) >= 0 ? "🟢" : "🔴";
-    const sessionTag = idx === 0 ? " <i>(الأحدث)</i>" : "";
+    const sessionTag = (idx === 0 && s.date === latestDate) ? " <i>(الأحدث)</i>" : "";
 
     txtAr += `📅 <b>جلسة: <code>${s.date}</code></b>${sessionTag}\n`
       + `   ▫️ صافي الأجانب: ${fDot} <code>${fmtNet(f, sUsd)}</code>\n\n`;
   });
 
   return txtAr + `<code>─────────────────────────────</code>\n🔒 <i>أرشيف رسمي موثق لجلسات الإقفال من شاشة البورصة المصرية.</i>`;
+}
+
+function formatEgxHistoryReport(data, lang, curr) {
+  return formatEgxPeriodicReport(data, "curr_month", lang, curr);
+}
+
+function getHistoryKeyboard(lang, curr, activePeriod) {
+  activePeriod = activePeriod || "curr_month";
+  const nextCurr = curr === "usd" ? "egp" : "usd";
+  const currToggleText = curr === "usd" ? (lang === "en" ? "💱 Switch to EGP" : "💱 التحويل إلى الجنيه") : (lang === "en" ? "💵 Switch to USD" : "💵 التحويل إلى الدولار");
+  const langToggleText = lang === "en" ? "🌐 اللغة العربية" : "🌐 English";
+  const langToggleData = lang === "en" ? "cmd_lang_ar" : "cmd_lang_en";
+  const menuText = lang === "en" ? "« Main Menu" : "« القائمة الرئيسية";
+
+  const mark = (p, label) => (activePeriod === p ? `• ${label} •` : label);
+
+  const rows = [];
+
+  // الصف الأول: الأسبوع الحالي والأسبوع الماضي
+  rows.push([
+    { text: mark("curr_week", lang === "en" ? "🗓 This Week" : "🗓 الأسبوع الحالي"), callback_data: `hist_p:curr_week:${lang}:${curr}` },
+    { text: mark("prev_week", lang === "en" ? "⏮ Last Week" : "⏮ الأسبوع الماضي"), callback_data: `hist_p:prev_week:${lang}:${curr}` }
+  ]);
+
+  // الصف الثاني: الشهر الحالي والشهر الماضي
+  rows.push([
+    { text: mark("curr_month", lang === "en" ? "📈 This Month" : "📈 الشهر الحالي"), callback_data: `hist_p:curr_month:${lang}:${curr}` },
+    { text: mark("prev_month", lang === "en" ? "⏮ Last Month" : "⏮ الشهر الماضي"), callback_data: `hist_p:prev_month:${lang}:${curr}` }
+  ]);
+
+  // الصف الثالث: فترات مخصصة سريعة
+  rows.push([
+    { text: mark("last3", lang === "en" ? "🎯 Last 3" : "🎯 آخر 3"), callback_data: `hist_p:last3:${lang}:${curr}` },
+    { text: mark("last5", lang === "en" ? "🎯 Last 5" : "🎯 آخر 5"), callback_data: `hist_p:last5:${lang}:${curr}` },
+    { text: mark("last10", lang === "en" ? "🎯 Last 10" : "🎯 آخر 10"), callback_data: `hist_p:last10:${lang}:${curr}` }
+  ]);
+
+  // الصف الرابع: تحويل العملة والعودة للبورصة الحية
+  rows.push([
+    { text: (lang === "en" ? "🏛 Back to Live" : "🏛 البورصة اللحظية"), callback_data: `cmd_egx:${lang}:${curr}` },
+    { text: currToggleText, callback_data: `hist_curr:${nextCurr}:${activePeriod}:${lang}` }
+  ]);
+
+  // الصف الخامس: القائمة الرئيسية واللغة
+  rows.push([
+    { text: menuText, callback_data: `cmd_menu:${lang}:${curr}` },
+    { text: langToggleText, callback_data: langToggleData }
+  ]);
+
+  return { inline_keyboard: rows };
 }
 
 /**
@@ -1871,8 +2075,7 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
     rows.push([{ text: (lang === "en" ? "📊 Closings Archive" : "📊 أرشيف الإقفال"), callback_data: `cmd_history:${lang}:${curr}` }]);
     rows.push([{ text: currToggleText, callback_data: currToggleData }]);
   } else if (cmdType === "history" || cmdType === "archive") {
-    rows.push([{ text: (lang === "en" ? "🏛 Back to Live Flows" : "🏛 العودة للبورصة اللحظية"), callback_data: `cmd_egx:${lang}:${curr}` }]);
-    rows.push([{ text: currToggleText, callback_data: currToggleData }]);
+    return getHistoryKeyboard(lang, curr, "curr_month");
   } else if (cmdType === "banks") {
     rows.push([{ text: (lang === "en" ? "📋 Show All Banks" : "📋 إظهار كافة البنوك"), callback_data: `cmd_banks_all:${lang}` }]);
   } else if (cmdType === "banks_all") {
