@@ -1251,34 +1251,17 @@ function formatEgxReport(data, lang, curr) {
   const arFoNet = arNet + foNet;
   const mStatus = getEgxMarketStatus(sessionDate);
 
-  // حساب التراكمي الشهري (يبدأ حصراً من 01 أكتوبر 2026 ويقفل شهرياً)
-  const { monthly } = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
-  const mArFoNet = monthly.arNet + monthly.foNet;
-  const mArFoUsd = monthly.arUsd + monthly.foUsd;
-  const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
-  const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
-
-  const fmtNet = (v, usdOverride) => {
+  const fmtNet = (v) => {
     const n = Number(v) || 0;
     const sign = n >= 0 ? "+" : "-";
     const absVal = Math.abs(n).toLocaleString("en-US");
     if (curr === "usd") {
-      const u = (usdOverride !== undefined && usdOverride !== null) ? Number(usdOverride) : Math.round(n / usdRate);
+      const u = Math.round(n / usdRate);
       const uSign = u >= 0 ? "+" : "-";
       return `${uSign}$${Math.abs(u).toLocaleString("en-US")}`;
     }
     const unit = lang === "en" ? " EGP" : " ج.م";
     return `${sign}${absVal}${unit}`;
-  };
-
-  const fmtVal = (v) => {
-    const n = Number(v) || 0;
-    if (curr === "usd") {
-      const u = Math.round(n / usdRate);
-      return "$" + Math.abs(u).toLocaleString("en-US");
-    }
-    const unit = lang === "en" ? " EGP" : " ج.م";
-    return Math.abs(n).toLocaleString("en-US") + unit;
   };
 
   const updatedDateTime = getCairoFullDateTime(lang);
@@ -1293,13 +1276,6 @@ function formatEgxReport(data, lang, curr) {
   const arDot = arNet >= 0 ? "🟢" : "🔴";
   const foDot = foNet >= 0 ? "🟢" : "🔴";
   const arFoDot = arFoNet >= 0 ? "🟢" : "🔴";
-  const totDot = totNet >= 0 ? "🟢" : "🔴";
-
-  const mEgDot = monthly.egNet >= 0 ? "🟢" : "🔴";
-  const mArDot = monthly.arNet >= 0 ? "🟢" : "🔴";
-  const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
-  const mArFoDot = mArFoNet >= 0 ? "🟢" : "🔴";
-  const mTotDot = monthly.totNet >= 0 ? "🟢" : "🔴";
 
   if (lang === "en") {
     let txt = `🏛 <b>Egyptian Stock Exchange (EGX) Flows</b>\n`
@@ -1311,17 +1287,11 @@ function formatEgxReport(data, lang, curr) {
       + snapshotLineEn
       + `<code>─────────────────────────────</code>\n\n`;
 
-    // 1. Session Breakdown
     txt += `🏛 <b>Institutional Flows ${mStatus.sessionTagEn}:</b>\n`
       + `   ▫️ Egyptians Net:     ${egDot} <code>${fmtNet(egNet)}</code>\n`
       + `   ▫️ Arabs Net:         ${arDot} <code>${fmtNet(arNet)}</code>\n`
       + `   ▫️ Foreigners Net:    ${foDot} <code>${fmtNet(foNet)}</code>\n`
-      + `   ▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
-
-    // 2. Monthly Accumulative Breakdown (Foreigners & Arabs strictly from Oct 1st)
-    txt += `📈 <b>Accumulative Flows (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
-      + `   ▫️ Foreigners Net:    ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
-      + `   ▫️ Arabs Net:         ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`;
+      + `   ▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n`;
 
     return txt + `\n<code>─────────────────────────────</code>\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
@@ -1336,17 +1306,11 @@ function formatEgxReport(data, lang, curr) {
     + snapshotLineAr
     + `<code>─────────────────────────────</code>\n\n`;
 
-  // 1. تفصيل الجلسة (صافي المصريين - صافي العرب - صافي الأجانب - صافي العرب + الأجانب)
   txtAr += `🏛 <b>تدفقات الجلسة ${mStatus.sessionTagAr}:</b>\n`
     + `   ▫️ صافي المصريين:      ${egDot} <code>${fmtNet(egNet)}</code>\n`
     + `   ▫️ صافي العرب:         ${arDot} <code>${fmtNet(arNet)}</code>\n`
     + `   ▫️ صافي الأجانب:       ${foDot} <code>${fmtNet(foNet)}</code>\n`
-    + `   ▪️ صافي العرب + الأجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
-
-  // 2. الرصيد التراكمي الشهري (الأجانب والعرب منفصلين فقط)
-  txtAr += `📈 <b>الرصيد التراكمي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
-    + `   ▫️ صافي الأجانب:       ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
-    + `   ▫️ صافي العرب:         ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`;
+    + `   ▪️ صافي العرب + الأجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n`;
 
   return txtAr + `\n<code>─────────────────────────────</code>\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
