@@ -1375,18 +1375,23 @@ function formatEgxHistoryReport(data, lang, curr) {
       + `سيتم تسجيل الجلسات تلقائياً فور اعتماد الإقفال اليومي.`;
   }
 
-  const sessions = archive.slice(0, 7);
-  const { monthly } = calculatePeriodicTotals(archive, archive[0]?.date, usdRate);
+  const { weekly, monthly } = calculatePeriodicTotals(archive, archive[0]?.date, usdRate);
   const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
   const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
+  const wFoDot = weekly.foNet >= 0 ? "🟢" : "🔴";
   const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
+
+  // عرض جلسات الشهر الحالي بالكامل (تصل إلى 22-25 جلسة شهرياً وتتسع بكل أريحية في رسالة التيليجرام)
+  const currentMonthSessions = archive.filter(s => s && s.date && s.date.startsWith(monthly.monthPrefix));
+  const sessions = currentMonthSessions.length > 0 ? currentMonthSessions.slice(0, 25) : archive.slice(0, 15);
 
   if (lang === "en") {
     let txt = `📜 <b>EGX Daily Closings Archive</b>\n`
       + `<code>─────────────────────────────</code>\n`
       + `🕒 Query: <b>${updatedDateTime}</b>\n`
       + `📅 Archive: <b>${monthLabelEn} (${sessions.length} Sessions)</b> • Currency: <b>${currBadge}</b>\n`
-      + `📈 <b>Monthly Foreigners Net:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code>\n`
+      + `🗓 <b>Weekly Foreigners Net:</b> ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code> <i>(${weekly.count} sessions)</i>\n`
+      + `📈 <b>Monthly Foreigners Net:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code> <i>(${monthly.count} sessions)</i>\n`
       + `<code>─────────────────────────────</code>\n\n`;
 
     sessions.forEach((s, idx) => {
@@ -1406,7 +1411,8 @@ function formatEgxHistoryReport(data, lang, curr) {
     + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
     + `📅 السجل: <b>${monthLabelAr} (${sessions.length} جلسات)</b> • العملة: <b>${currBadge}</b>\n`
-    + `📈 <b>صافي الأجانب التراكمي:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code>\n`
+    + `🗓 <b>الإقفال الأسبوعي لصافي الأجانب:</b> ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code> <i>(${weekly.count} جلسات)</i>\n`
+    + `📈 <b>صافي الأجانب التراكمي الشهري:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code> <i>(${monthly.count} جلسات)</i>\n`
     + `<code>─────────────────────────────</code>\n\n`;
 
   sessions.forEach((s, idx) => {
