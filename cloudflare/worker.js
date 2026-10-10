@@ -1315,20 +1315,14 @@ function formatEgxReport(data, lang, curr) {
     txt += `🏛 <b>Institutional Flows ${mStatus.sessionTagEn}:</b>\n`
       + `   ▫️ Egyptians Net:     ${egDot} <code>${fmtNet(egNet)}</code>\n`
       + `   ▫️ Arabs Net:         ${arDot} <code>${fmtNet(arNet)}</code>\n`
-      + `   ▫️ Foreigners Net:    ${foDot} <code>${fmtNet(foNet)}</code>\n`;
-    if (foBuy > 0 || foSell > 0) {
-      txt += `      ↳ Buy: <code>${fmtVal(foBuy)}</code> • Sell: <code>${fmtVal(foSell)}</code>\n`;
-    }
-    txt += `   ▫️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n`
-      + `   ▪️ Total Net:         ${totDot} <code>${fmtNet(totNet)}</code>\n\n`;
+      + `   ▫️ Foreigners Net:    ${foDot} <code>${fmtNet(foNet)}</code>\n`
+      + `   ▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code> <i>(Ref)</i>\n\n`;
 
-    // 2. Monthly Accumulative Breakdown
+    // 2. Monthly Accumulative Breakdown (Foreigners & Arabs strictly from Oct 1st)
     txt += `📈 <b>Accumulative Flows (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
-      + `   ▫️ Egyptians Net:     ${mEgDot} <code>${fmtNet(monthly.egNet, monthly.egUsd)}</code>\n`
-      + `   ▫️ Arabs Net:         ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`
       + `   ▫️ Foreigners Net:    ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
-      + `   ▫️ Arabs + Foreigners: ${mArFoDot} <code>${fmtNet(mArFoNet, mArFoUsd)}</code>\n`
-      + `   ▪️ Total Net:         ${mTotDot} <code>${fmtNet(monthly.totNet, monthly.totUsd)}</code>\n`;
+      + `   ▫️ Arabs Net:         ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`
+      + `   ▪️ Arabs + Foreigners: ${mArFoDot} <code>${fmtNet(mArFoNet, mArFoUsd)}</code> <i>(Ref)</i>\n`;
 
     return txt + `\n<code>─────────────────────────────</code>\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
@@ -1343,24 +1337,18 @@ function formatEgxReport(data, lang, curr) {
     + snapshotLineAr
     + `<code>─────────────────────────────</code>\n\n`;
 
-  // 1. تفصيل الجلسة
+  // 1. تفصيل الجلسة (صافي المصريين - صافي العرب - صافي الأجانب - صافي العرب + الأجانب كمرجع)
   txtAr += `🏛 <b>تدفقات الجلسة ${mStatus.sessionTagAr}:</b>\n`
     + `   ▫️ صافي المصريين:      ${egDot} <code>${fmtNet(egNet)}</code>\n`
     + `   ▫️ صافي العرب:         ${arDot} <code>${fmtNet(arNet)}</code>\n`
-    + `   ▫️ صافي الأجانب:       ${foDot} <code>${fmtNet(foNet)}</code>\n`;
-  if (foBuy > 0 || foSell > 0) {
-    txtAr += `      ↳ مشتريات: <code>${fmtVal(foBuy)}</code> • مبيعات: <code>${fmtVal(foSell)}</code>\n`;
-  }
-  txtAr += `   ▫️ صافي العرب + الأجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n`
-    + `   ▪️ إجمالي المؤسسات:     ${totDot} <code>${fmtNet(totNet)}</code>\n\n`;
+    + `   ▫️ صافي الأجانب:       ${foDot} <code>${fmtNet(foNet)}</code>\n`
+    + `   ▪️ صافي العرب + الأجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code> <i>(مرجع)</i>\n\n`;
 
-  // 2. الرصيد التراكمي الشهري
+  // 2. الرصيد التراكمي الشهري (تركيز أساسي على الأجانب والعرب منفصلين)
   txtAr += `📈 <b>الرصيد التراكمي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
-    + `   ▫️ صافي المصريين:      ${mEgDot} <code>${fmtNet(monthly.egNet, monthly.egUsd)}</code>\n`
-    + `   ▫️ صافي العرب:         ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`
     + `   ▫️ صافي الأجانب:       ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
-    + `   ▫️ صافي العرب + الأجانب: ${mArFoDot} <code>${fmtNet(mArFoNet, mArFoUsd)}</code>\n`
-    + `   ▪️ إجمالي المؤسسات:     ${mTotDot} <code>${fmtNet(monthly.totNet, monthly.totUsd)}</code>\n`;
+    + `   ▫️ صافي العرب:         ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`
+    + `   ▪️ صافي العرب + الأجانب: ${mArFoDot} <code>${fmtNet(mArFoNet, mArFoUsd)}</code> <i>(مرجع)</i>\n`;
 
   return txtAr + `\n<code>─────────────────────────────</code>\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
