@@ -231,16 +231,47 @@ function getEgxSnapshotTime(data, lang) {
 }
 
 function getBankSnapshotTime(data, lang) {
-  let raw = "";
+  let timeStr = "";
+  let dateStr = "";
+
+  const tsCandidate = data?.timestamp || (data?.banks && data.banks[0]?.created_at) || data?.cbe_updated_at || "";
+  if (tsCandidate) {
+    const s = String(tsCandidate).trim();
+    const dMatch = s.match(/(\d{4}-\d{2}-\d{2})/);
+    if (dMatch) dateStr = dMatch[1];
+  }
+
   if (data?.banks && data.banks[0]?.updated_at) {
     const m = String(data.banks[0].updated_at).match(/(\d{1,2}):(\d{2})/);
-    if (m) raw = `${m[1].padStart(2, "0")}:${m[2]}`;
+    if (m) timeStr = `${m[1].padStart(2, "0")}:${m[2]}`;
   }
-  if (!raw && data?.cbe_updated_at) {
+  if (!timeStr && data?.cbe_updated_at) {
     const m = String(data.cbe_updated_at).match(/(\d{1,2}):(\d{2})/);
-    if (m) raw = `${m[1].padStart(2, "0")}:${m[2]}`;
+    if (m) timeStr = `${m[1].padStart(2, "0")}:${m[2]}`;
   }
-  return raw ? format12HourTime(raw, lang) : "";
+  if (!timeStr && tsCandidate) {
+    const m = String(tsCandidate).match(/(\d{1,2}):(\d{2})/);
+    if (m) timeStr = `${m[1].padStart(2, "0")}:${m[2]}`;
+  }
+
+  const formattedTime = timeStr ? format12HourTime(timeStr, lang) : "";
+  if (!formattedTime) return "";
+
+  if (dateStr) {
+    try {
+      const parts = dateStr.split("-");
+      const d = new Date(Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 12, 0, 0));
+      const weekdayEn = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Cairo", weekday: "short" }).format(d);
+      const weekdayAr = new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", weekday: "long" }).format(d);
+
+      if (lang === "en") {
+        return `${weekdayEn}, ${dateStr} • ${formattedTime}`;
+      }
+      return `${weekdayAr} ${dateStr} • ${formattedTime}`;
+    } catch(e) {}
+  }
+
+  return formattedTime;
 }
 
 function fmtSigned(v) {
@@ -1033,6 +1064,7 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
   const list = (archive && Array.isArray(archive)) ? archive : [];
   list.forEach(s => {
     if (!s || !s.date) return;
+    if (s.date < "2026-10-01") return; // التراكمي يبدأ حصراً من 1 أكتوبر 2026
     const rate = Number(s.usd_rate || defaultUsdRate || 52.29);
     const eg = Number(s.egypt_net !== undefined ? s.egypt_net : (s.egypt_net_egp || 0));
     const ar = Number(s.arab_net !== undefined ? s.arab_net : (s.arab_net_egp || 0));
@@ -1141,18 +1173,47 @@ function getEgxMarketStatus(sessionDate) {
 }
 
 /**
+ * تحويل بادئة الشهر (YYYY-MM) إلى اسم الشهر باللغة المحددة
+ */
+function getMonthLabel(monthPrefix, lang) {
+  if (!monthPrefix) return "";
+  const parts = monthPrefix.split("-");
+  const year = parts[0];
+  const mNum = parseInt(parts[1], 10);
+  const allMonthsAr = [
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+  ];
+  const allMonthsEn = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  if (lang === "en") {
+    return `${allMonthsEn[mNum - 1] || parts[1]} ${year}`;
+  }
+  return `${allMonthsAr[mNum - 1] || parts[1]} ${year}`;
+}
+
+/**
  * 1. تقرير البورصة المصرية (EGX)
- * تركيز حصري على صافي الأجانب وصافي المؤسسات الإجمالي (يومي وأسبوعي وشهري)
+ * تفصيل شامل لفئات المستثمرين: المصريين، العرب، الأجانب، العرب+الأجانب، وإجمالي المؤسسات
+ * مع الرصيد التراكمي الشهري بدءاً من أول أكتوبر 2026 وإقفاله شهرياً
  */
 function formatEgxReport(data, lang, curr) {
   curr = curr || "usd";
   const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 52.29);
-  let foNet = 0, totNet = 0;
+  let egNet = 0, arNet = 0, foNet = 0, totNet = 0;
   let foBuy = 0, foSell = 0;
   let sessionDate = new Date().toISOString().split("T")[0];
 
   if (data.archive && data.archive.length > 0) {
     const r = data.archive[0];
+    const e = r.egypt_net !== undefined ? r.egypt_net : r.egypt_net_egp;
+    if (e !== undefined && e !== null && e !== "") egNet = Number(e);
+
+    const a = r.arab_net !== undefined ? r.arab_net : r.arab_net_egp;
+    if (a !== undefined && a !== null && a !== "") arNet = Number(a);
+
     const f = r.foreign_net !== undefined ? r.foreign_net : r.foreign_net_egp;
     if (f !== undefined && f !== null && f !== "") foNet = Number(f);
 
@@ -1163,35 +1224,46 @@ function formatEgxReport(data, lang, curr) {
     if (t !== undefined && t !== null && t !== "") {
       totNet = Number(t);
     } else {
-      const e = Number(r.egypt_net !== undefined ? r.egypt_net : (r.egypt_net_egp || 0));
-      const a = Number(r.arab_net !== undefined ? r.arab_net : (r.arab_net_egp || 0));
-      totNet = e + a + foNet;
+      totNet = egNet + arNet + foNet;
     }
 
     sessionDate = r.date || sessionDate;
   }
 
-  // مسار احتياطي من egx_institutions إذا كانت المشتريات/المبيعات صفر
-  if (foBuy === 0 && data.egx_institutions?.tables?.institutions) {
+  // مسار احتياطي من egx_institutions إذا كانت المشتريات/المبيعات صفر أو جلسة حية
+  if (data.egx_institutions?.tables?.institutions) {
     const inst = data.egx_institutions.tables.institutions;
     inst.forEach(item => {
       const t = item.type || "";
       if (t.includes("أجانب") || t.includes("اجانب") || t.toLowerCase().includes("foreign")) {
-        foBuy = Number(item.buy_egp || 0);
-        foSell = Number(item.sell_egp || 0);
-        foNet = Number(item.net_egp || foNet);
+        if (foBuy === 0) foBuy = Number(item.buy_egp || 0);
+        if (foSell === 0) foSell = Number(item.sell_egp || 0);
+        if (foNet === 0) foNet = Number(item.net_egp || 0);
+      } else if (t.includes("عرب") || t.toLowerCase().includes("arab")) {
+        if (arNet === 0) arNet = Number(item.net_egp || 0);
+      } else if (t.includes("مصر") || t.toLowerCase().includes("egypt")) {
+        if (egNet === 0) egNet = Number(item.net_egp || 0);
       }
     });
+    if (totNet === 0) totNet = egNet + arNet + foNet;
   }
 
+  const arFoNet = arNet + foNet;
   const mStatus = getEgxMarketStatus(sessionDate);
 
-  const fmtNet = (v) => {
+  // حساب التراكمي الشهري (يبدأ حصراً من 01 أكتوبر 2026 ويقفل شهرياً)
+  const { monthly } = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
+  const mArFoNet = monthly.arNet + monthly.foNet;
+  const mArFoUsd = monthly.arUsd + monthly.foUsd;
+  const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
+  const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
+
+  const fmtNet = (v, usdOverride) => {
     const n = Number(v) || 0;
     const sign = n >= 0 ? "+" : "-";
     const absVal = Math.abs(n).toLocaleString("en-US");
     if (curr === "usd") {
-      const u = Math.round(n / usdRate);
+      const u = (usdOverride !== undefined && usdOverride !== null) ? Number(usdOverride) : Math.round(n / usdRate);
       const uSign = u >= 0 ? "+" : "-";
       return `${uSign}$${Math.abs(u).toLocaleString("en-US")}`;
     }
@@ -1215,12 +1287,19 @@ function formatEgxReport(data, lang, curr) {
   const snapshotLineEn = (snapshotTime && mStatus.isTodaySession) ? `📸 Snapshot: <b>[${snapshotTime}]</b>\n` : "";
   const snapshotLineAr = (snapshotTime && mStatus.isTodaySession) ? `📸 لقطة الجلسة: <b>[${snapshotTime}]</b>\n` : "";
 
-  const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
-  const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-  const totStatusEn = totNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
-  const totStatusAr = totNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
+
+  const egDot = egNet >= 0 ? "🟢" : "🔴";
+  const arDot = arNet >= 0 ? "🟢" : "🔴";
+  const foDot = foNet >= 0 ? "🟢" : "🔴";
+  const arFoDot = arFoNet >= 0 ? "🟢" : "🔴";
+  const totDot = totNet >= 0 ? "🟢" : "🔴";
+
+  const mEgDot = monthly.egNet >= 0 ? "🟢" : "🔴";
+  const mArDot = monthly.arNet >= 0 ? "🟢" : "🔴";
+  const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
+  const mArFoDot = mArFoNet >= 0 ? "🟢" : "🔴";
+  const mTotDot = monthly.totNet >= 0 ? "🟢" : "🔴";
 
   if (lang === "en") {
     let txt = `🏛 <b>Egyptian Stock Exchange (EGX) Flows</b>\n`
@@ -1232,19 +1311,30 @@ function formatEgxReport(data, lang, curr) {
       + snapshotLineEn
       + `<code>─────────────────────────────</code>\n\n`;
 
-    txt += `🏛 <b>Foreign Institutions ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
-      + `   ▫️ Net Flow: <code>${fmtNet(foNet)}</code>\n`;
+    // 1. Session Breakdown
+    txt += `🏛 <b>Institutional Flows ${mStatus.sessionTagEn}:</b>\n`
+      + `   ▫️ Egyptians Net:     ${egDot} <code>${fmtNet(egNet)}</code>\n`
+      + `   ▫️ Arabs Net:         ${arDot} <code>${fmtNet(arNet)}</code>\n`
+      + `   ▫️ Foreigners Net:    ${foDot} <code>${fmtNet(foNet)}</code>\n`;
     if (foBuy > 0 || foSell > 0) {
-      txt += `   ▫️ Buy: <code>${fmtVal(foBuy)}</code> • Sell: <code>${fmtVal(foSell)}</code>\n`;
+      txt += `      ↳ Buy: <code>${fmtVal(foBuy)}</code> • Sell: <code>${fmtVal(foSell)}</code>\n`;
     }
+    txt += `   ▫️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n`
+      + `   ▪️ Total Net:         ${totDot} <code>${fmtNet(totNet)}</code>\n\n`;
 
-    txt += `\n📊 <b>Total Institutional Net ${mStatus.sessionTagEn}:</b> ${totStatusEn}\n`
-      + `   ▪️ Net Flow: <code>${fmtNet(totNet)}</code>\n`;
+    // 2. Monthly Accumulative Breakdown
+    txt += `📈 <b>Accumulative Flows (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
+      + `   ▫️ Egyptians Net:     ${mEgDot} <code>${fmtNet(monthly.egNet, monthly.egUsd)}</code>\n`
+      + `   ▫️ Arabs Net:         ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`
+      + `   ▫️ Foreigners Net:    ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
+      + `   ▫️ Arabs + Foreigners: ${mArFoDot} <code>${fmtNet(mArFoNet, mArFoUsd)}</code>\n`
+      + `   ▪️ Total Net:         ${mTotDot} <code>${fmtNet(monthly.totNet, monthly.totUsd)}</code>\n`;
 
     return txt + `\n<code>─────────────────────────────</code>\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
 
-  let txtAr = `🏛 <b>تدفقات المؤسسات بالبورصة المصرية (EGX)</b>\n`
+  // Arabic
+  let txtAr = `🏛 <b>تدفقات المستثمرين بالبورصة المصرية (EGX)</b>\n`
     + `<code>─────────────────────────────</code>\n`
     + `📅 <b>الجلسة:</b> <code>${sessionDate}</code>${mStatus.isTodaySession ? "" : " <i>(آخر جلسة معتمدة)</i>"}\n`
     + `🕒 <b>وقت الاستعلام:</b> <b>${updatedDateTime}</b>\n`
@@ -1253,14 +1343,24 @@ function formatEgxReport(data, lang, curr) {
     + snapshotLineAr
     + `<code>─────────────────────────────</code>\n\n`;
 
-  txtAr += `🏛 <b>المؤسسات الأجنبية ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
-    + `   ▫️ صافي السيولة: <code>${fmtNet(foNet)}</code>\n`;
+  // 1. تفصيل الجلسة
+  txtAr += `🏛 <b>تدفقات الجلسة ${mStatus.sessionTagAr}:</b>\n`
+    + `   ▫️ صافي المصريين:      ${egDot} <code>${fmtNet(egNet)}</code>\n`
+    + `   ▫️ صافي العرب:         ${arDot} <code>${fmtNet(arNet)}</code>\n`
+    + `   ▫️ صافي الأجانب:       ${foDot} <code>${fmtNet(foNet)}</code>\n`;
   if (foBuy > 0 || foSell > 0) {
-    txtAr += `   ▫️ مشتريات: <code>${fmtVal(foBuy)}</code> • مبيعات: <code>${fmtVal(foSell)}</code>\n`;
+    txtAr += `      ↳ مشتريات: <code>${fmtVal(foBuy)}</code> • مبيعات: <code>${fmtVal(foSell)}</code>\n`;
   }
+  txtAr += `   ▫️ صافي العرب + الأجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n`
+    + `   ▪️ إجمالي المؤسسات:     ${totDot} <code>${fmtNet(totNet)}</code>\n\n`;
 
-  txtAr += `\n📊 <b>إجمالي صافي المؤسسات ${mStatus.sessionTagAr}:</b> ${totStatusAr}\n`
-    + `   ▪️ صافي السيولة: <code>${fmtNet(totNet)}</code>\n`;
+  // 2. الرصيد التراكمي الشهري
+  txtAr += `📈 <b>الرصيد التراكمي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
+    + `   ▫️ صافي المصريين:      ${mEgDot} <code>${fmtNet(monthly.egNet, monthly.egUsd)}</code>\n`
+    + `   ▫️ صافي العرب:         ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`
+    + `   ▫️ صافي الأجانب:       ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
+    + `   ▫️ صافي العرب + الأجانب: ${mArFoDot} <code>${fmtNet(mArFoNet, mArFoUsd)}</code>\n`
+    + `   ▪️ إجمالي المؤسسات:     ${mTotDot} <code>${fmtNet(monthly.totNet, monthly.totUsd)}</code>\n`;
 
   return txtAr + `\n<code>─────────────────────────────</code>\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
@@ -1457,11 +1557,11 @@ function formatCurrenciesReport(data, lang) {
   if (isTradingHours && topBank && Number(topBank.buy) > 0) {
     const topRate = Number(topBank.buy);
     const bankNameEn = getBankName(topBank.bank, "en");
-    usdLineEn = `▫️ <b>US Dollar [USD]:</b> <b>${fmt(topRate, 2)} EGP</b> — <i>Top Buy: ${bankNameEn}</i>\n`;
-    usdLineAr = `▫️ <b>الدولار الأمريكي [USD]:</b> <b>${fmt(topRate, 2)} ج.م</b> — <i>أعلى شراء: ${topBank.bank}</i>\n`;
+    usdLineEn = `▫️ <b>US Dollar [USD]:</b> <code>${fmt(topRate, 2)} EGP</code> — <i>Top Buy: ${bankNameEn}</i>\n`;
+    usdLineAr = `▫️ <b>الدولار الأمريكي [USD]:</b> <code>${fmt(topRate, 2)} ج.م</code> — <i>أعلى شراء: ${topBank.bank}</i>\n`;
   } else {
-    usdLineEn = `▫️ <b>US Dollar [USD]:</b> <b>${fmt(cbeBuy, 2)} EGP</b> — <i>CBE Close</i>\n`;
-    usdLineAr = `▫️ <b>الدولار الأمريكي [USD]:</b> <b>${fmt(cbeBuy, 2)} ج.م</b> — <i>إقفال البنك المركزي</i>\n`;
+    usdLineEn = `▫️ <b>US Dollar [USD]:</b> <code>${fmt(cbeBuy, 2)} EGP</code> — <i>CBE Close</i>\n`;
+    usdLineAr = `▫️ <b>الدولار الأمريكي [USD]:</b> <code>${fmt(cbeBuy, 2)} ج.م</code> — <i>إقفال البنك المركزي</i>\n`;
   }
 
   if (lang === "en") {
@@ -1645,8 +1745,8 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   const bNameEn = getBankName(topBank.bank, "en");
   const bTime = formatCleanTime(topBank.updated_at, lang);
   const cbeTime = formatCleanTime(data.cbe_updated_at || extractTimeFromTimestamp(data.timestamp), lang);
-  const bankPeakLineEn = `\n  ▫️ <b>Top Buy Bank:</b> ${bNameEn} • Buy <b>${Number(topBank.buy).toFixed(2)}</b> • Sell <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
-  const bankPeakLineAr = `\n  ▫️ <b>أعلى بنك شراء:</b> ${topBank.bank} • شراء <b>${Number(topBank.buy).toFixed(2)}</b> • بيع <b>${Number(topBank.sell).toFixed(2)}</b> [${bTime}]`;
+  const bankPeakLineEn = `\n   ▫️ <b>Top Buy Bank:</b> ${bNameEn} • Buy <code>${Number(topBank.buy).toFixed(2)}</code> • Sell <code>${Number(topBank.sell).toFixed(2)}</code> [${bTime}]`;
+  const bankPeakLineAr = `\n   ▫️ <b>أعلى بنك شراء:</b> ${topBank.bank} • شراء <code>${Number(topBank.buy).toFixed(2)}</code> • بيع <code>${Number(topBank.sell).toFixed(2)}</code> [${bTime}]`;
 
   // السلع المطلوبة: ذهب عيار 24، أونصة الذهب، أونصة الفضة، وخام برنت
   const comms = data.live_commodities || [];
@@ -1657,6 +1757,8 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
 
   const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
   const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const totStatusEn = totNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
+  const totStatusAr = totNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
 
   // تنسيق الأرقام حسب العملة المختارة لتدفقات البورصة
   let foAmountEn = "", foAmountAr = "";
@@ -1672,13 +1774,13 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   if (curr === "usd") {
     const foUsd = Math.round(foNet / usdRate);
     const foSign = foUsd >= 0 ? "+" : "-";
-    foAmountEn = `${LRM}${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}${LRM}`;
-    foAmountAr = `${LRM}${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}${LRM}`;
+    foAmountEn = `${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}`;
+    foAmountAr = `${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}`;
 
     const totUsd = Math.round(totNet / usdRate);
     const totSign = totUsd >= 0 ? "+" : "-";
-    totAmountEn = `${LRM}${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}${LRM}`;
-    totAmountAr = `${LRM}${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}${LRM}`;
+    totAmountEn = `${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}`;
+    totAmountAr = `${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}`;
 
     if (foBuy > 0 || foSell > 0) {
       breakdownEn = `   ▫️ Buy: <code>$${Math.round(foBuy / usdRate).toLocaleString("en-US")}</code> • Sell: <code>$${Math.round(foSell / usdRate).toLocaleString("en-US")}</code>\n`;
@@ -1702,13 +1804,13 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   }
 
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
-  const getDot = (v) => v >= 0 ? "🟢" : "🔴";
 
   if (lang === "en") {
     let egxBlockEn = `🏛 <b>Foreign Institutions ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
       + `   ▫️ Net Flow: <code>${foAmountEn}</code>\n`
       + breakdownEn
-      + `\n📊 <b>Total Institutional Net ${mStatus.sessionTagEn}:</b> ${getDot(totNet)} <code>${totAmountEn}</code>\n\n`;
+      + `\n📊 <b>Total Institutional Net ${mStatus.sessionTagEn}:</b> ${totStatusEn}\n`
+      + `   ▪️ Net Flow: <code>${totAmountEn}</code>\n\n`;
 
     return `📊 <b>Executive Financial Summary</b>\n`
       + `<code>─────────────────────────────</code>\n`
@@ -1733,7 +1835,8 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   let egxBlockAr = `🏛 <b>المؤسسات الأجنبية ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
     + `   ▫️ صافي السيولة: <code>${foAmountAr}</code>\n`
     + breakdownAr
-    + `\n📊 <b>إجمالي المؤسسات ${mStatus.sessionTagAr}:</b> ${getDot(totNet)} <code>${totAmountAr}</code>\n\n`;
+    + `\n📊 <b>إجمالي المؤسسات ${mStatus.sessionTagAr}:</b> ${totStatusAr}\n`
+    + `   ▪️ صافي السيولة: <code>${totAmountAr}</code>\n\n`;
 
   return `📊 <b>التقرير المالي التنفيذي الشامل</b>\n`
     + `<code>─────────────────────────────</code>\n`
