@@ -40,11 +40,11 @@ let userCurrPreferences = {};
 let userTzPreferences = {};
 
 const TIMEZONES = {
-  "cairo": { id: "Africa/Cairo", name_ar: "القاهرة (مصر)", name_en: "Cairo (Egypt)", flag: "🇪🇬" },
-  "riyadh": { id: "Asia/Riyadh", name_ar: "الرياض (السعودية)", name_en: "Riyadh (KSA)", flag: "🇸🇦" },
-  "dubai": { id: "Asia/Dubai", name_ar: "دبي (الإمارات)", name_en: "Dubai (UAE)", flag: "🇦🇪" },
-  "london": { id: "Europe/London", name_ar: "لندن (جرينتش)", name_en: "London (GMT/BST)", flag: "🇬🇧" },
-  "newyork": { id: "America/New_York", name_ar: "نيويورك (وول ستريت)", name_en: "New York (EST/EDT)", flag: "🇺🇸" }
+  "cairo": { id: "Africa/Cairo", name_ar: "القاهرة", name_en: "Cairo", flag: "🇪🇬" },
+  "riyadh": { id: "Asia/Riyadh", name_ar: "الرياض", name_en: "Riyadh", flag: "🇸🇦" },
+  "dubai": { id: "Asia/Dubai", name_ar: "دبي", name_en: "Dubai", flag: "🇦🇪" },
+  "london": { id: "Europe/London", name_ar: "لندن", name_en: "London", flag: "🇬🇧" },
+  "newyork": { id: "America/New_York", name_ar: "نيويورك", name_en: "New York", flag: "🇺🇸" }
 };
 
 const BANK_EN_NAMES = {
@@ -172,7 +172,7 @@ function getCairoFullDateTime(lang, tzKey) {
     return `${dateStr} • ${timeEn} (${tzLabelEn})`;
   }
   const dateStrAr = d.toLocaleDateString("ar-EG-u-nu-latn", { timeZone: tzId, weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  return `${dateStrAr} • ${timeAr} بتوقيت ${tzLabelAr}`;
+  return `${dateStrAr} • ${timeAr} (بتوقيت ${tzLabelAr})`;
 }
 
 function extractTimeFromTimestamp(ts) {
@@ -1096,32 +1096,32 @@ function getEgxMarketStatus(sessionDate) {
 
   if (isWeekend) {
     isHolidayOrClosed = true;
-    statusEn = "🏖️ Market Status: Weekend Holiday (No Trading Today • 0 Flow)";
-    statusAr = "🏖️ حالة السوق: عطلة نهاية الأسبوع (لا يوجد تداول اليوم • صفر تداول)";
-    sessionTagEn = `(Last Session: ${sessionDate})`;
+    statusEn = "🏖️ Status: Weekend Holiday (Market Closed • 0 Flow)";
+    statusAr = "🏖️ الحالة: عطلة نهاية الأسبوع (السوق مغلق • صفر تداول)";
+    sessionTagEn = `(Last Audited: ${sessionDate})`;
     sessionTagAr = `(آخر جلسة معتمدة: ${sessionDate})`;
   } else if (!isTodaySession) {
     // أيام العمل (الأحد - الخميس) ولكن تاريخ آخر جلسة ليس اليوم
     if (h < 10) {
-      statusEn = "⏳ Market Status: Pre-Market (Opens at 10:00 AM Cairo)";
-      statusAr = "⏳ حالة السوق: قبل افتتاح الجلسة (تبدأ 10:00 صباحاً بتوقيت القاهرة)";
+      statusEn = "⏳ Status: Pre-Market (Opens at 10:00 AM Cairo)";
+      statusAr = "⏳ الحالة: قبل افتتاح الجلسة (تبدأ 10:00 ص بتوقيت القاهرة)";
       sessionTagEn = `(Previous Close: ${sessionDate})`;
       sessionTagAr = `(إقفال الجلسة السابقة: ${sessionDate})`;
     } else {
       isHolidayOrClosed = true;
-      statusEn = "🏖️ Market Status: Official Holiday / Market Closed (No Trading Today • 0 Flow)";
-      statusAr = "🏖️ حالة السوق: عطلة رسمية بالبورصة (لا يوجد تداول اليوم • صفر تداول)";
-      sessionTagEn = `(Last Session: ${sessionDate})`;
+      statusEn = "🏖️ Status: Official Holiday (Market Closed • 0 Flow)";
+      statusAr = "🏖️ الحالة: عطلة رسمية بالبورصة (السوق مغلق • صفر تداول)";
+      sessionTagEn = `(Last Audited: ${sessionDate})`;
       sessionTagAr = `(آخر جلسة معتمدة: ${sessionDate})`;
     }
   } else {
     // جلسة مسجلة لتاريخ اليوم
     if (h < 15) {
-      statusEn = "🟢 Market Status: Trading Session Active (Live)";
-      statusAr = "🟢 حالة السوق: جلسة التداول نشطة (مباشر)";
+      statusEn = "🟢 Status: Trading Session Active (Live)";
+      statusAr = "🟢 الحالة: جلسة التداول نشطة (مباشر)";
     } else {
-      statusEn = "🔒 Market Status: Session Closed (Official Daily Close)";
-      statusAr = "🔒 حالة السوق: تم إقفال الجلسة (الإقفال الرسمي اليومي)";
+      statusEn = "🔒 Status: Session Closed (Official Daily Close)";
+      statusAr = "🔒 الحالة: تم إقفال الجلسة (الإقفال الرسمي اليومي)";
     }
     sessionTagEn = "(Today)";
     sessionTagAr = "(اليوم)";
@@ -1193,10 +1193,10 @@ function formatEgxReport(data, lang, curr) {
     if (curr === "usd") {
       const u = Math.round(n / usdRate);
       const uSign = u >= 0 ? "+" : "-";
-      return `${LRM}${uSign}$${Math.abs(u).toLocaleString("en-US")}${LRM}`;
+      return `${uSign}$${Math.abs(u).toLocaleString("en-US")}`;
     }
     const unit = lang === "en" ? " EGP" : " ج.م";
-    return `${LRM}${sign}${absVal}${LRM}${unit}`;
+    return `${sign}${absVal}${unit}`;
   };
 
   const fmtVal = (v) => {
@@ -1205,14 +1205,15 @@ function formatEgxReport(data, lang, curr) {
       const u = Math.round(n / usdRate);
       return "$" + Math.abs(u).toLocaleString("en-US");
     }
-    return Math.abs(n).toLocaleString("en-US");
+    const unit = lang === "en" ? " EGP" : " ج.م";
+    return Math.abs(n).toLocaleString("en-US") + unit;
   };
 
   const updatedDateTime = getCairoFullDateTime(lang);
   const snapshotTime = getEgxSnapshotTime(data, lang);
 
-  const snapshotLineEn = (snapshotTime && mStatus.isTodaySession) ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
-  const snapshotLineAr = (snapshotTime && mStatus.isTodaySession) ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
+  const snapshotLineEn = (snapshotTime && mStatus.isTodaySession) ? `📸 Snapshot: <b>[${snapshotTime}]</b>\n` : "";
+  const snapshotLineAr = (snapshotTime && mStatus.isTodaySession) ? `📸 لقطة الجلسة: <b>[${snapshotTime}]</b>\n` : "";
 
   const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
   const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
@@ -1222,56 +1223,46 @@ function formatEgxReport(data, lang, curr) {
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
   if (lang === "en") {
-    let txt = `🏛️ <b>Egyptian Stock Exchange (EGX) Flows</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n`
-      + `🕒 Query: <b>${updatedDateTime}</b>\n`
+    let txt = `🏛 <b>Egyptian Stock Exchange (EGX) Flows</b>\n`
+      + `<code>─────────────────────────────</code>\n`
+      + `📅 <b>Session:</b> <code>${sessionDate}</code>${mStatus.isTodaySession ? "" : " <i>(Last Audited)</i>"}\n`
+      + `🕒 <b>Query:</b> <b>${updatedDateTime}</b>\n`
+      + `💰 <b>Currency:</b> <b>${currBadge}</b>\n`
       + `${mStatus.statusEn}\n`
       + snapshotLineEn
-      + `📅 Session: <b>${sessionDate}</b>${mStatus.isTodaySession ? "" : " <i>(Last Audited)</i>"} • Currency: <b>${currBadge}</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n\n`;
+      + `<code>─────────────────────────────</code>\n\n`;
 
-    if (mStatus.isHolidayOrClosed) {
-      txt += `🏖️ <b>Today's Trading:</b> <b>No Session (0.00 Flow • Market Closed)</b>\n\n`;
-    } else if (!mStatus.isTodaySession) {
-      txt += `⏳ <b>Today's Session:</b> <i>Pre-Market (Opens at 10:00 AM Cairo)</i>\n\n`;
-    }
-
-    txt += `🏛️ <b>Foreign Institutions ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
-      + `   ▫️ Net Flow: <b>${fmtNet(foNet)}</b>\n`;
+    txt += `🏛 <b>Foreign Institutions ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
+      + `   ▫️ Net Flow: <code>${fmtNet(foNet)}</code>\n`;
     if (foBuy > 0 || foSell > 0) {
-      txt += `   ▫️ Buy: <b>${fmtVal(foBuy)}</b> • Sell: <b>${fmtVal(foSell)}</b>\n`;
+      txt += `   ▫️ Buy: <code>${fmtVal(foBuy)}</code> • Sell: <code>${fmtVal(foSell)}</code>\n`;
     }
 
     txt += `\n📊 <b>Total Institutional Net ${mStatus.sessionTagEn}:</b> ${totStatusEn}\n`
-      + `   ▪️ Net Flow: <b>${fmtNet(totNet)}</b>\n`;
+      + `   ▪️ Net Flow: <code>${fmtNet(totNet)}</code>\n`;
 
-    return txt + `\n🔒 <i>Officially audited from EGX Terminal.</i>`;
+    return txt + `\n<code>─────────────────────────────</code>\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
 
-  let txtAr = `🏛️ <b>صافي تعاملات البورصة المصرية (EGX)</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n`
-    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
+  let txtAr = `🏛 <b>تدفقات المؤسسات بالبورصة المصرية (EGX)</b>\n`
+    + `<code>─────────────────────────────</code>\n`
+    + `📅 <b>الجلسة:</b> <code>${sessionDate}</code>${mStatus.isTodaySession ? "" : " <i>(آخر جلسة معتمدة)</i>"}\n`
+    + `🕒 <b>وقت الاستعلام:</b> <b>${updatedDateTime}</b>\n`
+    + `💰 <b>العملة:</b> <b>${currBadge}</b>\n`
     + `${mStatus.statusAr}\n`
     + snapshotLineAr
-    + `📅 تاريخ الجلسة: <b>${sessionDate}</b>${mStatus.isTodaySession ? "" : " <i>(آخر جلسة معتمدة)</i>"} • العملة: <b>${currBadge}</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n\n`;
+    + `<code>─────────────────────────────</code>\n\n`;
 
-  if (mStatus.isHolidayOrClosed) {
-    txtAr += `🏖️ <b>تداول اليوم:</b> <b>لا يوجد تداول (عطلة • صفر تداول)</b>\n\n`;
-  } else if (!mStatus.isTodaySession) {
-    txtAr += `⏳ <b>جلسة اليوم:</b> <i>قبل الافتتاح (تبدأ 10:00 ص بتوقيت القاهرة)</i>\n\n`;
-  }
-
-  txtAr += `🏛️ <b>المؤسسات الأجنبية ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
-    + `   ▫️ صافي السيولة: <b>${fmtNet(foNet)}</b>\n`;
+  txtAr += `🏛 <b>المؤسسات الأجنبية ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
+    + `   ▫️ صافي السيولة: <code>${fmtNet(foNet)}</code>\n`;
   if (foBuy > 0 || foSell > 0) {
-    txtAr += `   ▫️ مشتريات: <b>${fmtVal(foBuy)}</b> • مبيعات: <b>${fmtVal(foSell)}</b>\n`;
+    txtAr += `   ▫️ مشتريات: <code>${fmtVal(foBuy)}</code> • مبيعات: <code>${fmtVal(foSell)}</code>\n`;
   }
 
   txtAr += `\n📊 <b>إجمالي صافي المؤسسات ${mStatus.sessionTagAr}:</b> ${totStatusAr}\n`
-    + `   ▪️ صافي السيولة: <b>${fmtNet(totNet)}</b>\n`;
+    + `   ▪️ صافي السيولة: <code>${fmtNet(totNet)}</code>\n`;
 
-  return txtAr + `\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
+  return txtAr + `\n<code>─────────────────────────────</code>\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
 
 /**
@@ -1318,10 +1309,10 @@ function formatEgxHistoryReport(data, lang, curr) {
 
   if (lang === "en") {
     let txt = `📜 <b>EGX Daily Closings Archive</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n`
+      + `<code>─────────────────────────────</code>\n`
       + `🕒 Query: <b>${updatedDateTime}</b>\n`
       + `📅 Archive: <b>Last ${sessions.length} Sessions</b> • Currency: <b>${currBadge}</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n\n`;
+      + `<code>─────────────────────────────</code>\n\n`;
 
     sessions.forEach((s, idx) => {
       const e = s.egypt_net !== undefined ? s.egypt_net : (s.egypt_net_egp || 0);
@@ -1335,19 +1326,19 @@ function formatEgxHistoryReport(data, lang, curr) {
 
       const sessionTag = idx === 0 ? " <i>(Latest)</i>" : "";
 
-      txt += `📅 <b>Session: ${s.date}</b>${sessionTag}\n`
-        + `   ▫️ Foreigners: ${fDot} <b>${fmtNet(f, sUsd)}</b>\n`
-        + `   ▪️ <b>Total Net:</b> ${totDot} <b>${fmtNet(tot, sUsd)}</b>\n\n`;
+      txt += `📅 <b>Session: <code>${s.date}</code></b>${sessionTag}\n`
+        + `   ▫️ Foreigners: ${fDot} <code>${fmtNet(f, sUsd)}</code>\n`
+        + `   ▪️ Total Net:   ${totDot} <code>${fmtNet(tot, sUsd)}</code>\n\n`;
     });
 
-    return txt + `🔒 <i>Officially recorded historical closing flows from EGX Terminal.</i>`;
+    return txt + `<code>─────────────────────────────</code>\n🔒 <i>Officially recorded historical closing flows from EGX Terminal.</i>`;
   }
 
   let txtAr = `📜 <b>أرشيف الإقفالات اليومية - البورصة المصرية</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n`
+    + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
     + `📅 السجل: <b>آخر ${sessions.length} جلسات</b> • العملة: <b>${currBadge}</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n\n`;
+    + `<code>─────────────────────────────</code>\n\n`;
 
   sessions.forEach((s, idx) => {
     const e = s.egypt_net !== undefined ? s.egypt_net : (s.egypt_net_egp || 0);
@@ -1361,12 +1352,12 @@ function formatEgxHistoryReport(data, lang, curr) {
 
     const sessionTag = idx === 0 ? " <i>(الأحدث)</i>" : "";
 
-    txtAr += `📅 <b>جلسة: ${s.date}</b>${sessionTag}\n`
-      + `   ▫️ الأجانب: ${fDot} <b>${fmtNet(f, sUsd)}</b>\n`
-      + `   ▪️ <b>صافي المؤسسات:</b> ${totDot} <b>${fmtNet(tot, sUsd)}</b>\n\n`;
+    txtAr += `📅 <b>جلسة: <code>${s.date}</code></b>${sessionTag}\n`
+      + `   ▫️ الأجانب:     ${fDot} <code>${fmtNet(f, sUsd)}</code>\n`
+      + `   ▪️ صافي المؤسسات: ${totDot} <code>${fmtNet(tot, sUsd)}</code>\n\n`;
   });
 
-  return txtAr + `🔒 <i>أرشيف رسمي موثق لجلسات الإقفال من شاشة البورصة المصرية.</i>`;
+  return txtAr + `<code>─────────────────────────────</code>\n🔒 <i>أرشيف رسمي موثق لجلسات الإقفال من شاشة البورصة المصرية.</i>`;
 }
 
 /**
@@ -1378,33 +1369,33 @@ function formatCommoditiesReport(data, lang) {
 
   if (lang === "en") {
     let txt = `🪙 <b>Gold, Oil & Crypto Live Market</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n`
+      + `<code>─────────────────────────────</code>\n`
       + `🕒 Query: <b>${updatedDateTime}</b>\n`
-      + `💱 Currency: <b>USD ($)</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n\n`;
+      + `💰 Currency: <b>USD ($)</b>\n`
+      + `<code>─────────────────────────────</code>\n\n`;
 
     items.forEach(item => {
       const uP = Number(item.usd_price || 0);
       const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
-      txt += `▫️ <b>${item.name_en || item.name}:</b> <b>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</b>\n`;
+      txt += `▫️ <b>${item.name_en || item.name}:</b> <code>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</code>\n`;
     });
 
-    return txt + `\n⚡ <i>Live real-time feed via TradingView.</i>`;
+    return txt + `\n<code>─────────────────────────────</code>\n⚡ <i>Live real-time feed via TradingView.</i>`;
   }
 
   let txtAr = `🪙 <b>أسواق الذهب والفضة والنفط والكريبتو</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n`
+    + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
-    + `💱 العملة: <b>USD ($)</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n\n`;
+    + `💰 العملة: <b>USD ($)</b>\n`
+    + `<code>─────────────────────────────</code>\n\n`;
 
   items.forEach(item => {
     const uP = Number(item.usd_price || 0);
     const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
-    txtAr += `▫️ <b>${item.name}:</b> <b>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</b>\n`;
+    txtAr += `▫️ <b>${item.name}:</b> <code>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</code>\n`;
   });
 
-  return txtAr + `\n⚡ <i>أسعار حية ولحظية بالدولار مباشرة عبر تريدنج فيو.</i>`;
+  return txtAr + `\n<code>─────────────────────────────</code>\n⚡ <i>أسعار حية ولحظية بالدولار مباشرة عبر تريدنج فيو.</i>`;
 }
 
 /**
@@ -1475,10 +1466,10 @@ function formatCurrenciesReport(data, lang) {
 
   if (lang === "en") {
     let txt = `💵 <b>Foreign Currency Exchange Rates (vs EGP)</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n`
+      + `<code>─────────────────────────────</code>\n`
       + `🕒 Query: <b>${updatedDateTime}</b>`
       + snapshotLineEn + `\n`
-      + `━━━━━━━━━━━━━━━━━━\n\n`
+      + `<code>─────────────────────────────</code>\n\n`
       + usdLineEn;
 
     currItems.forEach(item => {
@@ -1488,17 +1479,17 @@ function formatCurrenciesReport(data, lang) {
       }
       const code = (item.code || "").toUpperCase();
       const name = CURRENCY_EN[code] || item.name_en || item.name;
-      txt += `▫️ <b>${name} [${code}]:</b> <b>${fmt(eP, 2)} EGP</b>\n`;
+      txt += `▫️ <b>${name} [${code}]:</b> <code>${fmt(eP, 2)} EGP</code>\n`;
     });
 
-    return txt + `\n🏛️ <i>Official Central Bank of Egypt & Live Bank feeds.</i>`;
+    return txt + `\n<code>─────────────────────────────</code>\n🏛 <i>Official Central Bank of Egypt & Live Bank feeds.</i>`;
   }
 
   let txtAr = `💵 <b>أسعار العملات الرسمية مقابل الجنيه المصري</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n`
+    + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
     + snapshotLineAr + `\n`
-    + `━━━━━━━━━━━━━━━━━━\n\n`
+    + `<code>─────────────────────────────</code>\n\n`
     + usdLineAr;
 
   currItems.forEach(item => {
@@ -1508,10 +1499,10 @@ function formatCurrenciesReport(data, lang) {
     }
     const code = (item.code || "").toUpperCase();
     const name = item.name_ar || item.name;
-    txtAr += `▫️ <b>${name} [${code}]:</b> <b>${fmt(eP, 2)} ج.م</b>\n`;
+    txtAr += `▫️ <b>${name} [${code}]:</b> <code>${fmt(eP, 2)} ج.م</code>\n`;
   });
 
-  return txtAr + `\n🏛️ <i>أسعار موثقة معتمدة من البنك المركزي المصري والبنوك.</i>`;
+  return txtAr + `\n<code>─────────────────────────────</code>\n🏛 <i>أسعار موثقة معتمدة من البنك المركزي المصري والبنوك.</i>`;
 }
 
 /**
@@ -1528,8 +1519,8 @@ function formatBanksReport(data, lang, cfg) {
   const cbeTime = formatCleanTime(data.cbe_updated_at || extractTimeFromTimestamp(data.timestamp), lang);
   const updatedDateTime = getCairoFullDateTime(lang);
   const bankSnapshot = getBankSnapshotTime(data, lang);
-  const snapshotLineEn = bankSnapshot ? `\n📸 Rates Snapshot: <b>[${bankSnapshot}]</b>` : "";
-  const snapshotLineAr = bankSnapshot ? `\n📸 لقطة أسعار الصرف: <b>[${bankSnapshot}]</b>` : "";
+  const snapshotLineEn = bankSnapshot ? `\n📸 Snapshot: <b>[${bankSnapshot}]</b>` : "";
+  const snapshotLineAr = bankSnapshot ? `\n📸 لقطة الأسعار: <b>[${bankSnapshot}]</b>` : "";
 
   // ترتيب البنوك حسب أعلى سعر شراء
   banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
@@ -1540,52 +1531,52 @@ function formatBanksReport(data, lang, cfg) {
 
   if (lang === "en") {
     return `🏦 <b>USD Exchange Rates - Egyptian Banks</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n`
+      + `<code>─────────────────────────────</code>\n`
       + `🕒 Query: <b>${updatedDateTime}</b>`
       + snapshotLineEn + `\n`
-      + `━━━━━━━━━━━━━━━━━━\n`
-      + (showCbe ? `🏛️ <b>Central Bank (CBE):</b> Buy <b>${usdBuy.toFixed(4)}</b> • Sell <b>${usdSell.toFixed(4)}</b> [${cbeTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
-      + (showBest ? `🟢 <b>Top Buy Bank:</b> ${topBankNameEn}\n   ▫️ Buy <b>${Number(topBuy.buy).toFixed(2)}</b> • Sell <b>${Number(topBuy.sell).toFixed(2)}</b> [${topBuyTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
+      + `<code>─────────────────────────────</code>\n`
+      + (showCbe ? `🏛 <b>Central Bank (CBE):</b> Buy <code>${usdBuy.toFixed(4)}</code> • Sell <code>${usdSell.toFixed(4)}</code> [${cbeTime}]\n<code>─────────────────────────────</code>\n` : "")
+      + (showBest ? `🟢 <b>Top Buy Bank:</b> ${topBankNameEn}\n   ▫️ Buy <code>${Number(topBuy.buy).toFixed(2)}</code> • Sell <code>${Number(topBuy.sell).toFixed(2)}</code> [${topBuyTime}]\n<code>─────────────────────────────</code>\n` : "")
       + `📊 <b>Top ${Math.min(limit, banks.length)} Banks (Buy • Sell):</b>\n\n`
-      + banks.slice(0, limit).map(b => `▫️ <b>${getBankName(b.bank, "en")}:</b> Buy <b>${Number(b.buy).toFixed(2)}</b> • Sell <b>${Number(b.sell).toFixed(2)}</b>`).join("\n")
-      + `\n\n⚡ <i>Live feed via Ta3weem.</i>`;
+      + banks.slice(0, limit).map(b => `▫️ <b>${getBankName(b.bank, "en")}:</b> Buy <code>${Number(b.buy).toFixed(2)}</code> • Sell <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
+      + `\n\n<code>─────────────────────────────</code>\n⚡ <i>Live feed via Ta3weem.</i>`;
   }
 
   return `🏦 <b>أسعار صرف الدولار في البنوك المصرية</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n`
+    + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
     + snapshotLineAr + `\n`
-    + `━━━━━━━━━━━━━━━━━━\n`
-    + (showCbe ? `🏛️ <b>البنك المركزي المصري:</b> شراء <b>${usdBuy.toFixed(4)}</b> • بيع <b>${usdSell.toFixed(4)}</b> [${cbeTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
-    + (showBest ? `🟢 <b>أعلى بنك في سعر الشراء:</b> ${topBuy.bank}\n   ▫️ شراء <b>${Number(topBuy.buy).toFixed(2)}</b> • بيع <b>${Number(topBuy.sell).toFixed(2)}</b> [${topBuyTime}]\n━━━━━━━━━━━━━━━━━━\n` : "")
+    + `<code>─────────────────────────────</code>\n`
+    + (showCbe ? `🏛 <b>البنك المركزي المصري:</b> شراء <code>${usdBuy.toFixed(4)}</code> • بيع <code>${usdSell.toFixed(4)}</code> [${cbeTime}]\n<code>─────────────────────────────</code>\n` : "")
+    + (showBest ? `🟢 <b>أعلى بنك شراء:</b> ${topBuy.bank}\n   ▫️ شراء <code>${Number(topBuy.buy).toFixed(2)}</code> • بيع <code>${Number(topBuy.sell).toFixed(2)}</code> [${topBuyTime}]\n<code>─────────────────────────────</code>\n` : "")
     + `📊 <b>أبرز البنوك المصرية (شراء • بيع):</b>\n\n`
-    + banks.slice(0, limit).map(b => `▫️ <b>${b.bank}:</b> شراء <b>${Number(b.buy).toFixed(2)}</b> • بيع <b>${Number(b.sell).toFixed(2)}</b>`).join("\n")
-    + `\n\n⚡ <i>أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
+    + banks.slice(0, limit).map(b => `▫️ <b>${b.bank}:</b> شراء <code>${Number(b.buy).toFixed(2)}</code> • بيع <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
+    + `\n\n<code>─────────────────────────────</code>\n⚡ <i>أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
 }
 
 function formatAllBanksReport(data, lang) {
   const banks = data.banks || [];
   const updatedDateTime = getCairoFullDateTime(lang);
   const bankSnapshot = getBankSnapshotTime(data, lang);
-  const snapshotLineEn = bankSnapshot ? `\n📸 Rates Snapshot: <b>[${bankSnapshot}]</b>` : "";
-  const snapshotLineAr = bankSnapshot ? `\n📸 لقطة أسعار الصرف: <b>[${bankSnapshot}]</b>` : "";
+  const snapshotLineEn = bankSnapshot ? `\n📸 Snapshot: <b>[${bankSnapshot}]</b>` : "";
+  const snapshotLineAr = bankSnapshot ? `\n📸 لقطة الأسعار: <b>[${bankSnapshot}]</b>` : "";
 
   if (lang === "en") {
     return `🏦 <b>All 25 Egyptian Banks - USD Rates</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n`
+      + `<code>─────────────────────────────</code>\n`
       + `🕒 Query: <b>${updatedDateTime}</b>`
       + snapshotLineEn + `\n`
-      + `━━━━━━━━━━━━━━━━━━\n\n`
-      + banks.map((b, idx) => `${idx + 1}. <b>${getBankName(b.bank, "en")}:</b> Buy <b>${Number(b.buy).toFixed(2)}</b> • Sell <b>${Number(b.sell).toFixed(2)}</b>`).join("\n")
-      + `\n\n⚡ <i>Live feed via Ta3weem.</i>`;
+      + `<code>─────────────────────────────</code>\n\n`
+      + banks.map((b, idx) => `${idx + 1}. <b>${getBankName(b.bank, "en")}:</b> Buy <code>${Number(b.buy).toFixed(2)}</code> • Sell <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
+      + `\n\n<code>─────────────────────────────</code>\n⚡ <i>Live feed via Ta3weem.</i>`;
   }
   return `🏦 <b>قائمة الـ 25 بنكاً مصرياً بالكامل - أسعار الدولار</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n`
+    + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
     + snapshotLineAr + `\n`
-    + `━━━━━━━━━━━━━━━━━━\n\n`
-    + banks.map((b, idx) => `${idx + 1}. <b>${b.bank}:</b> شراء <b>${Number(b.buy).toFixed(2)}</b> • بيع <b>${Number(b.sell).toFixed(2)}</b>`).join("\n")
-    + `\n\n⚡ <i>أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
+    + `<code>─────────────────────────────</code>\n\n`
+    + banks.map((b, idx) => `${idx + 1}. <b>${b.bank}:</b> شراء <code>${Number(b.buy).toFixed(2)}</code> • بيع <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
+    + `\n\n<code>─────────────────────────────</code>\n⚡ <i>أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
 }
 
 /**
@@ -1690,23 +1681,23 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     totAmountAr = `${LRM}${totSign}$${Math.abs(totUsd).toLocaleString("en-US")}${LRM}`;
 
     if (foBuy > 0 || foSell > 0) {
-      breakdownEn = `  ▫️ Buy: $${Math.round(foBuy / usdRate).toLocaleString("en-US")} • Sell: $${Math.round(foSell / usdRate).toLocaleString("en-US")}\n`;
-      breakdownAr = `  ▫️ مشتريات: $${Math.round(foBuy / usdRate).toLocaleString("en-US")} • مبيعات: $${Math.round(foSell / usdRate).toLocaleString("en-US")}\n`;
+      breakdownEn = `   ▫️ Buy: <code>$${Math.round(foBuy / usdRate).toLocaleString("en-US")}</code> • Sell: <code>$${Math.round(foSell / usdRate).toLocaleString("en-US")}</code>\n`;
+      breakdownAr = `   ▫️ مشتريات: <code>$${Math.round(foBuy / usdRate).toLocaleString("en-US")}</code> • مبيعات: <code>$${Math.round(foSell / usdRate).toLocaleString("en-US")}</code>\n`;
     }
   } else {
     const foSign = foNet >= 0 ? "+" : "-";
     const absNet = Math.abs(foNet).toLocaleString("en-US");
-    foAmountEn = `${LRM}${foSign}${absNet}${LRM} EGP`;
-    foAmountAr = `${LRM}${foSign}${absNet}${LRM} ج.م`;
+    foAmountEn = `${foSign}${absNet} EGP`;
+    foAmountAr = `${foSign}${absNet} ج.م`;
 
     const totSign = totNet >= 0 ? "+" : "-";
     const absTot = Math.abs(totNet).toLocaleString("en-US");
-    totAmountEn = `${LRM}${totSign}${absTot}${LRM} EGP`;
-    totAmountAr = `${LRM}${totSign}${absTot}${LRM} ج.م`;
+    totAmountEn = `${totSign}${absTot} EGP`;
+    totAmountAr = `${totSign}${absTot} ج.م`;
 
     if (foBuy > 0 || foSell > 0) {
-      breakdownEn = `  ▫️ Buy: ${foBuy.toLocaleString("en-US")} • Sell: ${foSell.toLocaleString("en-US")}\n`;
-      breakdownAr = `  ▫️ مشتريات: ${foBuy.toLocaleString("en-US")} • مبيعات: ${foSell.toLocaleString("en-US")}\n`;
+      breakdownEn = `   ▫️ Buy: <code>${foBuy.toLocaleString("en-US")}</code> • Sell: <code>${foSell.toLocaleString("en-US")}</code>\n`;
+      breakdownAr = `   ▫️ مشتريات: <code>${foBuy.toLocaleString("en-US")}</code> • مبيعات: <code>${foSell.toLocaleString("en-US")}</code>\n`;
     }
   }
 
@@ -1714,88 +1705,54 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   const getDot = (v) => v >= 0 ? "🟢" : "🔴";
 
   if (lang === "en") {
-    let egxBlockEn = "";
-    if (mStatus.isHolidayOrClosed) {
-      egxBlockEn = `🏛️ <b>Foreign Institutional Flows:</b>\n`
-        + `  🏖️ <b>Today's Trading:</b> <b>No Session (0 Flow • Market Closed)</b>\n`
-        + `  ▫️ <b>Status ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
-        + `  ▫️ <b>Net Flow ${mStatus.sessionTagEn}:</b> <b>${foAmountEn}</b>\n`
-        + breakdownEn
-        + `  ▪️ <b>Total Inst. Net ${mStatus.sessionTagEn}:</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n\n`;
-    } else if (!mStatus.isTodaySession) {
-      egxBlockEn = `🏛️ <b>Foreign Institutional Flows:</b>\n`
-        + `  ⏳ <b>Today's Session:</b> <i>Pre-Market (Opens at 10:00 AM Cairo)</i>\n`
-        + `  ▫️ <b>Status ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
-        + `  ▫️ <b>Net Flow ${mStatus.sessionTagEn}:</b> <b>${foAmountEn}</b>\n`
-        + breakdownEn
-        + `  ▪️ <b>Total Inst. Net ${mStatus.sessionTagEn}:</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n\n`;
-    } else {
-      egxBlockEn = `🏛️ <b>Foreign Institutional Flows:</b>\n`
-        + `  ▫️ <b>Status (Today):</b> ${foStatusEn}\n`
-        + `  ▫️ <b>Today's Net Flow:</b> <b>${foAmountEn}</b>\n`
-        + breakdownEn
-        + `  ▪️ <b>Total Inst. Net (Today):</b> ${getDot(totNet)} <b>${totAmountEn}</b>\n\n`;
-    }
+    let egxBlockEn = `🏛 <b>Foreign Institutions ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
+      + `   ▫️ Net Flow: <code>${foAmountEn}</code>\n`
+      + breakdownEn
+      + `\n📊 <b>Total Institutional Net ${mStatus.sessionTagEn}:</b> ${getDot(totNet)} <code>${totAmountEn}</code>\n\n`;
 
     return `📊 <b>Executive Financial Summary</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n`
-      + `🕒 Query: <b>${updatedDateTime}</b>\n`
-      + (mStatus.isHolidayOrClosed ? `${mStatus.statusEn}\n` : "")
+      + `<code>─────────────────────────────</code>\n`
+      + `📅 <b>Session:</b> <code>${sessionDate}</code>${mStatus.isTodaySession ? "" : " <i>(Last Audited)</i>"}\n`
+      + `🕒 <b>Query:</b> <b>${updatedDateTime}</b>\n`
+      + `💰 <b>Currency:</b> <b>${currBadge}</b>\n`
+      + `${mStatus.statusEn}\n`
       + snapshotLineEn
-      + `📅 Session: <b>${sessionDate}</b>${mStatus.isTodaySession ? "" : " <i>(Last Verified Session)</i>"} • Currency: <b>${currBadge}</b>\n`
-      + `━━━━━━━━━━━━━━━━━━\n\n`
+      + `<code>─────────────────────────────</code>\n\n`
       + egxBlockEn
-      + `━━━━━━━━━━━━━━━━━━\n`
+      + `<code>─────────────────────────────</code>\n`
       + `💵 <b>USD Exchange Rates:</b>\n`
-      + `  ▫️ <b>Central Bank (CBE):</b> Buy <b>${cbeBuy.toFixed(4)}</b> • Sell <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
+      + `   ▫️ <b>Central Bank (CBE):</b> Buy <code>${cbeBuy.toFixed(4)}</code> • Sell <code>${cbeSell.toFixed(4)}</code> [${cbeTime}]`
       + bankPeakLineEn + `\n\n`
-      + `━━━━━━━━━━━━━━━━━━\n`
-      + `🛢️ <b>Brent Crude Oil:</b> <b>${brentStrEn}</b>\n`
-      + `🪙 <b>Gold (Ounce):</b> <b>${goldOunceStr}</b> • <b>24K (Gram):</b> <b>${gold24StrEn}</b>\n`
-      + `🪙 <b>Silver (Ounce):</b> <b>${silverStr}</b>\n`
-      + `\n⚡ <i>Live Executive Summary • Real-time feeds.</i>`;
+      + `<code>─────────────────────────────</code>\n`
+      + `🛢 <b>Brent Crude Oil:</b> <code>${brentStrEn}</code>\n`
+      + `🪙 <b>Gold (Ounce):</b> <code>${goldOunceStr}</code> • <b>24K:</b> <code>${gold24StrEn}</code>\n`
+      + `🪙 <b>Silver (Ounce):</b> <code>${silverStr}</code>\n`
+      + `\n<code>─────────────────────────────</code>\n⚡ <i>Live Executive Summary • Real-time feeds.</i>`;
   }
 
-  let egxBlockAr = "";
-  if (mStatus.isHolidayOrClosed) {
-    egxBlockAr = `🏛️ <b>صافي تدفقات المؤسسات:</b>\n`
-      + `  🏖️ <b>تداول اليوم:</b> <b>لا يوجد تداول (عطلة • صفر تداول)</b>\n`
-      + `  ▫️ <b>حالة الأجانب ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
-      + `  ▫️ <b>صافي السيولة ${mStatus.sessionTagAr}:</b> <b>${foAmountAr}</b>\n`
-      + breakdownAr
-      + `  ▪️ <b>إجمالي صافي المؤسسات ${mStatus.sessionTagAr}:</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n\n`;
-  } else if (!mStatus.isTodaySession) {
-    egxBlockAr = `🏛️ <b>صافي تدفقات المؤسسات:</b>\n`
-      + `  ⏳ <b>جلسة اليوم:</b> <i>قبل الافتتاح (تبدأ 10:00 ص بتوقيت القاهرة)</i>\n`
-      + `  ▫️ <b>حالة الأجانب ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
-      + `  ▫️ <b>صافي السيولة ${mStatus.sessionTagAr}:</b> <b>${foAmountAr}</b>\n`
-      + breakdownAr
-      + `  ▪️ <b>إجمالي صافي المؤسسات ${mStatus.sessionTagAr}:</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n\n`;
-  } else {
-    egxBlockAr = `🏛️ <b>صافي تدفقات المؤسسات:</b>\n`
-      + `  ▫️ <b>حالة الأجانب اليوم:</b> ${foStatusAr}\n`
-      + `  ▫️ <b>صافي سيولة الأجانب (اليوم):</b> <b>${foAmountAr}</b>\n`
-      + breakdownAr
-      + `  ▪️ <b>إجمالي صافي المؤسسات (اليوم):</b> ${getDot(totNet)} <b>${totAmountAr}</b>\n\n`;
-  }
+  let egxBlockAr = `🏛 <b>المؤسسات الأجنبية ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
+    + `   ▫️ صافي السيولة: <code>${foAmountAr}</code>\n`
+    + breakdownAr
+    + `\n📊 <b>إجمالي المؤسسات ${mStatus.sessionTagAr}:</b> ${getDot(totNet)} <code>${totAmountAr}</code>\n\n`;
 
   return `📊 <b>التقرير المالي التنفيذي الشامل</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n`
-    + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
-    + (mStatus.isHolidayOrClosed ? `${mStatus.statusAr}\n` : "")
+    + `<code>─────────────────────────────</code>\n`
+    + `📅 <b>الجلسة:</b> <code>${sessionDate}</code>${mStatus.isTodaySession ? "" : " <i>(آخر جلسة معتمدة)</i>"}\n`
+    + `🕒 <b>وقت الاستعلام:</b> <b>${updatedDateTime}</b>\n`
+    + `💰 <b>العملة:</b> <b>${currBadge}</b>\n`
+    + `${mStatus.statusAr}\n`
     + snapshotLineAr
-    + `📅 تاريخ الجلسة: <b>${sessionDate}</b>${mStatus.isTodaySession ? "" : " <i>(آخر جلسة معتمدة)</i>"} • العملة: <b>${currBadge}</b>\n`
-    + `━━━━━━━━━━━━━━━━━━\n\n`
+    + `<code>─────────────────────────────</code>\n\n`
     + egxBlockAr
-    + `━━━━━━━━━━━━━━━━━━\n`
+    + `<code>─────────────────────────────</code>\n`
     + `💵 <b>أسعار صرف الدولار:</b>\n`
-    + `  ▫️ <b>البنك المركزي:</b> شراء <b>${cbeBuy.toFixed(4)}</b> • بيع <b>${cbeSell.toFixed(4)}</b> [${cbeTime}]`
+    + `   ▫️ <b>البنك المركزي:</b> شراء <code>${cbeBuy.toFixed(4)}</code> • بيع <code>${cbeSell.toFixed(4)}</code> [${cbeTime}]`
     + bankPeakLineAr + `\n\n`
-    + `━━━━━━━━━━━━━━━━━━\n`
-    + `🛢️ <b>خام برنت (نفط):</b> <b>${brentStrAr}</b>\n`
-    + `🪙 <b>أونصة الذهب:</b> <b>${goldOunceStr}</b> • <b>ذهب عيار 24:</b> <b>${gold24StrAr}</b>\n`
-    + `🪙 <b>أونصة الفضة:</b> <b>${silverStr}</b>\n`
-    + `\n⚡ <i>تقرير تنفيذي لحظي موثق ومباشر.</i>`;
+    + `<code>─────────────────────────────</code>\n`
+    + `🛢 <b>خام برنت (نفط):</b> <code>${brentStrAr}</code>\n`
+    + `🪙 <b>أونصة الذهب:</b> <code>${goldOunceStr}</code> • <b>عيار 24:</b> <code>${gold24StrAr}</code>\n`
+    + `🪙 <b>أونصة الفضة:</b> <code>${silverStr}</code>\n`
+    + `\n<code>─────────────────────────────</code>\n⚡ <i>تقرير تنفيذي لحظي موثق ومباشر.</i>`;
 }
 
 // ==========================================
@@ -1805,8 +1762,8 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
 function getReportKeyboard(cmdType, lang, cfg, curr) {
   cfg = cfg || botConfig;
   curr = curr || "usd";
-  const refreshText = lang === "en" ? "🔄 Refresh Data" : "🔄 تحديث لحظي للبيانات";
-  const menuText = lang === "en" ? "🔙 Main Menu" : "🔙 القائمة الرئيسية";
+  const refreshText = lang === "en" ? "🔄 Refresh" : "🔄 تحديث لحظي";
+  const menuText = lang === "en" ? "« Main Menu" : "« القائمة الرئيسية";
   const langToggleText = lang === "en" ? "🌐 اللغة العربية" : "🌐 English";
   const langToggleData = lang === "en" ? `cmd_lang_ar:${curr}` : `cmd_lang_en:${curr}`;
 
@@ -1814,9 +1771,9 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
   const nextCurr = curr === "usd" ? "egp" : "usd";
   let currToggleText = "";
   if (lang === "en") {
-    currToggleText = curr === "usd" ? "💵 Show in EGP" : "💲 Show in USD";
+    currToggleText = curr === "usd" ? "💱 Switch to EGP" : "💱 Switch to USD";
   } else {
-    currToggleText = curr === "usd" ? "💵 العرض بالجنيه (EGP)" : "💲 العرض بالدولار (USD)";
+    currToggleText = curr === "usd" ? "💱 التحويل للجنيه (EGP)" : "💱 التحويل للدولار (USD)";
   }
   const currToggleData = `toggle_curr:${nextCurr}:${cmdType}:${lang}`;
 
@@ -1829,15 +1786,15 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
   if (cmdType === "report") {
     rows.push([{ text: currToggleText, callback_data: currToggleData }]);
   } else if (cmdType === "egx") {
-    rows.push([{ text: (lang === "en" ? "📜 Daily Closings Archive" : "📜 أرشيف الإقفال اليومي"), callback_data: `cmd_history:${lang}:${curr}` }]);
+    rows.push([{ text: (lang === "en" ? "📊 Closings Archive" : "📊 أرشيف الإقفال"), callback_data: `cmd_history:${lang}:${curr}` }]);
     rows.push([{ text: currToggleText, callback_data: currToggleData }]);
   } else if (cmdType === "history" || cmdType === "archive") {
-    rows.push([{ text: (lang === "en" ? "🏛️ Back to EGX Live" : "🏛️ العودة للبورصة اللحظية"), callback_data: `cmd_egx:${lang}:${curr}` }]);
+    rows.push([{ text: (lang === "en" ? "🏛 Back to Live Flows" : "🏛 العودة للبورصة اللحظية"), callback_data: `cmd_egx:${lang}:${curr}` }]);
     rows.push([{ text: currToggleText, callback_data: currToggleData }]);
   } else if (cmdType === "banks") {
     rows.push([{ text: (lang === "en" ? "📋 View All 25 Banks" : "📋 عرض كافة الـ 25 بنكاً"), callback_data: `cmd_banks_all:${lang}` }]);
   } else if (cmdType === "banks_all") {
-    rows.push([{ text: (lang === "en" ? "🔙 Back to Top Banks" : "🔙 العودة لأبرز البنوك"), callback_data: `cmd_banks:${lang}` }]);
+    rows.push([{ text: (lang === "en" ? "« Top Banks" : "« أبرز البنوك"), callback_data: `cmd_banks:${lang}` }]);
   }
 
   // الصف الثالث: القائمة واللغة
