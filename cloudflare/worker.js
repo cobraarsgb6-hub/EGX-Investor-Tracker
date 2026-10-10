@@ -1251,10 +1251,11 @@ function formatEgxReport(data, lang, curr) {
   const arFoNet = arNet + foNet;
   const mStatus = getEgxMarketStatus(sessionDate);
 
-  // حساب التراكمي الشهري (حصرياً لصافي الأجانب بدءاً من 01 أكتوبر ويقفل شهرياً)
-  const { monthly } = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
+  // حساب التراكمي الأسبوعي والشهري (حصرياً لصافي الأجانب بدءاً من 01 أكتوبر)
+  const { weekly, monthly } = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
   const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
   const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
+  const wFoDot = weekly.foNet >= 0 ? "🟢" : "🔴";
   const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
 
   const fmtNet = (v, usdOverride) => {
@@ -1300,9 +1301,10 @@ function formatEgxReport(data, lang, curr) {
       + `   ▫️ Foreigners Net:    ${foDot} <code>${fmtNet(foNet)}</code>\n`
       + `   ▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
 
-    // 2. Monthly Accumulative (Foreigners Only)
-    txt += `📈 <b>Monthly Foreigners Net (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
-      + `   ▫️ Accumulative:     ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`;
+    // 2. Weekly & Monthly Accumulative (Foreigners Only)
+    txt += `📈 <b>Foreigners Periodic Net (Weekly & Monthly):</b>\n`
+      + `   ▫️ Weekly Net (${weekly.count} Sessions):  ${wFoDot} <code>${fmtNet(weekly.foNet, weekly.foUsd)}</code>\n`
+      + `   ▪️ Monthly Net (${monthLabelEn} • ${monthly.count} Sessions): ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`;
 
     return txt + `\n<code>─────────────────────────────</code>\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
@@ -1324,9 +1326,10 @@ function formatEgxReport(data, lang, curr) {
     + `   ▫️ صافي الأجانب:       ${foDot} <code>${fmtNet(foNet)}</code>\n`
     + `   ▪️ صافي العرب + الأجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
 
-  // 2. التراكمي الشهري (للأجانب فقط)
-  txtAr += `📈 <b>صافي الأجانب التراكمي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
-    + `   ▫️ إجمالي تعاملات الشهر: ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`;
+  // 2. التراكمي الأسبوعي والشهري (للأجانب فقط)
+  txtAr += `📈 <b>تعاملات الأجانب التراكمية (أسبوعي وشهري):</b>\n`
+    + `   ▫️ الإقفال الأسبوعي (${weekly.count} جلسات): ${wFoDot} <code>${fmtNet(weekly.foNet, weekly.foUsd)}</code>\n`
+    + `   ▪️ التراكمي الشهري (${monthLabelAr} • ${monthly.count} جلسات): ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`;
 
   return txtAr + `\n<code>─────────────────────────────</code>\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
@@ -1569,7 +1572,7 @@ function formatCurrenciesReport(data, lang) {
  */
 function formatBanksReport(data, lang, cfg) {
   const banks = data.banks || [];
-  const limit = (cfg && cfg.banks_count) ? parseInt(cfg.banks_count) : 8;
+  const limit = (cfg && cfg.banks_count) ? parseInt(cfg.banks_count) : 5;
   const showCbe = cfg ? (cfg.show_cbe_in_banks !== false) : true;
   const showBest = cfg ? (cfg.show_best_banks !== false) : true;
 
@@ -1608,7 +1611,7 @@ function formatBanksReport(data, lang, cfg) {
     + `<code>─────────────────────────────</code>\n`
     + (showCbe ? `🏛 <b>البنك المركزي المصري:</b> شراء <code>${usdBuy.toFixed(4)}</code> • بيع <code>${usdSell.toFixed(4)}</code> [${cbeTime}]\n<code>─────────────────────────────</code>\n` : "")
     + (showBest ? `🟢 <b>أعلى بنك شراء:</b> ${topBuy.bank}\n   ▫️ شراء <code>${Number(topBuy.buy).toFixed(2)}</code> • بيع <code>${Number(topBuy.sell).toFixed(2)}</code> [${topBuyTime}]\n<code>─────────────────────────────</code>\n` : "")
-    + `📊 <b>أبرز البنوك المصرية (شراء • بيع):</b>\n\n`
+    + `📊 <b>أعلى ${Math.min(limit, banks.length)} بنوك (شراء • بيع):</b>\n\n`
     + banks.slice(0, limit).map(b => `▫️ <b>${b.bank}:</b> شراء <code>${Number(b.buy).toFixed(2)}</code> • بيع <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
     + `\n\n<code>─────────────────────────────</code>\n⚡ <i>أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
 }
@@ -1730,12 +1733,15 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   const brentStrAr = `$${Number(brent.usd_price).toFixed(2)}`;
   let breakdownEn = "", breakdownAr = "";
 
-  // حساب التراكمي الشهري (حصرياً لصافي الأجانب بدءاً من 01 أكتوبر ويقفل شهرياً)
-  const { monthly } = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
+  // حساب التراكمي الأسبوعي والشهري (حصرياً لصافي الأجانب بدءاً من 01 أكتوبر ويقفل شهرياً)
+  const { weekly, monthly } = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
+  const wFoStatusEn = weekly.foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
+  const wFoStatusAr = weekly.foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
   const mFoStatusEn = monthly.foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
   const mFoStatusAr = monthly.foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
   const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
   const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
+  let wFoAmountEn = "", wFoAmountAr = "";
   let mFoAmountEn = "", mFoAmountAr = "";
 
   if (curr === "usd") {
@@ -1743,6 +1749,11 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     const foSign = foUsd >= 0 ? "+" : "-";
     foAmountEn = `${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}`;
     foAmountAr = `${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}`;
+
+    const wUsd = weekly.foUsd;
+    const wSign = wUsd >= 0 ? "+" : "-";
+    wFoAmountEn = `${wSign}$${Math.abs(wUsd).toLocaleString("en-US")}`;
+    wFoAmountAr = `${wSign}$${Math.abs(wUsd).toLocaleString("en-US")}`;
 
     const mUsd = monthly.foUsd;
     const mSign = mUsd >= 0 ? "+" : "-";
@@ -1754,6 +1765,11 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     foAmountEn = `${foSign}${absNet} EGP`;
     foAmountAr = `${foSign}${absNet} ج.م`;
 
+    const wSign = weekly.foNet >= 0 ? "+" : "-";
+    const wAbs = Math.abs(weekly.foNet).toLocaleString("en-US");
+    wFoAmountEn = `${wSign}${wAbs} EGP`;
+    wFoAmountAr = `${wSign}${wAbs} ج.م`;
+
     const mSign = monthly.foNet >= 0 ? "+" : "-";
     const mAbs = Math.abs(monthly.foNet).toLocaleString("en-US");
     mFoAmountEn = `${mSign}${mAbs} EGP`;
@@ -1764,7 +1780,8 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
 
   if (lang === "en") {
     let egxBlockEn = `🏛 <b>Foreign Institutions ${mStatus.sessionTagEn}:</b> ${foStatusEn}\n`
-      + `   ▫️ Session Net: <code>${foAmountEn}</code>\n\n`
+      + `   ▫️ Session Net: <code>${foAmountEn}</code>\n`
+      + `   ▫️ Weekly Net (${weekly.count} Sessions): <code>${wFoAmountEn}</code>\n\n`
       + `📈 <b>Monthly Foreigners Net (${monthLabelEn} • ${monthly.count} Sessions):</b> ${mFoStatusEn}\n`
       + `   ▪️ Accumulative: <code>${mFoAmountEn}</code>\n\n`;
 
@@ -1789,7 +1806,8 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   }
 
   let egxBlockAr = `🏛 <b>المؤسسات الأجنبية ${mStatus.sessionTagAr}:</b> ${foStatusAr}\n`
-    + `   ▫️ صافي الجلسة: <code>${foAmountAr}</code>\n\n`
+    + `   ▫️ صافي الجلسة: <code>${foAmountAr}</code>\n`
+    + `   ▫️ الإقفال الأسبوعي (${weekly.count} جلسات): <code>${wFoAmountAr}</code>\n\n`
     + `📈 <b>صافي الأجانب التراكمي (${monthLabelAr} • ${monthly.count} جلسات):</b> ${mFoStatusAr}\n`
     + `   ▪️ إجمالي تعاملات الشهر: <code>${mFoAmountAr}</code>\n\n`;
 
@@ -1850,9 +1868,9 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
     rows.push([{ text: (lang === "en" ? "🏛 Back to Live Flows" : "🏛 العودة للبورصة اللحظية"), callback_data: `cmd_egx:${lang}:${curr}` }]);
     rows.push([{ text: currToggleText, callback_data: currToggleData }]);
   } else if (cmdType === "banks") {
-    rows.push([{ text: (lang === "en" ? "📋 View All 25 Banks" : "📋 عرض كافة الـ 25 بنكاً"), callback_data: `cmd_banks_all:${lang}` }]);
+    rows.push([{ text: (lang === "en" ? "📋 Show All Banks (25)" : "📋 إظهار الكل (كافة الـ 25 بنكاً)"), callback_data: `cmd_banks_all:${lang}` }]);
   } else if (cmdType === "banks_all") {
-    rows.push([{ text: (lang === "en" ? "« Top Banks" : "« أبرز البنوك"), callback_data: `cmd_banks:${lang}` }]);
+    rows.push([{ text: (lang === "en" ? "« Top 5 Banks Only" : "« أعلى 5 بنوك فقط"), callback_data: `cmd_banks:${lang}` }]);
   }
 
   // الصف الثالث: القائمة واللغة
