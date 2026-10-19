@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-19 01:01:17",
+  "timestamp": "2026-10-19 10:01:32",
   "usd_rate": 53.54,
   "cbe_usd_buy": 53.4683,
   "cbe_usd_sell": 53.6083,
@@ -250,7 +250,7 @@
       "sell": 52.17,
       "rate_egp": 52.4,
       "change": "0.013%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "عملات رئيسية",
@@ -262,7 +262,7 @@
       "sell": 58.84,
       "rate_egp": 58.76,
       "change": "0.419%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "عملات رئيسية",
@@ -274,7 +274,7 @@
       "sell": 13.98,
       "rate_egp": 13.96,
       "change": "0.023%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "عملات رئيسية",
@@ -286,7 +286,7 @@
       "sell": 14.29,
       "rate_egp": 14.27,
       "change": "0.035%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "عملات رئيسية",
@@ -298,7 +298,7 @@
       "sell": 69.33,
       "rate_egp": 69.23,
       "change": "0.113%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "عملات رئيسية",
@@ -310,7 +310,7 @@
       "sell": 170.19,
       "rate_egp": 169.84,
       "change": "+0.10%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "عملات رئيسية",
@@ -322,7 +322,7 @@
       "sell": 14.35,
       "rate_egp": 14.31,
       "change": "+0.05%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "عملات رئيسية",
@@ -334,7 +334,7 @@
       "sell": 7.38,
       "rate_egp": 7.35,
       "change": "+0.02%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "ذهب ومعادن",
@@ -346,7 +346,7 @@
       "sell": 6136.95,
       "rate_egp": 6136.95,
       "change": "0.901%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "ذهب ومعادن",
@@ -358,7 +358,7 @@
       "sell": 7038.93,
       "rate_egp": 7038.93,
       "change": "1.004%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "ذهب ومعادن",
@@ -370,7 +370,7 @@
       "sell": 49040.0,
       "rate_egp": 49040.0,
       "change": "0.245%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "ذهب ومعادن",
@@ -382,7 +382,7 @@
       "sell": 4165.0,
       "rate_egp": 222994.1,
       "change": "+0.45%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "ذهب ومعادن",
@@ -394,31 +394,31 @@
       "sell": 61.1,
       "rate_egp": 3271.29,
       "change": "+0.80%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "طاقة وبترول",
       "name": "نفط برنت (خام)",
       "code": "BRENT",
-      "usd_price": 109.86,
-      "egp_price": 5881.72,
-      "buy": 109.86,
-      "sell": 109.86,
-      "rate_egp": 5881.72,
-      "change": "+0.00%",
-      "updated_at": "01:01:17"
+      "usd_price": 107.29,
+      "egp_price": 5744.12,
+      "buy": 107.29,
+      "sell": 107.29,
+      "rate_egp": 5744.12,
+      "change": "-2.34%",
+      "updated_at": "10:01:32"
     },
     {
       "category": "طاقة وبترول",
       "name": "خام غرب تكساس (WTI)",
       "code": "WTI",
-      "usd_price": 99.02,
-      "egp_price": 5301.36,
-      "buy": 99.02,
-      "sell": 99.02,
-      "rate_egp": 5301.36,
-      "change": "+0.00%",
-      "updated_at": "01:01:17"
+      "usd_price": 96.97,
+      "egp_price": 5191.61,
+      "buy": 96.97,
+      "sell": 96.97,
+      "rate_egp": 5191.61,
+      "change": "-2.07%",
+      "updated_at": "10:01:32"
     },
     {
       "category": "عملات رقمية",
@@ -430,7 +430,7 @@
       "sell": 86000.0,
       "rate_egp": 4604293.8,
       "change": "+0.00%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     },
     {
       "category": "عملات رقمية",
@@ -442,288 +442,226 @@
       "sell": 2730.0,
       "rate_egp": 146159.56,
       "change": "+0.00%",
-      "updated_at": "01:01:17"
+      "updated_at": "10:01:32"
     }
   ],
   "banks": [
     {
       "bank": "أبوظبي الإسلامي (ADIB)",
-      "buy": 53.7,
-      "sell": 53.8,
-      "avg": 53.75,
-      "updated_at": "01:00"
-    },
-    {
-      "bank": "الأهلي الكويتي (ABK)",
-      "buy": 53.54,
-      "sell": 53.64,
-      "avg": 53.59,
-      "updated_at": "01:00"
+      "buy": 53.49,
+      "sell": 53.59,
+      "avg": 53.54,
+      "updated_at": "10:00"
     },
     {
       "bank": "بنك نكست (NXT)",
       "buy": 53.49,
       "sell": 53.59,
       "avg": 53.54,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
-      "bank": "البركة (Al Baraka)",
-      "buy": 53.48,
-      "sell": 53.58,
-      "avg": 53.53,
-      "updated_at": "01:00"
-    },
-    {
-      "bank": "التجاري الدولي (CIB)",
-      "buy": 53.48,
-      "sell": 53.58,
-      "avg": 53.53,
-      "updated_at": "01:00"
+      "bank": "الكويت الوطني (NBK)",
+      "buy": 53.49,
+      "sell": 53.59,
+      "avg": 53.54,
+      "updated_at": "10:00"
     },
     {
       "bank": "بنك الشركة المصرفية (SAIB)",
+      "buy": 53.49,
+      "sell": 53.59,
+      "avg": 53.54,
+      "updated_at": "10:00"
+    },
+    {
+      "bank": "الأهلي الكويتي (ABK)",
       "buy": 53.48,
       "sell": 53.58,
       "avg": 53.53,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
       "bank": "الأهلي المصري (NBE)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
+    },
+    {
+      "bank": "البركة (Al Baraka)",
+      "buy": 53.47,
+      "sell": 53.57,
+      "avg": 53.52,
+      "updated_at": "10:00"
     },
     {
       "bank": "المصرف العربي (AIB)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
+    },
+    {
+      "bank": "التجاري الدولي (CIB)",
+      "buy": 53.47,
+      "sell": 53.57,
+      "avg": 53.52,
+      "updated_at": "10:00"
     },
     {
       "bank": "بنك مصر (BM)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
       "bank": "بنك الإسكندرية (ALEXBANK)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
       "bank": "المصري الخليجي (EG Bank)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
-      "bank": "التنمية الصناعية (IDB)",
+      "bank": "بنك فيصل (Faisal)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "00:42"
+      "updated_at": "10:00"
     },
     {
-      "bank": "الكويت الوطني (NBK)",
+      "bank": "التعمير والإسكان (HDB)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
       "bank": "قناة السويس (SCB)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
       "bank": "المصرف المتحد (UB)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
       "bank": "اتش اس بي سي (HSBC)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
+    },
+    {
+      "bank": "بنك بيت التمويل الكويتي (KFH)",
+      "buy": 53.47,
+      "sell": 53.57,
+      "avg": 53.52,
+      "updated_at": "10:00"
     },
     {
       "bank": "العربي الأفريقي (AAIB)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
       "bank": "أبوظبي اﻷول (FABMISR)",
       "buy": 53.47,
       "sell": 53.57,
       "avg": 53.52,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
       "bank": "أبوظبي التجاري (ADCB)",
       "buy": 53.45,
       "sell": 53.55,
       "avg": 53.5,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
     },
     {
-      "bank": "بنك فيصل (Faisal)",
-      "buy": 53.45,
-      "sell": 53.55,
-      "avg": 53.5,
-      "updated_at": "01:00"
-    },
-    {
-      "bank": "التعمير والإسكان (HDB)",
-      "buy": 53.45,
-      "sell": 53.55,
-      "avg": 53.5,
-      "updated_at": "01:00"
-    },
-    {
-      "bank": "بنك بيت التمويل الكويتي (KFH)",
-      "buy": 53.45,
-      "sell": 53.55,
-      "avg": 53.5,
-      "updated_at": "01:00"
+      "bank": "التنمية الصناعية (IDB)",
+      "buy": 53.42,
+      "sell": 53.52,
+      "avg": 53.47,
+      "updated_at": "09:57"
     },
     {
       "bank": "العقاري المصري العربي (EALB)",
-      "buy": 53.45,
-      "sell": 53.55,
-      "avg": 53.5,
-      "updated_at": "01:00"
-    },
-    {
-      "bank": "كريدي أجريكول (CA)",
-      "buy": 53.44,
-      "sell": 53.54,
-      "avg": 53.49,
-      "updated_at": "01:00"
+      "buy": 53.4,
+      "sell": 53.5,
+      "avg": 53.45,
+      "updated_at": "10:00"
     },
     {
       "bank": "قطر الوطني (QNB Alahli)",
       "buy": 53.05,
       "sell": 53.15,
       "avg": 53.1,
-      "updated_at": "01:00"
+      "updated_at": "10:00"
+    },
+    {
+      "bank": "كريدي أجريكول (CA)",
+      "buy": 52.58,
+      "sell": 52.68,
+      "avg": 52.63,
+      "updated_at": "10:00"
     }
   ],
   "latest_egx": {
-    "timestamp": "2026-10-18 23:00:55",
+    "timestamp": "2026-10-19 10:01:08",
     "sb": "1",
     "segment_name": "الأسهم والسندات والأذون (الإجمالي)",
     "usd_rate": 53.54,
     "tables": {
-      "all": [
-        {
-          "type": "مصريين",
-          "order": 1,
-          "buy_egp": 27841732261.0,
-          "sell_egp": 22719741704.0,
-          "net_egp": 5121990557.0,
-          "buy_usd": 520017412.4206201,
-          "sell_usd": 424350797.60926414,
-          "net_usd": 95666614.811356
-        },
-        {
-          "type": "عرب",
-          "order": 2,
-          "buy_egp": 862043598.0,
-          "sell_egp": 421521084.0,
-          "net_egp": 440522514.0,
-          "buy_usd": 16100926.37280538,
-          "sell_usd": 7873012.401942473,
-          "net_usd": 8227913.970862906
-        },
-        {
-          "type": "أجانب",
-          "order": 3,
-          "buy_egp": 2397264623.0,
-          "sell_egp": 7959777694.0,
-          "net_egp": -5562513071.0,
-          "buy_usd": 44775207.75121405,
-          "sell_usd": 148669736.53343296,
-          "net_usd": -103894528.7822189
-        }
-      ],
+      "all": [],
       "individuals": [
         {
           "type": "مصريين",
           "order": 1,
-          "buy_egp": 7677598921.0,
-          "sell_egp": 6029197261.0,
-          "net_egp": 1648401660.0,
-          "buy_usd": 143399307.45237207,
-          "sell_usd": 112611080.7060142,
-          "net_usd": 30788226.746357866
+          "buy_egp": 0.0,
+          "sell_egp": 0.0,
+          "net_egp": 0.0,
+          "buy_usd": 0.0,
+          "sell_usd": 0.0,
+          "net_usd": 0.0
         },
         {
           "type": "عرب",
           "order": 2,
-          "buy_egp": 185002639.0,
-          "sell_egp": 108374525.0,
-          "net_egp": 76628114.0,
-          "buy_usd": 3455409.7683974598,
-          "sell_usd": 2024178.6514755324,
-          "net_usd": 1431231.1169219275
+          "buy_egp": 0.0,
+          "sell_egp": 0.0,
+          "net_egp": 0.0,
+          "buy_usd": 0.0,
+          "sell_usd": 0.0,
+          "net_usd": 0.0
         },
         {
           "type": "أجانب",
           "order": 3,
-          "buy_egp": 8923513.0,
-          "sell_egp": 2200992.0,
-          "net_egp": 6722521.0,
-          "buy_usd": 166670.02241314904,
-          "sell_usd": 41109.301456854686,
-          "net_usd": 125560.72095629436
+          "buy_egp": 0.0,
+          "sell_egp": 0.0,
+          "net_egp": 0.0,
+          "buy_usd": 0.0,
+          "sell_usd": 0.0,
+          "net_usd": 0.0
         }
       ],
-      "institutions": [
-        {
-          "type": "مصريين",
-          "order": 1,
-          "buy_egp": 20164133340.0,
-          "sell_egp": 16690544443.0,
-          "net_egp": 3473588897.0,
-          "buy_usd": 376618104.96824807,
-          "sell_usd": 311739716.9032499,
-          "net_usd": 64878388.064998135
-        },
-        {
-          "type": "عرب",
-          "order": 2,
-          "buy_egp": 677040959.0,
-          "sell_egp": 313146559.0,
-          "net_egp": 363894400.0,
-          "buy_usd": 12645516.60440792,
-          "sell_usd": 5848833.750466941,
-          "net_usd": 6796682.853940979
-        },
-        {
-          "type": "أجانب",
-          "order": 3,
-          "buy_egp": 2388341110.0,
-          "sell_egp": 7957576702.0,
-          "net_egp": -5569235592.0,
-          "buy_usd": 44608537.7288009,
-          "sell_usd": 148628627.2319761,
-          "net_usd": -104020089.5031752
-        }
-      ]
+      "institutions": []
     }
   }
 }
