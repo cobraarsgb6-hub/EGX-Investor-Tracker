@@ -710,8 +710,8 @@ async function getCachedDashboardData() {
         const currFo = Number(curr.foreign_net !== undefined ? curr.foreign_net : curr.foreign_net_egp);
         const prevTot = Number(prev.total_net !== undefined ? prev.total_net : prev.total_net_egp);
         const currTot = Number(curr.total_net !== undefined ? curr.total_net : curr.total_net_egp);
-        if (Math.abs(prevFo - currFo) < 1.0 && Math.abs(prevTot - currTot) < 1.0 && prev.date !== curr.date) {
-          // If first item was duplicate of second, remove first item and keep second
+        // لا يتم حذف أي جلسة إلا إذا كان التاريخ نفسه مكرراً (Duplicate Date)
+        if (prev.date === curr.date) {
           cleanArch[cleanArch.length - 1] = curr;
         } else {
           cleanArch.push(curr);
@@ -1493,19 +1493,20 @@ function formatEgxReport(data, lang, curr) {
 
     // 1. Session Breakdown
     txt += `🏛 <b>Institutional Flows ${mStatus.sessionTagEn}:</b>\n`
-      + `   ▫️ Egyptians Net:     ${egDot} <code>${fmtNet(egNet)}</code>\n`
-      + `   ▫️ Arabs Net:         ${arDot} <code>${fmtNet(arNet)}</code>\n`
-      + `   ▫️ Foreigners Net:    ${foDot} <code>${fmtNet(foNet)}</code>\n`
-      + `   ▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
+      + `▫️ Egyptians: ${egDot} <code>${fmtNet(egNet)}</code>\n`
+      + `▫️ Arabs: ${arDot} <code>${fmtNet(arNet)}</code>\n`
+      + `▫️ Foreigners: ${foDot} <code>${fmtNet(foNet)}</code>\n`
+      + `▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
 
     // 2. Weekly & Monthly Accumulative (Foreigners & Arabs+Foreigners Hot Money)
     const wArFoDot = (weekly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
     const mArFoDot = (monthly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
-    txt += `📈 <b>Periodic Accumulative Net (Foreigners & Hot Money):</b>\n`
-      + `   ▫️ Weekly Foreigners (${weekly.count} Sessions):  ${wFoDot} <code>${fmtNet(weekly.foNet, weekly.foUsd)}</code>\n`
-      + `   ▪️ Weekly Arabs + Foreigners:                   ${wArFoDot} <code>${fmtNet(weekly.arFoNet, weekly.arFoUsd)}</code>\n`
-      + `   ▫️ Monthly Foreigners (${monthLabelEn} • ${monthly.count} Sessions): ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
-      + `   ▪️ Monthly Arabs + Foreigners:                  ${mArFoDot} <code>${fmtNet(monthly.arFoNet, monthly.arFoUsd)}</code>\n`;
+    txt += `🗓 <b>Current Week (${weekly.count} Sessions):</b>\n`
+      + `▫️ Foreigners: ${wFoDot} <code>${fmtNet(weekly.foNet, weekly.foUsd)}</code>\n`
+      + `▪️ Arabs + Foreigners: ${wArFoDot} <code>${fmtNet(weekly.arFoNet, weekly.arFoUsd)}</code>\n\n`
+      + `📈 <b>Current Month (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
+      + `▫️ Foreigners: ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
+      + `▪️ Arabs + Foreigners: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, monthly.arFoUsd)}</code>\n`;
 
     return txt + `\n<code>─────────────────────────────</code>\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
@@ -1522,20 +1523,20 @@ function formatEgxReport(data, lang, curr) {
 
   // 1. تفصيل الجلسة
   txtAr += `🏛 <b>تدفقات الجلسة ${mStatus.sessionTagAr}:</b>\n`
-    + `   ▫️ صافي المصريين: ${egDot} <code>${fmtNet(egNet)}</code>\n`
-    + `   ▫️ صافي العرب: ${arDot} <code>${fmtNet(arNet)}</code>\n`
-    + `   ▫️ صافي الأجانب: ${foDot} <code>${fmtNet(foNet)}</code>\n`
-    + `   ▪️ عرب + أجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
+    + `▫️ مصريين: ${egDot} <code>${fmtNet(egNet)}</code>\n`
+    + `▫️ عرب: ${arDot} <code>${fmtNet(arNet)}</code>\n`
+    + `▫️ أجانب: ${foDot} <code>${fmtNet(foNet)}</code>\n`
+    + `▪️ عرب + أجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
 
   // 2. التراكمي الأسبوعي والشهري (للأجانب والعرب+الأجانب)
   const wArFoDot = (weekly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
   const mArFoDot = (monthly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
-  txtAr += `📈 <b>التراكمي (أجانب وأموال ساخنة):</b>\n`
-    + `   ▫️ أسبوعي (أجانب • ${weekly.count} جلسات): ${wFoDot} <code>${fmtNet(weekly.foNet, weekly.foUsd)}</code>\n`
-    + `   ▪️ أسبوعي (عرب + أجانب): ${wArFoDot} <code>${fmtNet(weekly.arFoNet, weekly.arFoUsd)}</code>\n`
-    + `   ▫️ شهري (أجانب • ${monthLabelAr}): ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
-    + `   ▪️ شهري (عرب + أجانب): ${mArFoDot} <code>${fmtNet(monthly.arFoNet, monthly.arFoUsd)}</code>\n`;
-
+  txtAr += `🗓 <b>الأسبوع الحالي (${weekly.count} جلسات):</b>\n`
+    + `▫️ أجانب: ${wFoDot} <code>${fmtNet(weekly.foNet, weekly.foUsd)}</code>\n`
+    + `▪️ عرب + أجانب: ${wArFoDot} <code>${fmtNet(weekly.arFoNet, weekly.arFoUsd)}</code>\n\n`
+    + `📈 <b>الشهر الحالي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
+    + `▫️ أجانب: ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
+    + `▪️ عرب + أجانب: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, monthly.arFoUsd)}</code>\n`;
   return txtAr + `\n<code>─────────────────────────────</code>\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
 
@@ -1688,6 +1689,8 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
 
   // حساب التراكمي الأسبوعي والشهري الرسمي (لحالة الشهر الحالي)
   const { weekly, monthly } = calculatePeriodicTotals(rawArchive, latestDate, usdRate);
+  const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
+  const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
   const wFoDot = weekly.foNet >= 0 ? "🟢" : "🔴";
   const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
   const wArFoDot = (weekly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
@@ -1700,13 +1703,16 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
       + `📅 Period: <b>${periodDescEn}</b> • Currency: <b>${currBadge}</b>\n`;
 
     if (isDefaultMonth) {
-      txt += `🗓 <b>Weekly Foreigners Net:</b> ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code> <i>(${weekly.count} sessions)</i>\n`
-        + `🔥 <b>Weekly Arabs + Foreigners:</b> ${wArFoDot} <code>${fmtNet(weekly.arFoNet, usdRate, weekly.arFoUsd)}</code>\n`
-        + `📈 <b>Monthly Foreigners Net:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code> <i>(${monthly.count} sessions)</i>\n`
-        + `🔥 <b>Monthly Arabs + Foreigners:</b> ${mArFoDot} <code>${fmtNet(monthly.arFoNet, usdRate, monthly.arFoUsd)}</code>\n`;
+      txt += `\n🗓 <b>Current Week (${weekly.count} Sessions):</b>\n`
+        + `▫️ Foreigners: ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code>\n`
+        + `▪️ Arabs + Foreigners: ${wArFoDot} <code>${fmtNet(weekly.arFoNet, usdRate, weekly.arFoUsd)}</code>\n\n`
+        + `📈 <b>Current Month (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
+        + `▫️ Foreigners: ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code>\n`
+        + `▪️ Arabs + Foreigners: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, usdRate, monthly.arFoUsd)}</code>\n`;
     } else {
-      txt += `🎯 <b>Foreigners Period Net:</b> ${foDot} <code>${fmtNet(totalFoNet, usdRate, totalFoUsd)}</code> <i>(${sessions.length} sessions)</i>\n`
-        + `🔥 <b>Arabs + Foreigners Period Net:</b> ${arFoDot} <code>${fmtNet(totalArFoNet, usdRate, totalArFoUsd)}</code>\n`;
+      txt += `\n🎯 <b>Period Totals (${sessions.length} Sessions):</b>\n`
+        + `▫️ Foreigners: ${foDot} <code>${fmtNet(totalFoNet, usdRate, totalFoUsd)}</code>\n`
+        + `▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(totalArFoNet, usdRate, totalArFoUsd)}</code>\n`;
     }
 
     txt += `<code>─────────────────────────────</code>\n\n`;
@@ -1735,13 +1741,16 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
     + `📅 الفترة: <b>${periodDescAr}</b> • العملة: <b>${currBadge}</b>\n`;
 
   if (isDefaultMonth) {
-    txtAr += `🗓 <b>الإقفال الأسبوعي لصافي الأجانب:</b> ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code> <i>(${weekly.count} جلسات)</i>\n`
-      + `🔥 <b>أسبوعي العرب + الأجانب (أموال ساخنة):</b> ${wArFoDot} <code>${fmtNet(weekly.arFoNet, usdRate, weekly.arFoUsd)}</code>\n`
-      + `📈 <b>صافي الأجانب التراكمي الشهري:</b> ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code> <i>(${monthly.count} جلسات)</i>\n`
-      + `🔥 <b>شهري العرب + الأجانب (أموال ساخنة):</b> ${mArFoDot} <code>${fmtNet(monthly.arFoNet, usdRate, monthly.arFoUsd)}</code>\n`;
+    txtAr += `\n🗓 <b>الأسبوع الحالي (${weekly.count} جلسات):</b>\n`
+      + `▫️ أجانب: ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code>\n`
+      + `▪️ عرب + أجانب: ${wArFoDot} <code>${fmtNet(weekly.arFoNet, usdRate, weekly.arFoUsd)}</code>\n\n`
+      + `📈 <b>الشهر الحالي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
+      + `▫️ أجانب: ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code>\n`
+      + `▪️ عرب + أجانب: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, usdRate, monthly.arFoUsd)}</code>\n`;
   } else {
-    txtAr += `🎯 <b>صافي تعاملات الأجانب للفترة:</b> ${foDot} <code>${fmtNet(totalFoNet, usdRate, totalFoUsd)}</code> <i>(${sessions.length} جلسات)</i>\n`
-      + `🔥 <b>صافي العرب + الأجانب (الأموال الساخنة):</b> ${arFoDot} <code>${fmtNet(totalArFoNet, usdRate, totalArFoUsd)}</code>\n`;
+    txtAr += `\n🎯 <b>إجمالي الفترة (${sessions.length} جلسات):</b>\n`
+      + `▫️ أجانب: ${foDot} <code>${fmtNet(totalFoNet, usdRate, totalFoUsd)}</code>\n`
+      + `▪️ عرب + أجانب: ${arFoDot} <code>${fmtNet(totalArFoNet, usdRate, totalArFoUsd)}</code>\n`;
   }
 
   txtAr += `<code>─────────────────────────────</code>\n\n`;
@@ -2208,14 +2217,15 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
   if (lang === "en") {
-    let egxBlockEn = `🏛 <b>Foreign & Non-Egyptian Flows ${mStatus.sessionTagEn}:</b>\n`
-      + `   ▫️ Foreigners Session: <code>${foAmountEn}</code>\n`
-      + `   ▪️ Arabs + Foreigners (Hot Money): <code>${arFoAmountEn}</code>\n`
-      + `   ▫️ Weekly Foreigners (${weekly.count} Sessions): <code>${wFoAmountEn}</code>\n`
-      + `   ▪️ Weekly Arabs + Foreigners: <code>${wArFoAmountEn}</code>\n\n`
-      + `📈 <b>Monthly Accumulative (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
-      + `   ▫️ Monthly Foreigners: <code>${mFoAmountEn}</code>\n`
-      + `   ▪️ Monthly Arabs + Foreigners: <code>${mArFoAmountEn}</code>\n\n`;
+    let egxBlockEn = `🏛 <b>Non-Egyptian Flows ${mStatus.sessionTagEn}:</b>\n`
+      + `▫️ Foreigners: <code>${foAmountEn}</code>\n`
+      + `▪️ Arabs + Foreigners: <code>${arFoAmountEn}</code>\n\n`
+      + `🗓 <b>Current Week (${weekly.count} Sessions):</b>\n`
+      + `▫️ Foreigners: <code>${wFoAmountEn}</code>\n`
+      + `▪️ Arabs + Foreigners: <code>${wArFoAmountEn}</code>\n\n`
+      + `📈 <b>Current Month (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
+      + `▫️ Foreigners: <code>${mFoAmountEn}</code>\n`
+      + `▪️ Arabs + Foreigners: <code>${mArFoAmountEn}</code>\n\n`;
 
     return `📊 <b>Executive Financial Summary</b>\n`
       + `<code>─────────────────────────────</code>\n`
@@ -2238,14 +2248,14 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   }
 
   let egxBlockAr = `🏛 <b>تدفقات غير المصريين ${mStatus.sessionTagAr}:</b>\n`
-    + `   ▫️ أجانب (الجلسة): <code>${foAmountAr}</code>\n`
-    + `   ▪️ عرب + أجانب: <code>${arFoAmountAr}</code>\n`
-    + `   ▫️ أسبوعي (أجانب • ${weekly.count} جلسات): <code>${wFoAmountAr}</code>\n`
-    + `   ▪️ أسبوعي (عرب + أجانب): <code>${wArFoAmountAr}</code>\n\n`
-    + `📈 <b>التراكمي الشهري (${monthLabelAr}):</b>\n`
-    + `   ▫️ شهري (أجانب • ${monthly.count} جلسات): <code>${mFoAmountAr}</code>\n`
-    + `   ▪️ شهري (عرب + أجانب): <code>${mArFoAmountAr}</code>\n\n`;
-
+    + `▫️ أجانب: <code>${foAmountAr}</code>\n`
+    + `▪️ عرب + أجانب: <code>${arFoAmountAr}</code>\n\n`
+    + `🗓 <b>الأسبوع الحالي (${weekly.count} جلسات):</b>\n`
+    + `▫️ أجانب: <code>${wFoAmountAr}</code>\n`
+    + `▪️ عرب + أجانب: <code>${wArFoAmountAr}</code>\n\n`
+    + `📈 <b>الشهر الحالي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
+    + `▫️ أجانب: <code>${mFoAmountAr}</code>\n`
+    + `▪️ عرب + أجانب: <code>${mArFoAmountAr}</code>\n\n`;
   return `📊 <b>التقرير المالي التنفيذي الشامل</b>\n`
     + `<code>─────────────────────────────</code>\n`
     + `📅 <b>الجلسة:</b> <code>${sessionDate}</code>${mStatus.isTodaySession ? "" : " <i>(آخر جلسة معتمدة)</i>"}\n`
