@@ -1499,13 +1499,17 @@ function formatEgxReport(data, lang, curr) {
       + `▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
 
     // 2. Weekly & Monthly Accumulative (Foreigners & Arabs+Foreigners Hot Money)
+    const wArDot = (weekly.arNet || 0) >= 0 ? "🟢" : "🔴";
+    const mArDot = (monthly.arNet || 0) >= 0 ? "🟢" : "🔴";
     const wArFoDot = (weekly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
     const mArFoDot = (monthly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
     txt += `🗓 <b>Current Week (${weekly.count} Sessions):</b>\n`
       + `▫️ Foreigners: ${wFoDot} <code>${fmtNet(weekly.foNet, weekly.foUsd)}</code>\n`
+      + `▫️ Arabs: ${wArDot} <code>${fmtNet(weekly.arNet, weekly.arUsd)}</code>\n`
       + `▪️ Arabs + Foreigners: ${wArFoDot} <code>${fmtNet(weekly.arFoNet, weekly.arFoUsd)}</code>\n\n`
       + `📈 <b>Current Month (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
       + `▫️ Foreigners: ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
+      + `▫️ Arabs: ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`
       + `▪️ Arabs + Foreigners: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, monthly.arFoUsd)}</code>\n`;
 
     return txt + `\n<code>─────────────────────────────</code>\n🔒 <i>Officially audited from EGX Terminal.</i>`;
@@ -1529,13 +1533,13 @@ function formatEgxReport(data, lang, curr) {
     + `▪️ عرب + أجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
 
   // 2. التراكمي الأسبوعي والشهري (للأجانب والعرب+الأجانب)
-  const wArFoDot = (weekly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
-  const mArFoDot = (monthly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
   txtAr += `🗓 <b>الأسبوع الحالي (${weekly.count} جلسات):</b>\n`
     + `▫️ أجانب: ${wFoDot} <code>${fmtNet(weekly.foNet, weekly.foUsd)}</code>\n`
+    + `▫️ عرب: ${wArDot} <code>${fmtNet(weekly.arNet, weekly.arUsd)}</code>\n`
     + `▪️ عرب + أجانب: ${wArFoDot} <code>${fmtNet(weekly.arFoNet, weekly.arFoUsd)}</code>\n\n`
     + `📈 <b>الشهر الحالي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
     + `▫️ أجانب: ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
+    + `▫️ عرب: ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`
     + `▪️ عرب + أجانب: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, monthly.arFoUsd)}</code>\n`;
   return txtAr + `\n<code>─────────────────────────────</code>\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
 }
@@ -1685,6 +1689,7 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
   });
 
   const foDot = totalFoNet >= 0 ? "🟢" : "🔴";
+  const arDot = totalArNet >= 0 ? "🟢" : "🔴";
   const arFoDot = totalArFoNet >= 0 ? "🟢" : "🔴";
 
   // حساب التراكمي الأسبوعي والشهري الرسمي (لحالة الشهر الحالي)
@@ -1692,7 +1697,9 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
   const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
   const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
   const wFoDot = weekly.foNet >= 0 ? "🟢" : "🔴";
+  const wArDot = (weekly.arNet || 0) >= 0 ? "🟢" : "🔴";
   const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
+  const mArDot = (monthly.arNet || 0) >= 0 ? "🟢" : "🔴";
   const wArFoDot = (weekly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
   const mArFoDot = (monthly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
 
@@ -1705,13 +1712,16 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
     if (isDefaultMonth) {
       txt += `\n🗓 <b>Current Week (${weekly.count} Sessions):</b>\n`
         + `▫️ Foreigners: ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code>\n`
+        + `▫️ Arabs: ${wArDot} <code>${fmtNet(weekly.arNet, usdRate, weekly.arUsd)}</code>\n`
         + `▪️ Arabs + Foreigners: ${wArFoDot} <code>${fmtNet(weekly.arFoNet, usdRate, weekly.arFoUsd)}</code>\n\n`
         + `📈 <b>Current Month (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
         + `▫️ Foreigners: ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code>\n`
+        + `▫️ Arabs: ${mArDot} <code>${fmtNet(monthly.arNet, usdRate, monthly.arUsd)}</code>\n`
         + `▪️ Arabs + Foreigners: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, usdRate, monthly.arFoUsd)}</code>\n`;
     } else {
       txt += `\n🎯 <b>Period Totals (${sessions.length} Sessions):</b>\n`
         + `▫️ Foreigners: ${foDot} <code>${fmtNet(totalFoNet, usdRate, totalFoUsd)}</code>\n`
+        + `▫️ Arabs: ${arDot} <code>${fmtNet(totalArNet, usdRate, totalArUsd)}</code>\n`
         + `▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(totalArFoNet, usdRate, totalArFoUsd)}</code>\n`;
     }
 
@@ -1723,11 +1733,13 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
       const af = Number(f) + Number(a);
       const sUsd = Number(s.usd_rate || usdRate);
       const fDot = Number(f) >= 0 ? "🟢" : "🔴";
+      const aDot = Number(a) >= 0 ? "🟢" : "🔴";
       const afDot = Number(af) >= 0 ? "🟢" : "🔴";
       const sessionTag = (idx === 0 && s.date === latestDate) ? " <i>(Latest)</i>" : "";
 
       txt += `📅 <b>Session: <code>${s.date}</code></b>${sessionTag}\n`
         + `   ▫️ Foreigners: ${fDot} <code>${fmtNet(f, sUsd)}</code>\n`
+        + `   ▫️ Arabs: ${aDot} <code>${fmtNet(a, sUsd)}</code>\n`
         + `   ▪️ Arabs + Foreigners: ${afDot} <code>${fmtNet(af, sUsd)}</code>\n\n`;
     });
 
@@ -1743,13 +1755,16 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
   if (isDefaultMonth) {
     txtAr += `\n🗓 <b>الأسبوع الحالي (${weekly.count} جلسات):</b>\n`
       + `▫️ أجانب: ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code>\n`
+      + `▫️ عرب: ${wArDot} <code>${fmtNet(weekly.arNet, usdRate, weekly.arUsd)}</code>\n`
       + `▪️ عرب + أجانب: ${wArFoDot} <code>${fmtNet(weekly.arFoNet, usdRate, weekly.arFoUsd)}</code>\n\n`
       + `📈 <b>الشهر الحالي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
       + `▫️ أجانب: ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code>\n`
+      + `▫️ عرب: ${mArDot} <code>${fmtNet(monthly.arNet, usdRate, monthly.arUsd)}</code>\n`
       + `▪️ عرب + أجانب: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, usdRate, monthly.arFoUsd)}</code>\n`;
   } else {
     txtAr += `\n🎯 <b>إجمالي الفترة (${sessions.length} جلسات):</b>\n`
       + `▫️ أجانب: ${foDot} <code>${fmtNet(totalFoNet, usdRate, totalFoUsd)}</code>\n`
+      + `▫️ عرب: ${arDot} <code>${fmtNet(totalArNet, usdRate, totalArUsd)}</code>\n`
       + `▪️ عرب + أجانب: ${arFoDot} <code>${fmtNet(totalArFoNet, usdRate, totalArFoUsd)}</code>\n`;
   }
 
@@ -1761,11 +1776,13 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
     const af = Number(f) + Number(a);
     const sUsd = Number(s.usd_rate || usdRate);
     const fDot = Number(f) >= 0 ? "🟢" : "🔴";
+    const aDot = Number(a) >= 0 ? "🟢" : "🔴";
     const afDot = Number(af) >= 0 ? "🟢" : "🔴";
     const sessionTag = (idx === 0 && s.date === latestDate) ? " <i>(الأحدث)</i>" : "";
 
     txtAr += `📅 <b>جلسة: <code>${s.date}</code></b>${sessionTag}\n`
       + `   ▫️ صافي الأجانب: ${fDot} <code>${fmtNet(f, sUsd)}</code>\n`
+      + `   ▫️ صافي العرب: ${aDot} <code>${fmtNet(a, sUsd)}</code>\n`
       + `   ▪️ صافي العرب + الأجانب: ${afDot} <code>${fmtNet(af, sUsd)}</code>\n\n`;
   });
 
@@ -2127,6 +2144,7 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
 
   // تنسيق الأرقام حسب العملة المختارة لتدفقات البورصة
   let foAmountEn = "", foAmountAr = "";
+  let arAmountEn = "", arAmountAr = "";
   let arFoAmountEn = "", arFoAmountAr = "";
   let totAmountEn = "", totAmountAr = "";
   const gold24StrEn = `$${Number(gold24.usd_price).toFixed(2)}`;
@@ -2146,7 +2164,9 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
   const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
   let wFoAmountEn = "", wFoAmountAr = "";
+  let wArAmountEn = "", wArAmountAr = "";
   let mFoAmountEn = "", mFoAmountAr = "";
+  let mArAmountEn = "", mArAmountAr = "";
 
   const arFoNet = arNet + foNet;
   let wArFoAmountEn = "", wArFoAmountAr = "";
@@ -2158,6 +2178,11 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     foAmountEn = `${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}`;
     foAmountAr = `${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}`;
 
+    const arUsd = Math.round(arNet / usdRate);
+    const arSign = arUsd >= 0 ? "+" : "-";
+    arAmountEn = `${arSign}$${Math.abs(arUsd).toLocaleString("en-US")}`;
+    arAmountAr = `${arSign}$${Math.abs(arUsd).toLocaleString("en-US")}`;
+
     const arFoUsd = Math.round(arFoNet / usdRate);
     const arFoSign = arFoUsd >= 0 ? "+" : "-";
     arFoAmountEn = `${arFoSign}$${Math.abs(arFoUsd).toLocaleString("en-US")}`;
@@ -2167,6 +2192,11 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     const wSign = wUsd >= 0 ? "+" : "-";
     wFoAmountEn = `${wSign}$${Math.abs(wUsd).toLocaleString("en-US")}`;
     wFoAmountAr = `${wSign}$${Math.abs(wUsd).toLocaleString("en-US")}`;
+
+    const wArUsd = weekly.arUsd || 0;
+    const wArSign = wArUsd >= 0 ? "+" : "-";
+    wArAmountEn = `${wArSign}$${Math.abs(wArUsd).toLocaleString("en-US")}`;
+    wArAmountAr = `${wArSign}$${Math.abs(wArUsd).toLocaleString("en-US")}`;
 
     const wAfUsd = weekly.arFoUsd || 0;
     const wAfSign = wAfUsd >= 0 ? "+" : "-";
@@ -2178,6 +2208,11 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     mFoAmountEn = `${mSign}$${Math.abs(mUsd).toLocaleString("en-US")}`;
     mFoAmountAr = `${mSign}$${Math.abs(mUsd).toLocaleString("en-US")}`;
 
+    const mArUsd = monthly.arUsd || 0;
+    const mArSign = mArUsd >= 0 ? "+" : "-";
+    mArAmountEn = `${mArSign}$${Math.abs(mArUsd).toLocaleString("en-US")}`;
+    mArAmountAr = `${mArSign}$${Math.abs(mArUsd).toLocaleString("en-US")}`;
+
     const mAfUsd = monthly.arFoUsd || 0;
     const mAfSign = mAfUsd >= 0 ? "+" : "-";
     mArFoAmountEn = `${mAfSign}$${Math.abs(mAfUsd).toLocaleString("en-US")}`;
@@ -2187,6 +2222,11 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     const absNet = Math.abs(foNet).toLocaleString("en-US");
     foAmountEn = `${foSign}${absNet} EGP`;
     foAmountAr = `${foSign}${absNet} ج.م`;
+
+    const arSign = arNet >= 0 ? "+" : "-";
+    const absAr = Math.abs(arNet).toLocaleString("en-US");
+    arAmountEn = `${arSign}${absAr} EGP`;
+    arAmountAr = `${arSign}${absAr} ج.م`;
 
     const arFoSign = arFoNet >= 0 ? "+" : "-";
     const absArFo = Math.abs(arFoNet).toLocaleString("en-US");
@@ -2198,6 +2238,11 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     wFoAmountEn = `${wSign}${wAbs} EGP`;
     wFoAmountAr = `${wSign}${wAbs} ج.م`;
 
+    const wArSign = (weekly.arNet || 0) >= 0 ? "+" : "-";
+    const wArAbs = Math.abs(weekly.arNet || 0).toLocaleString("en-US");
+    wArAmountEn = `${wArSign}${wArAbs} EGP`;
+    wArAmountAr = `${wArSign}${wArAbs} ج.م`;
+
     const wAfSign = (weekly.arFoNet || 0) >= 0 ? "+" : "-";
     const wAfAbs = Math.abs(weekly.arFoNet || 0).toLocaleString("en-US");
     wArFoAmountEn = `${wAfSign}${wAfAbs} EGP`;
@@ -2207,6 +2252,11 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     const mAbs = Math.abs(monthly.foNet).toLocaleString("en-US");
     mFoAmountEn = `${mSign}${mAbs} EGP`;
     mFoAmountAr = `${mSign}${mAbs} ج.م`;
+
+    const mArSign = (monthly.arNet || 0) >= 0 ? "+" : "-";
+    const mArAbs = Math.abs(monthly.arNet || 0).toLocaleString("en-US");
+    mArAmountEn = `${mArSign}${mArAbs} EGP`;
+    mArAmountAr = `${mArSign}${mArAbs} ج.م`;
 
     const mAfSign = (monthly.arFoNet || 0) >= 0 ? "+" : "-";
     const mAfAbs = Math.abs(monthly.arFoNet || 0).toLocaleString("en-US");
@@ -2219,12 +2269,15 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   if (lang === "en") {
     let egxBlockEn = `🏛 <b>Non-Egyptian Flows ${mStatus.sessionTagEn}:</b>\n`
       + `▫️ Foreigners: <code>${foAmountEn}</code>\n`
+      + `▫️ Arabs: <code>${arAmountEn}</code>\n`
       + `▪️ Arabs + Foreigners: <code>${arFoAmountEn}</code>\n\n`
       + `🗓 <b>Current Week (${weekly.count} Sessions):</b>\n`
       + `▫️ Foreigners: <code>${wFoAmountEn}</code>\n`
+      + `▫️ Arabs: <code>${wArAmountEn}</code>\n`
       + `▪️ Arabs + Foreigners: <code>${wArFoAmountEn}</code>\n\n`
       + `📈 <b>Current Month (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
       + `▫️ Foreigners: <code>${mFoAmountEn}</code>\n`
+      + `▫️ Arabs: <code>${mArAmountEn}</code>\n`
       + `▪️ Arabs + Foreigners: <code>${mArFoAmountEn}</code>\n\n`;
 
     return `📊 <b>Executive Financial Summary</b>\n`
@@ -2249,12 +2302,15 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
 
   let egxBlockAr = `🏛 <b>تدفقات غير المصريين ${mStatus.sessionTagAr}:</b>\n`
     + `▫️ أجانب: <code>${foAmountAr}</code>\n`
+    + `▫️ عرب: <code>${arAmountAr}</code>\n`
     + `▪️ عرب + أجانب: <code>${arFoAmountAr}</code>\n\n`
     + `🗓 <b>الأسبوع الحالي (${weekly.count} جلسات):</b>\n`
     + `▫️ أجانب: <code>${wFoAmountAr}</code>\n`
+    + `▫️ عرب: <code>${wArAmountAr}</code>\n`
     + `▪️ عرب + أجانب: <code>${wArFoAmountAr}</code>\n\n`
     + `📈 <b>الشهر الحالي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
     + `▫️ أجانب: <code>${mFoAmountAr}</code>\n`
+    + `▫️ عرب: <code>${mArAmountAr}</code>\n`
     + `▪️ عرب + أجانب: <code>${mArFoAmountAr}</code>\n\n`;
   return `📊 <b>التقرير المالي التنفيذي الشامل</b>\n`
     + `<code>─────────────────────────────</code>\n`
