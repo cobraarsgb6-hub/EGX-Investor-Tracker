@@ -1,3 +1,4 @@
+import unicodedata  # Added by PromptMaster Auto-Fix
 import time
 import json
 import os
@@ -112,9 +113,9 @@ def scrape_cbe_official_rates() -> Dict[str, Any]:
     result = {
         "source": "البنك المركزي المصري (CBE)",
         "source_url": "https://www.cbe.org.eg/ar",
-        "usd_buy": 51.9354,
-        "usd_sell": 52.0354,
-        "usd_rate": 51.9854,
+        "usd_buy": 54.4463,
+        "usd_sell": 54.5863,
+        "usd_rate": 54.5163,
         "currencies": {}
     }
     try:
@@ -190,10 +191,10 @@ def fetch_ta3weem_data(force_refresh: bool = False) -> Dict[str, Any]:
     currencies = existing_cache.get("currencies", [])
     gold_items = existing_cache.get("gold", [])
     banks = existing_cache.get("banks", [])
-    highest_buy = existing_cache.get("highest_buy", 52.07)
-    lowest_sell = existing_cache.get("lowest_sell", 52.17)
-    avg_rate = existing_cache.get("avg_rate", 52.12)
-    nbe_rate = existing_cache.get("usd_rate", 52.07)
+    highest_buy = existing_cache.get("highest_buy", 54.45)
+    lowest_sell = existing_cache.get("lowest_sell", 54.55)
+    avg_rate = existing_cache.get("avg_rate", 54.50)
+    nbe_rate = existing_cache.get("usd_rate", 54.45)
 
     banks_scraped_ok = False if should_scrape_ta3weem else bool(existing_cache.get("banks_fresh", False))
     if should_scrape_ta3weem:
@@ -233,8 +234,8 @@ def fetch_ta3weem_data(force_refresh: bool = False) -> Dict[str, Any]:
                                 item["code"] = "USD"
                                 item["flag"] = "🇺🇸"
                                 item["name_ar"] = "دولار أمريكي"
-                                item["buy"] = 52.07
-                                item["sell"] = 52.17
+                                item["buy"] = 54.45
+                                item["sell"] = 54.55
                                 scraped_curr.append(item)
                             elif "EUR" in name_full or "يورو" in name_full:
                                 item["code"] = "EUR"
@@ -393,11 +394,11 @@ def fetch_ta3weem_data(force_refresh: bool = False) -> Dict[str, Any]:
     # Fallbacks for banks if empty
     if not banks:
         banks = [
-            {"bank": "البنك الأهلي المصري (NBE)", "buy": 52.07, "sell": 52.17, "avg": 52.12},
-            {"bank": "بنك مصر (BM)", "buy": 52.07, "sell": 52.17, "avg": 52.12},
-            {"bank": "البنك التجاري الدولي (CIB)", "buy": 52.07, "sell": 52.17, "avg": 52.12},
-            {"bank": "مصرف أبوظبي الإسلامي (ADIB)", "buy": 52.15, "sell": 52.25, "avg": 52.20},
-            {"bank": "بنك الإسكندرية (AlexBank)", "buy": 52.07, "sell": 52.17, "avg": 52.12}
+            {"bank": "البنك الأهلي المصري (NBE)", "buy": 54.45, "sell": 54.55, "avg": 54.50},
+            {"bank": "بنك مصر (BM)", "buy": 54.45, "sell": 54.55, "avg": 54.50},
+            {"bank": "البنك التجاري الدولي (CIB)", "buy": 54.45, "sell": 54.55, "avg": 54.50},
+            {"bank": "مصرف أبوظبي الإسلامي (ADIB)", "buy": 54.49, "sell": 54.59, "avg": 54.54},
+            {"bank": "بنك الإسكندرية (AlexBank)", "buy": 54.45, "sell": 54.55, "avg": 54.50}
         ]
 
     if not gold_items:
@@ -409,9 +410,9 @@ def fetch_ta3weem_data(force_refresh: bool = False) -> Dict[str, Any]:
 
     # ALWAYS FETCH CBE OFFICIAL RATE, CRYPTO & OIL LIVE
     cbe_data = scrape_cbe_official_rates()
-    cbe_usd_rate = cbe_data.get("usd_rate") or 51.9854
-    cbe_usd_buy = cbe_data.get("usd_buy") or 51.9354
-    cbe_usd_sell = cbe_data.get("usd_sell") or 52.0354
+    cbe_usd_rate = cbe_data.get("usd_rate") or 54.5163
+    cbe_usd_buy = cbe_data.get("usd_buy") or 54.4463
+    cbe_usd_sell = cbe_data.get("usd_sell") or 54.5863
 
     crypto_list = fetch_crypto_rates()
     oil_list = fetch_oil_rates()

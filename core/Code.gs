@@ -167,7 +167,13 @@ function doGet(e) {
   }
 
   if (action === "purge_date") {
-    var targetDate = (e && e.parameter && e.parameter.date) ? e.parameter.date : "2026-10-08";
+    var targetDate = (e && e.parameter && e.parameter.date) ? String(e.parameter.date).trim() : "";
+    if (!targetDate) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "يجب تحديد التاريخ المطلوب حذفه عبر المعامل date=YYYY-MM-DD"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var s1 = findExistingSheet(ss, "🏛️ تعاملات المؤسسات - البورصة المصرية", ["تعاملات البورصة", "المؤسسات", "EGX"]);
     var deletedCount = 0;
@@ -206,6 +212,10 @@ function doPost(e) {
 
     if (data.latest_egx) {
       PropertiesService.getScriptProperties().setProperty("LATEST_EGX_JSON", JSON.stringify(data.latest_egx));
+    }
+    if (data.cbe_usd_buy) {
+      PropertiesService.getScriptProperties().setProperty("CBE_USD_BUY", String(data.cbe_usd_buy));
+      PropertiesService.getScriptProperties().setProperty("CBE_USD_SELL", String(data.cbe_usd_sell || (data.cbe_usd_buy + 0.14)));
     }
 
     // 1. تبويب تعاملات المؤسسات (الأرشيف التراكمي المدمج)
@@ -272,7 +282,7 @@ function normalizeDateStr(d) {
 }
 
 function getWeekSunday(dateStr) {
-  var norm = normalizeDateStr(dateStr) || "2026-10-05";
+  var norm = normalizeDateStr(dateStr) || (new Date().toISOString().slice(0, 10));
   var d = new Date(norm + "T12:00:00Z");
   if (isNaN(d.getTime())) return norm;
   var day = d.getUTCDay(); // 0 is Sunday
@@ -282,9 +292,10 @@ function getWeekSunday(dateStr) {
 }
 
 function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
-  var sessionDate = normalizeDateStr(currentSessionDate) || "2026-10-05";
+  var sessionDate = normalizeDateStr(currentSessionDate) || (new Date().toISOString().slice(0, 10));
   var weekStart = getWeekSunday(sessionDate);
-  var monthPrefix = sessionDate.slice(0, 7); // "2026-10"
+  var monthPrefix = sessionDate.slice(0, 7); // e.g. "2026-10"
+  var monthStart = monthPrefix + "-01";
 
   var weekly = { count: 0, egNet: 0, arNet: 0, foNet: 0, totNet: 0, egUsd: 0, arUsd: 0, foUsd: 0, totUsd: 0, weekStart: weekStart };
   var monthly = { count: 0, egNet: 0, arNet: 0, foNet: 0, totNet: 0, egUsd: 0, arUsd: 0, foUsd: 0, totUsd: 0, monthPrefix: monthPrefix };
@@ -319,8 +330,8 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
       weekly.totUsd += totU;
     }
 
-    // الشهر: يبدأ حصراً من 01 أكتوبر 2026 فصاعداً
-    if (dStr.indexOf(monthPrefix) === 0 && dStr >= "2026-10-01" && dStr <= sessionDate) {
+    // الشهر: يبدأ ديناميكياً من أول يوم في الشهر الجاري
+    if (dStr.indexOf(monthPrefix) === 0 && dStr >= monthStart && dStr <= sessionDate) {
       monthly.count++;
       monthly.egNet += eg;
       monthly.arNet += ar;
@@ -449,6 +460,10 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
   sheet.getRange(1, 1).setValue("🏛️ منظومة البورصة المصرية وأسواق المال - التقرير المالي التنفيذي والتراكمي");
   sheet.getRange(2, 1).setValue("🕒 توقيت المزامنة: " + (ts || new Date().toLocaleString()) + " بتوقيت مصر | سعر الدولار المعتمد: " + usdRate.toFixed(2) + " ج.م");
 
+  var mIdx = parseInt(periodic.monthly.monthPrefix.slice(5, 7), 10) - 1;
+  var monthArName = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"][mIdx] || periodic.monthly.monthPrefix;
+  var monthTitle = "إجمالي شهر " + monthArName + " " + periodic.monthly.monthPrefix.slice(0, 4) + " التراكمي";
+
   var summaryHeaders = ["الفترة / المؤشر", "صافي تعاملات الأجانب (ج.م)", "صافي تعاملات الأجانب ($)", "إجمالي صافي المؤسسات (ج.م)", "إجمالي صافي المؤسسات ($)", "عدد الجلسات", "توجيه السيولة"];
   var summaryRows = [
     summaryHeaders,
@@ -467,7 +482,7 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
       periodic.weekly.foNet >= 0 ? "🟢 تراكمي شراء أسبوعي" : "🔴 تراكمي بيع أسبوعي"
     ],
     [
-      "إجمالي شهر أكتوبر 2026 التراكمي",
+      monthTitle,
       periodic.monthly.foNet, periodic.monthly.foUsd,
       periodic.monthly.totNet, periodic.monthly.totUsd,
       periodic.monthly.count + " جلسات",
@@ -732,21 +747,36 @@ function styleSheetTable(sheet, startRow, startCol, numRows, numCols, th) {
 function colorNetColumn(sheet, colIndex, numRows, th) {
   th = th || THEMES.swiss;
   var startR = sheet.getLastRow() - numRows + 1;
-  if (startR < 2) return;
+  if (startR < 2 || numRows <= 0) return;
   var range = sheet.getRange(startR, colIndex, numRows, 1);
   var values = range.getValues();
+  var bgs = range.getBackgrounds();
+  var fontColors = range.getFontColors();
+  var fontWeights = range.getFontWeights();
+  var modified = false;
+
   for (var i = 0; i < values.length; i++) {
     var raw = values[i][0];
     if (typeof raw === "string") raw = raw.replace(/,/g, "").replace(/،/g, "").replace(/\$/g, "");
     var val = Number(raw);
-    if (!isNaN(val)) {
-      var cell = range.getCell(1 + i, 1);
+    if (!isNaN(val) && val !== 0) {
+      modified = true;
       if (val > 0) {
-        cell.setBackground(th.posBg).setFontColor(th.posText).setFontWeight("bold");
+        bgs[i][0] = th.posBg;
+        fontColors[i][0] = th.posText;
+        fontWeights[i][0] = "bold";
       } else if (val < 0) {
-        cell.setBackground(th.negBg).setFontColor(th.negText).setFontWeight("bold");
+        bgs[i][0] = th.negBg;
+        fontColors[i][0] = th.negText;
+        fontWeights[i][0] = "bold";
       }
     }
+  }
+
+  if (modified) {
+    range.setBackgrounds(bgs)
+         .setFontColors(fontColors)
+         .setFontWeights(fontWeights);
   }
 }
 
@@ -767,9 +797,13 @@ function autoFitColumns(sheet, maxCols) {
 
 function getLiveDashboardData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var cbeBuyVal = Number(PropertiesService.getScriptProperties().getProperty("CBE_USD_BUY") || 54.45);
+  var cbeSellVal = Number(PropertiesService.getScriptProperties().getProperty("CBE_USD_SELL") || 54.59);
   var result = {
     timestamp: new Date().toISOString(),
-    usd_rate: 52.42,
+    usd_rate: cbeBuyVal,
+    cbe_usd_buy: cbeBuyVal,
+    cbe_usd_sell: cbeSellVal,
     active_theme: getActiveThemeKey(),
     egx_institutions: null,
     archive: [],

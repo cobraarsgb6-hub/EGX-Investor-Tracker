@@ -2338,23 +2338,36 @@
     }
 
     function getAssetPrices(item, usdRate) {
-      var code = item.code || "";
+      var code = (item.code || "").toUpperCase();
       var uPrice = Number(item.usd_price || 0);
       var ePrice = Number(item.egp_price || 0);
+      usdRate = Number(usdRate || 54.49);
       if (code === "USD") return { uPrice: 1.0, ePrice: usdRate };
-      if (ePrice <= 0 && uPrice > 0) ePrice = uPrice * usdRate;
-      else if (uPrice <= 0 && ePrice > 0) uPrice = ePrice / usdRate;
-      else if (uPrice <= 0 && ePrice <= 0) {
-        var rawBuy = Number(item.buy || 0);
-        var rawRate = Number(item.rate_egp || 0);
-        if (code.indexOf("GOLD") >= 0 || ["SAR", "AED", "EUR", "KWD", "GBP", "QAR"].indexOf(code) >= 0) {
-          ePrice = rawRate || rawBuy;
-          uPrice = ePrice / usdRate;
-        } else {
-          uPrice = rawBuy || rawRate;
-          ePrice = uPrice * usdRate;
+
+      // كافة العملات الأجنبية والعربية في مصر تُسعر رسمياً بالجنيه المصري
+      var isFiatCurr = (item.category === "عملات رئيسية") || 
+                       ["EUR", "SAR", "AED", "GBP", "KWD", "QAR", "CNY", "BHD", "OMR", "JPY", "CHF", "CAD", "AUD"].indexOf(code) >= 0;
+
+      if (isFiatCurr) {
+        var rawRate = Number(item.rate_egp || item.egp_price || item.buy || item.sell || 0);
+        if (rawRate > 0) {
+          ePrice = rawRate;
+          uPrice = usdRate > 0 ? (ePrice / usdRate) : 0;
+        }
+        return { uPrice: uPrice, ePrice: ePrice };
+      }
+
+      if (code.indexOf("GOLD") >= 0) {
+        var gRate = Number(item.rate_egp || item.egp_price || item.buy || item.sell || 0);
+        if (gRate > 0) {
+          ePrice = gRate;
+          uPrice = usdRate > 0 ? (ePrice / usdRate) : 0;
+          return { uPrice: uPrice, ePrice: ePrice };
         }
       }
+
+      if (ePrice <= 0 && uPrice > 0) ePrice = uPrice * usdRate;
+      else if (uPrice <= 0 && ePrice > 0) uPrice = ePrice / usdRate;
       return { uPrice: uPrice, ePrice: ePrice };
     }
 
@@ -2707,25 +2720,42 @@
         switchTheme(data.active_theme);
       }
       var t = i18n[currentLang];
-      // استخراج سعر البنك المركزي الفعلي الموثق
+      // استخراج سعر البنك المركزي الفعلي الموثق لحظياً
       var usdBuy = 0, usdSell = 0;
       if (data.cbe_usd_buy && Number(data.cbe_usd_buy) > 40) {
         usdBuy = Number(data.cbe_usd_buy);
-        usdSell = Number(data.cbe_usd_sell || (usdBuy + 0.10));
-      } else if (data.banks && data.banks.length > 0) {
-        var cbeBank = data.banks.find(function(b) {
-          var bn = (b.bank || "").toLowerCase();
-          return bn.indexOf("مركزي") >= 0 || bn.indexOf("cbe") >= 0;
-        });
-        if (cbeBank && Number(cbeBank.buy) > 40) {
-          usdBuy = Number(cbeBank.buy);
-          usdSell = Number(cbeBank.sell || (usdBuy + 0.10));
+        usdSell = Number(data.cbe_usd_sell || (usdBuy + 0.14));
+      }
+      if (!usdBuy || usdBuy < 45) {
+        var usdItem = (data.rates || []).find(function(r) { return (r.code || "").toUpperCase() === "USD"; });
+        if (usdItem && Number(usdItem.egp_price || usdItem.buy) > 45) {
+          usdBuy = Number(usdItem.buy || usdItem.egp_price);
+          usdSell = Number(usdItem.sell || (usdBuy + 0.14));
         }
       }
-      if (!usdBuy || usdBuy < 45) usdBuy = 52.26;
-      if (!usdSell || usdSell < 45) usdSell = 52.36;
+      if (!usdBuy || usdBuy < 45) {
+        if (data.banks && data.banks.length > 0) {
+          var cbeBank = data.banks.find(function(b) {
+            var bn = (b.bank || "").toLowerCase();
+            return bn.indexOf("مركزي") >= 0 || bn.indexOf("cbe") >= 0;
+          });
+          if (cbeBank && Number(cbeBank.buy) > 40) {
+            usdBuy = Number(cbeBank.buy);
+            usdSell = Number(cbeBank.sell || (usdBuy + 0.14));
+          }
+        }
+      }
+      if (!usdBuy || usdBuy < 45) {
+        if (data.usd_rate && Number(data.usd_rate) > 45) {
+          usdBuy = Number(data.usd_rate);
+          usdSell = Number((usdBuy + 0.14).toFixed(2));
+        }
+      }
+      // في حال عدم توفر بيانات، اعتماد سعر الإقفال المركزي الحالي الموثق بدقة
+      if (!usdBuy || usdBuy < 45) usdBuy = 54.45;
+      if (!usdSell || usdSell < 45) usdSell = 54.59;
 
-      var usdRate = usdBuy;
+      var usdRate = Number(data.usd_rate || usdBuy);
       
       var elBuy = document.getElementById("nav-usd-buy");
       var elSell = document.getElementById("nav-usd-sell");
@@ -2897,7 +2927,7 @@
     // بطاقات الأسواق الحية المدمجة الشاملة (بدون أي تكرار)
     function renderMarketCards(rates) {
       var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
-      var usdRate = Number((globalData && globalData.usd_rate) || 52.26);
+      var usdRate = Number((globalData && globalData.usd_rate) || 54.49);
       var cardsHtml = "";
 
       var filtered = rates.filter(function(item) {
@@ -2971,7 +3001,7 @@
     function renderArchiveTable(data) {
       if (!data || !data.archive) return;
       var currEgpLabel = (currentLang === "en") ? "EGP" : "ج.م";
-      var usdRate = Number(data.usd_rate || 52.26);
+      var usdRate = Number(data.usd_rate || 54.49);
       var rawRows = data.archive.slice();
 
       // فلترة ذكية في الواجهة: إخفاء أي جلسة مكررة الأرقام تماماً مع الجلسة السابقة بسبب عطلة البورصة
@@ -3206,7 +3236,7 @@
             var item = globalData.rates.find(function(r) { return r.code === code; });
             if (item) {
               item.usd_price = parseFloat(d.c);
-              item.egp_price = item.usd_price * Number(globalData.usd_rate || 52.26);
+              item.egp_price = item.usd_price * Number(globalData.usd_rate || 54.49);
               item.change = parseFloat(d.P).toFixed(2) + "%";
               item.updated_at = new Date().toLocaleTimeString("en-US");
               renderMarketCards(globalData.rates);
