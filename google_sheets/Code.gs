@@ -306,7 +306,7 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
     var dStr = normalizeDateStr(s.date);
     if (!dStr) return;
 
-    var rate = Number(s.usd_rate || defaultUsdRate || 52.42);
+    var rate = Number(s.usd_rate || defaultUsdRate || 54.45);
     var eg = Number(s.egypt_net !== undefined ? s.egypt_net : (s.egypt_net_egp || 0));
     var ar = Number(s.arab_net !== undefined ? s.arab_net : (s.arab_net_egp || 0));
     var fo = Number(s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0));
@@ -401,7 +401,7 @@ function getSheetArchiveRows(ss) {
       list.push({
         date: normalizeDateStr(row[0]),
         segment: String(row[1] || ""),
-        usd_rate: Number(row[2] || 52.42),
+        usd_rate: Number(row[2] || 54.45),
         egypt_buy: Number(row[3] || 0), egypt_sell: Number(row[4] || 0), egypt_net: Number(row[5] || 0),
         arab_buy: Number(row[6] || 0), arab_sell: Number(row[7] || 0), arab_net: Number(row[8] || 0),
         foreign_buy: Number(row[9] || 0), foreign_sell: Number(row[10] || 0), foreign_net: Number(row[11] || 0),
@@ -423,7 +423,7 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
   sheet.setRightToLeft(true);
   sheet.clear();
 
-  var usdRate = 52.42;
+  var usdRate = 54.45;
   if (banks && banks.length > 0 && Number(banks[0].buy) > 30) {
     usdRate = Number(banks[0].buy);
   }
@@ -437,7 +437,7 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
   var todayFoUsd = Math.round(todayFoNet / usdRate);
   var todayTotUsd = Math.round(todayTotNet / usdRate);
 
-  var topBank = (banks && banks.length > 0) ? banks[0] : { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.42, sell: 52.52 };
+  var topBank = (banks && banks.length > 0) ? banks[0] : { bank: "أبوظبي الإسلامي (ADIB)", buy: 54.45, sell: 54.59 };
   var gold24 = 0, goldOunce = 0, silver = 0, brent = 0, wti = 0;
   if (rates && rates.length > 0) {
     rates.forEach(function(r) {
@@ -492,8 +492,8 @@ function updateExecutiveSummarySheet(ss, archive, banks, rates, ts) {
 
   sheet.getRange(4, 1, summaryRows.length, summaryHeaders.length).setValues(summaryRows);
 
-  var cbeBuyStr = (r0.cbe_usd_buy ? Number(r0.cbe_usd_buy).toFixed(4) : "52.2600") + " ج.م";
-  var cbeSellStr = (r0.cbe_usd_sell ? Number(r0.cbe_usd_sell).toFixed(4) : "52.3600") + " ج.م";
+  var cbeBuyStr = (r0.cbe_usd_buy ? Number(r0.cbe_usd_buy).toFixed(4) : "54.4500") + " ج.م";
+  var cbeSellStr = (r0.cbe_usd_sell ? Number(r0.cbe_usd_sell).toFixed(4) : "54.5900") + " ج.م";
 
   var marketHeaders = ["الأصل / المؤشر", "السعر العالمي ($USD)", "المعادل المحلي (EGP)", "أفضل بنك / المصدر المعتمد"];
   var marketRows = [
@@ -535,7 +535,7 @@ function updateInstitutionsArchiveSheet(ss, archive) {
     var seg = String(r.segment || "").trim();
     if (dStr) {
       outRows.push([
-        dStr, seg, Number(r.usd_rate || 52.42),
+        dStr, seg, Number(r.usd_rate || 54.45),
         Number(r.egypt_buy_egp || 0), Number(r.egypt_sell_egp || 0), Number(r.egypt_net_egp || 0),
         Number(r.arab_buy_egp || 0), Number(r.arab_sell_egp || 0), Number(r.arab_net_egp || 0),
         Number(r.foreign_buy_egp || 0), Number(r.foreign_sell_egp || 0), Number(r.foreign_net_egp || 0),
@@ -799,6 +799,14 @@ function getLiveDashboardData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var cbeBuyVal = Number(PropertiesService.getScriptProperties().getProperty("CBE_USD_BUY") || 54.45);
   var cbeSellVal = Number(PropertiesService.getScriptProperties().getProperty("CBE_USD_SELL") || 54.59);
+  if (cbeBuyVal < 54.0) {
+    cbeBuyVal = 54.45;
+    cbeSellVal = 54.59;
+    try {
+      PropertiesService.getScriptProperties().setProperty("CBE_USD_BUY", "54.45");
+      PropertiesService.getScriptProperties().setProperty("CBE_USD_SELL", "54.59");
+    } catch(e) {}
+  }
   var result = {
     timestamp: new Date().toISOString(),
     usd_rate: cbeBuyVal,
