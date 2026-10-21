@@ -838,13 +838,24 @@ function getLiveDashboardData() {
     var maxC2 = Math.min(s2.getLastColumn(), 7);
     var rVals = s2.getRange(4, 1, maxR2, maxC2).getValues();
     rVals.forEach(function(row) {
+      var rowCat = String(row[0] || "");
+      var rowCode = String(row[1] || "");
+      var rowBuy = Number(row[3] || 0);
+      var rowSell = Number(row[4] || 0);
+      var rowRateEgp = Number(row[5] || 0);
+      var isCurr = rowCat.indexOf("عملات") >= 0 && rowCat.indexOf("رقمية") < 0;
+      var uPrice = isCurr ? (cbeBuyVal > 0 ? rowRateEgp / cbeBuyVal : 0) : rowBuy;
+      var ePrice = rowRateEgp > 0 ? rowRateEgp : (uPrice * cbeBuyVal);
+
       result.rates.push({
-        category: String(row[0] || ""),
-        code: String(row[1] || ""),
+        category: rowCat,
+        code: rowCode,
         name: String(row[2] || ""),
-        buy: Number(row[3] || 0),
-        sell: Number(row[4] || 0),
-        rate_egp: Number(row[5] || 0),
+        buy: rowBuy,
+        sell: rowSell,
+        rate_egp: rowRateEgp,
+        usd_price: uPrice,
+        egp_price: ePrice,
         change: String(row[6] || "مباشر")
       });
     });

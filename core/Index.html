@@ -2366,8 +2366,20 @@
         }
       }
 
-      if (ePrice <= 0 && uPrice > 0) ePrice = uPrice * usdRate;
-      else if (uPrice <= 0 && ePrice > 0) uPrice = ePrice / usdRate;
+      var rawRateEgp = Number(item.rate_egp || 0);
+      var rawBuy = Number(item.buy || 0);
+      var rawSell = Number(item.sell || 0);
+
+      // Commodities (Gold Ounce, Silver, Oil) & Cryptos fallback
+      if (uPrice <= 0) {
+        uPrice = rawBuy || rawSell;
+      }
+      if (ePrice <= 0) {
+        ePrice = rawRateEgp || (uPrice > 0 ? (uPrice * usdRate) : 0);
+      }
+      if (uPrice <= 0 && ePrice > 0 && usdRate > 0) {
+        uPrice = ePrice / usdRate;
+      }
       return { uPrice: uPrice, ePrice: ePrice };
     }
 
@@ -2982,9 +2994,8 @@
 
         cardsHtml += '<div class="asset-card ' + catClass + '">'
           + '<div class="asset-head">'
-          + '<span class="asset-name">' + cleanName + '</span>'
-          + '<div style="display:flex; align-items:center; gap:5px;">'
-          + '<span class="cat-tag-pill ' + catTagClass + '">' + catTagLabel + '</span>'
+          + '<span class="asset-name" title="' + cleanName + '">' + cleanName + '</span>'
+          + '<div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">'
           + '<span class="asset-symbol">' + item.code + '</span>'
           + '</div>'
           + '</div>'

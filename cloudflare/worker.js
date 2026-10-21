@@ -772,7 +772,7 @@ async function getCachedDashboardData() {
     mk("SILVER", "أونصة الفضة (Silver)", "Silver (Ounce)", tv.silver, tv.silver_chg)
   ];
 
-  // العملات: فقط ما جاء فعلاً من تعويم (سعر واحد لكل عملة، بدون شراء/بيع مصطنع)
+  // العملات: ما جاء فعلاً من تعويم + احتياطي كامل من بيانات السحابة (sheetData)
   const rates = [];
   if (usdRate) {
     rates.push({ code: "USD", ...CURR_META.USD, usd_price: 1, egp_price: usdRate, rate_egp: usdRate, buy: cbeBuy, sell: cbeSell, change: currs?.USD?.change || null });
@@ -788,12 +788,34 @@ async function getCachedDashboardData() {
     rates.push({ code, name: c.name, name_en: c.name_en, usd_price: usdRate ? Number((c.price / usdRate).toFixed(4)) : null, egp_price: c.price, rate_egp: c.price, buy: c.buy, sell: c.sell, change: null });
   });
 
+  // Fallback to sheetData.rates if live Ta3weem scrape was blocked or returned only USD
+  if (rates.length <= 1 && Array.isArray(sheetData.rates) && sheetData.rates.length > 0) {
+    sheetData.rates.forEach(r => {
+      const cCode = (r.code || "").toUpperCase();
+      if (cCode === "USD" || rates.some(x => x.code === cCode)) return;
+      const meta = CURR_META[cCode] || { name: r.name, name_en: r.name_en || r.name };
+      const eP = Number(r.egp_price || r.rate_egp || 0);
+      const uP = r.usd_price ? Number(r.usd_price) : (usdRate && eP ? Number((eP / usdRate).toFixed(4)) : null);
+      rates.push({
+        code: cCode,
+        name: meta.name || r.name,
+        name_en: meta.name_en || r.name_en || r.name,
+        usd_price: uP,
+        egp_price: eP,
+        rate_egp: eP,
+        buy: r.buy,
+        sell: r.sell,
+        change: r.change || null
+      });
+    });
+  }
+
   const sources = {
     sheet: sheetCache.timestamp > 0 && now - sheetCache.timestamp < 5 * 60000,
-    banks: banksLive,
-    cbe: !!cbeLive,
-    currencies: !!currs,
-    fx_extra: !!extraFx,
+    banks: banksLive || (Array.isArray(banks) && banks.length > 0),
+    cbe: !!cbeLive || !!cbeBuy,
+    currencies: !!currs || (rates.length > 1),
+    fx_extra: !!extraFx || (rates.length > 1),
     markets: !!(tv.btc || tv.brent || tv.gold_ounce)
   };
 
@@ -1407,7 +1429,7 @@ function formatBanksReport(data, lang, cfg, tz) {
   txt += `📊 <b>${T(`Top ${Math.min(limit, banks.length)} Banks (Buy • Sell)`, `أعلى ${Math.min(limit, banks.length)} بنوك (شراء • بيع)`)}:</b>\n\n`
     + banks.slice(0, limit).map(b => `▫️ <b>${bn(b.bank, lang)}:</b> ${buyL} <code>${Number(b.buy).toFixed(2)}</code> • ${sellL} <code>${Number(b.sell).toFixed(2)}</code>`).join("\n");
 
-  if (data.sources && data.sources.banks === false) {
+  if (data.sources && data.sources.banks === false && (!banks || !banks.length)) {
     txt += `\n\n⚠️ <i>${T("Live bank feed unavailable - showing last saved rates.", "مصدر البنوك الحي غير متاح - عرض آخر أسعار محفوظة.")}</i>`;
   }
   return txt + `\n\n${LINE}\n⚡ <i>${T("Live feed via Ta3weem.", "أسعار حية مباشرة من البنوك عبر تعويم.")}</i>`;
