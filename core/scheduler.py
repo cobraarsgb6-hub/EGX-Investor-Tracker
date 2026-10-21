@@ -2,7 +2,7 @@ import time
 import threading
 from datetime import datetime, timedelta, time as dtime
 from zoneinfo import ZoneInfo
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 import logging
 import traceback
 
@@ -48,13 +48,15 @@ def get_cairo_datetime() -> datetime:
     """Returns current Cairo datetime."""
     return datetime.now(CAIRO_TZ)
 
-def check_egx_market_status(now_cairo: datetime) -> Tuple[bool, str]:
+def check_egx_market_status(now_cairo: Optional[datetime] = None) -> Tuple[bool, str]:
     """
     Evaluates whether the EGX session is actively running.
     Egyptian trading days: Sunday (6) through Thursday (3).
     Weekend: Friday (4) and Saturday (5).
     Regular Trading Hours: 10:00 AM to 02:00 PM Cairo Time.
     """
+    if now_cairo is None:
+        now_cairo = get_cairo_datetime()
     weekday = now_cairo.weekday()  # Monday is 0, Sunday is 6
     
     # 1. Weekend Check (Friday=4, Saturday=5)
@@ -79,13 +81,15 @@ def check_egx_market_status(now_cairo: datetime) -> Tuple[bool, str]:
     else:
         return True, "جلسة التداول اليومية جارية الآن (10:00 ص - 02:00 م)"
 
-def get_cairo_next_action(now_cairo: datetime) -> Tuple[str, int]:
+def get_cairo_next_action(now_cairo: Optional[datetime] = None) -> Tuple[str, int]:
     """
     Determines next action and sleep duration for currency sync:
     - Active business window: 09:00 - 16:00 (Every 5 minutes = 300s).
     - Evening closing snapshot: 23:00 - 23:05 (One sync).
     - Off-hours / Weekends: Standby until next active window.
     """
+    if now_cairo is None:
+        now_cairo = get_cairo_datetime()
     weekday = now_cairo.weekday()  # Monday=0, Sun=6, Fri=4, Sat=5
     cur_time = now_cairo.time()
 
