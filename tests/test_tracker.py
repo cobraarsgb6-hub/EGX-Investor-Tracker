@@ -143,5 +143,44 @@ class TestEGXTracker(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertIn("غير صالح", res.get_json()["message"])
 
+    # ==============================================================================
+    # 5. TA3WEEM 18 CURRENCIES & OUTLIER AUDIT TESTS
+    # ==============================================================================
+
+    def test_ta3weem_18_currencies_accuracy(self):
+        from core.ta3weem import fetch_ta3weem_data
+        data = fetch_ta3weem_data(force_refresh=False)
+        self.assertIn("currencies", data)
+        codes = [c["code"] for c in data["currencies"]]
+        
+        # Verify all 18 currencies are present
+        expected_codes = ["USD", "EUR", "GBP", "SAR", "AED", "QAR", "KWD", "BHD", "JPY", "JOD", "OMR", "CHF", "SEK", "NOK", "DKK", "CNY", "CAD", "AUD"]
+        for ec in expected_codes:
+            self.assertIn(ec, codes, f"Currency {ec} missing from Ta3weem payload")
+            
+        # Verify KWD, QAR, CNY are NOT hardcoded old values
+        kwd = next(c for c in data["currencies"] if c["code"] == "KWD")
+        self.assertGreater(kwd["rate"], 172.0, "KWD rate must be live (>172.0), not old hardcoded 169.84")
+        
+        cny = next(c for c in data["currencies"] if c["code"] == "CNY")
+        self.assertGreater(cny["rate"], 7.8, "CNY rate must be live (>7.8), not old hardcoded 7.35")
+        
+        qar = next(c for c in data["currencies"] if c["code"] == "QAR")
+        self.assertGreater(qar["rate"], 14.6, "QAR rate must be live (>14.6), not old hardcoded 14.31")
+
+    def test_ta3weem_cbe_bank_in_banks(self):
+        from core.ta3weem import fetch_ta3weem_data
+        data = fetch_ta3weem_data(force_refresh=False)
+        self.assertIn("banks", data)
+        self.assertGreaterEqual(len(data["banks"]), 20)
+        cbe_present = any("المركزي" in b["bank"] for b in data["banks"])
+        self.assertTrue(cbe_present, "Central Bank (CBE) must be present in banks list")
+
+    def test_ta3weem_outlier_rejection(self):
+        from core.ta3weem import fetch_ta3weem_data
+        data = fetch_ta3weem_data(force_refresh=False)
+        self.assertGreater(data["lowest_sell"], 53.5, "lowest_sell should not be distorted by broken outlier (e.g. 53.15)")
+        self.assertLess(data["lowest_sell"], 56.0)
+
 if __name__ == "__main__":
     unittest.main()
