@@ -1,9 +1,10 @@
 import time
 import threading
-from datetime import datetime, time as dtime
+from datetime import datetime, timedelta, time as dtime
 from zoneinfo import ZoneInfo
 from typing import Dict, Any, Tuple
 import logging
+import traceback
 
 from core.ta3weem import fetch_ta3weem_data
 from core.scraper import fetch_investors_from_egx
@@ -23,107 +24,79 @@ FIXED_HOLIDAYS = {
     "05-01": "عيد العمال",
     "06-30": "عيد ثورة 30 يونيو",
     "07-23": "عيد ثورة 23 يوليو",
-    "10-06": "عيد القوات المسلحة (6 أكتوبر)"
+    "10-06": "عيد القوات المسلحة (نصر أكتوبر)",
 }
 
-# State tracking
+# Global scheduler state for UI monitoring
 scheduler_state = {
     "last_currency_sync": None,
-    "last_currency_epoch": None,
+    "last_currency_epoch": 0,
     "next_currency_sync": None,
-    "next_currency_epoch": None,
+    "next_currency_epoch": 0,
+    "total_currency_syncs": 0,
+    
     "last_egx_sync": None,
     "next_egx_sync": None,
-    "next_egx_epoch": None,
-    "egx_market_status": "غير محدد",
+    "next_egx_epoch": 0,
+    "total_egx_syncs": 0,
+    "egx_market_status": "قيد الفحص...",
     "egx_market_open": False,
-    "last_egx_error": None,
-    "total_currency_syncs": 0,
-    "total_egx_syncs": 0
+    "last_egx_error": None
 }
 
 def get_cairo_datetime() -> datetime:
-    """Returns current date and time in Cairo timezone (Africa/Cairo)."""
+    """Returns current Cairo datetime."""
     return datetime.now(CAIRO_TZ)
 
-def check_egx_market_status(dt: datetime = None) -> Tuple[bool, str]:
+def check_egx_market_status(now_cairo: datetime) -> Tuple[bool, str]:
     """
-    Checks if Egyptian Exchange (EGX) is currently in active trading session.
-    Trading Days: Sunday through Thursday (0=Mon, 1=Tue, 2=Wed, 3=Thu, 6=Sun).
+    Evaluates whether the EGX session is actively running.
+    Egyptian trading days: Sunday (6) through Thursday (3).
     Weekend: Friday (4) and Saturday (5).
-    Trading Hours: 10:00 AM to 02:00 PM (Cairo Time).
+    Regular Trading Hours: 10:00 AM to 02:00 PM Cairo Time.
     """
-    if dt is None:
-        dt = get_cairo_datetime()
+    weekday = now_cairo.weekday()  # Monday is 0, Sunday is 6
+    
+    # 1. Weekend Check (Friday=4, Saturday=5)
+    if weekday in (4, 5):
+        day_name = "الجمعة" if weekday == 4 else "السبت"
+        return False, f"عطلة نهاية الأسبوع الرسمية ({day_name})"
         
-    weekday = dt.weekday()
-    if weekday == 4:
-        return False, "عطلة نهاية الأسبوع (الجمعة) - البورصة مغلقة"
-    if weekday == 5:
-        return False, "عطلة نهاية الأسبوع (السبت) - البورصة مغلقة"
-        
-    date_md = dt.strftime("%m-%d")
+    # 2. Fixed Holiday Check
+    date_md = now_cairo.strftime("%m-%d")
     if date_md in FIXED_HOLIDAYS:
-        return False, f"إجازة رسمية ({FIXED_HOLIDAYS[date_md]}) - البورصة مغلقة"
+        return False, f"عطلة رسمية بالبورصة ({FIXED_HOLIDAYS[date_md]})"
         
-    cur_time = dt.time()
+    # 3. Trading Hours Check
+    cur_time = now_cairo.time()
     market_open = dtime(10, 0)
     market_close = dtime(14, 0)
     
     if cur_time < market_open:
-        return False, "قبل بدء الجلسة (تبدأ 10:00 صباحاً بتوقيت مصر) - البورصة مغلقة"
-    if cur_time > market_close:
-        return False, "انتهت جلسة اليوم (انتهت 2:00 ظهراً بتوقيت مصر) - البورصة مغلقة"
-        
-    return True, "🟢 جلسة التداول مفتوحة حالياً (10:00 ص - 2:00 م)"
-
-def get_market_status_info() -> Dict[str, Any]:
-    """Returns a full snapshot of Cairo time, market operational status, and sync countdowns."""
-    now_cairo = get_cairo_datetime()
-    is_open, status_desc = check_egx_market_status(now_cairo)
-    
-    scheduler_state["egx_market_open"] = is_open
-    scheduler_state["egx_market_status"] = status_desc
-    
-    now_epoch = time.time()
-    next_curr_epoch = scheduler_state.get("next_currency_epoch") or (now_epoch + 600)
-    countdown_curr_sec = max(0, int(next_curr_epoch - now_epoch))
-    
-    return {
-        "cairo_time": now_cairo.strftime("%Y-%m-%d %H:%M:%S"),
-        "cairo_time_formatted": now_cairo.strftime("%I:%M:%S %p").replace("AM", "صباحاً").replace("PM", "مساءً"),
-        "cairo_date_formatted": now_cairo.strftime("%Y-%m-%d"),
-        "weekday_ar": ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"][now_cairo.weekday()],
-        "is_market_open": is_open,
-        "status_description": status_desc,
-        "last_currency_sync": scheduler_state["last_currency_sync"],
-        "next_currency_sync": scheduler_state["next_currency_sync"],
-        "currency_countdown_sec": countdown_curr_sec,
-        "total_currency_syncs": scheduler_state["total_currency_syncs"],
-        "last_egx_sync": scheduler_state["last_egx_sync"],
-        "next_egx_sync": scheduler_state["next_egx_sync"],
-        "total_egx_syncs": scheduler_state["total_egx_syncs"]
-    }
+        return False, "جلسة التداول لم تبدأ بعد (تبدأ 10:00 صباحاً بتوقيت القاهرة)"
+    elif cur_time > market_close:
+        return False, "جلسة التداول أغلقت رسمياً (تنتهي 02:00 ظهراً بتوقيت القاهرة)"
+    else:
+        return True, "جلسة التداول اليومية جارية الآن (10:00 ص - 02:00 م)"
 
 def get_cairo_next_action(now_cairo: datetime) -> Tuple[str, int]:
     """
-    Determines next action and sleep duration in seconds:
-    - Active trading/banking window (09:00 to 16:00 Sun-Thu): 'SYNC', sleep 300s (5 min).
-    - Closing snapshot at 23:00 Cairo time: 'CLOSING_SYNC' if within [23:00 - 23:05].
-    - Otherwise (nights, weekends, holidays): 'SLEEP' (Zero requests).
+    Determines next action and sleep duration for currency sync:
+    - Active business window: 09:00 - 16:00 (Every 5 minutes = 300s).
+    - Evening closing snapshot: 23:00 - 23:05 (One sync).
+    - Off-hours / Weekends: Standby until next active window.
     """
-    weekday = now_cairo.weekday()
+    weekday = now_cairo.weekday()  # Monday=0, Sun=6, Fri=4, Sat=5
     cur_time = now_cairo.time()
 
-    # Weekend: Friday (4) and Saturday (5) -> Sleep until Sunday 09:00
+    # Weekend (Friday & Saturday) -> Sleep until Sunday 09:00 AM
     if weekday in (4, 5):
-        # Calculate seconds until next Sunday 09:00 AM
         days_ahead = (6 - weekday) % 7
         if days_ahead == 0 and cur_time >= dtime(9, 0):
             days_ahead = 7
         target_sunday = (now_cairo + timedelta(days=days_ahead)).replace(hour=9, minute=0, second=0, microsecond=0)
         sleep_sec = max(60, int((target_sunday - now_cairo).total_seconds()))
-        return "WEEKEND_SLEEP", min(sleep_sec, 3600)  # Check at most every hour or sleep until target
+        return "WEEKEND_SLEEP", min(sleep_sec, 3600)
 
     # Official Holiday
     date_md = now_cairo.strftime("%m-%d")
@@ -159,91 +132,126 @@ def get_cairo_next_action(now_cairo: datetime) -> Tuple[str, int]:
 def run_currency_sync_loop():
     """
     Intelligently syncs currency, commodity, crypto, and gold rates.
-    ZERO REQUESTS policy outside trading hours:
-    - 5 minutes during active banking hours (09:00 - 16:00 Sun-Thu).
-    - 1 final closing snapshot at 23:00 Cairo time.
-    - Zero network queries during evenings, nights, and weekends.
+    Thread is resilient and auto-recovers from any transient error.
     """
     while True:
-        now_cairo = get_cairo_datetime()
-        action, sleep_duration = get_cairo_next_action(now_cairo)
-        
-        if action in ("ACTIVE_SYNC", "CLOSING_SYNC"):
-            try:
-                now_epoch = time.time()
+        try:
+            now_cairo = get_cairo_datetime()
+            action, sleep_duration = get_cairo_next_action(now_cairo)
+            
+            if action in ("ACTIVE_SYNC", "CLOSING_SYNC"):
+                try:
+                    now_epoch = time.time()
+                    now_str = now_cairo.strftime("%Y-%m-%d %H:%M:%S")
+                    is_closing = (action == "CLOSING_SYNC")
+                    tag = "🌙 Final 23:00 Closing Sync" if is_closing else "💱 Active Session Sync"
+                    
+                    fetch_ta3weem_data(force_refresh=is_closing)
+                    scheduler_state["last_currency_sync"] = now_str
+                    scheduler_state["last_currency_epoch"] = now_epoch
+                    scheduler_state["total_currency_syncs"] += 1
+                    
+                    next_epoch = now_epoch + sleep_duration
+                    scheduler_state["next_currency_epoch"] = next_epoch
+                    next_sync_dt = datetime.fromtimestamp(next_epoch, tz=CAIRO_TZ)
+                    scheduler_state["next_currency_sync"] = next_sync_dt.strftime("%H:%M:%S")
+                    print(f"[Scheduler] {tag} #{scheduler_state['total_currency_syncs']} at {now_str}. Next in {sleep_duration // 60}m ({scheduler_state['next_currency_sync']})", flush=True)
+                except Exception as e:
+                    print(f"[Scheduler Error] Currency sync failed: {e}", flush=True)
+                    logger.error(f"Currency sync failed: {e}", exc_info=True)
+            else:
                 now_str = now_cairo.strftime("%Y-%m-%d %H:%M:%S")
-                is_closing = (action == "CLOSING_SYNC")
-                tag = "🌙 Final 23:00 Closing Sync" if is_closing else "💱 Active Session Sync"
-                
-                fetch_ta3weem_data(force_refresh=is_closing)
-                scheduler_state["last_currency_sync"] = now_str
-                scheduler_state["last_currency_epoch"] = now_epoch
-                scheduler_state["total_currency_syncs"] += 1
-                
-                next_epoch = now_epoch + sleep_duration
-                scheduler_state["next_currency_epoch"] = next_epoch
-                next_sync_dt = datetime.fromtimestamp(next_epoch, tz=CAIRO_TZ)
-                scheduler_state["next_currency_sync"] = next_sync_dt.strftime("%H:%M:%S")
-                print(f"[Scheduler] {tag} #{scheduler_state['total_currency_syncs']} at {now_str}. Next in {sleep_duration // 60}m ({scheduler_state['next_currency_sync']})", flush=True)
-            except Exception as e:
-                print(f"[Scheduler Error] Currency sync failed: {e}", flush=True)
-        else:
-            now_str = now_cairo.strftime("%Y-%m-%d %H:%M:%S")
-            resume_dt = now_cairo + timedelta(seconds=sleep_duration)
-            resume_str = resume_dt.strftime("%I:%M %p").replace("AM", "صباحاً").replace("PM", "مساءً")
-            print(f"[Scheduler] 💤 Zero-Request Standby ({action}) at {now_str}. Markets closed. Sleeping for {sleep_duration // 60}m (Resuming at {resume_str}).", flush=True)
+                resume_dt = now_cairo + timedelta(seconds=sleep_duration)
+                resume_str = resume_dt.strftime("%I:%M %p").replace("AM", "صباحاً").replace("PM", "مساءً")
+                print(f"[Scheduler] 💤 Standby ({action}) at {now_str}. Sleeping for {sleep_duration // 60}m (Resuming at {resume_str}).", flush=True)
 
-        time.sleep(sleep_duration)
+            time.sleep(sleep_duration)
+        except Exception as loop_err:
+            print(f"[Scheduler Critical] Error in currency sync loop: {loop_err}", flush=True)
+            logger.critical(f"Scheduler currency loop error: {loop_err}\n{traceback.format_exc()}")
+            time.sleep(60)  # Safe delay before retry to ensure thread never terminates
 
 
 def run_egx_sync_loop():
     """
     Syncs EGX investor data every 1 hour (3600 seconds) during trading hours:
     Sunday - Thursday, 10:00 AM to 02:00 PM Cairo Time.
-    Skips Friday, Saturday, and official Egyptian holidays.
     """
     time.sleep(30)
     
     while True:
-        now_cairo = get_cairo_datetime()
-        is_open, desc = check_egx_market_status(now_cairo)
-        scheduler_state["egx_market_open"] = is_open
-        scheduler_state["egx_market_status"] = desc
-        
-        now_epoch = time.time()
-        next_epoch = now_epoch + 3600
-        scheduler_state["next_egx_epoch"] = next_epoch
-        scheduler_state["next_egx_sync"] = datetime.fromtimestamp(next_epoch, tz=CAIRO_TZ).strftime("%H:%M:%S")
-
-        if is_open:
-            try:
-                now_str = now_cairo.strftime("%Y-%m-%d %H:%M:%S")
-                print(f"[Scheduler] 🏛️ EGX Market is OPEN. Fetching hourly snapshot at {now_str}...", flush=True)
-                data = fetch_investors_from_egx(sb="1")
-                save_institution_snapshot(data)
-                scheduler_state["last_egx_sync"] = now_str
-                scheduler_state["total_egx_syncs"] += 1
-                scheduler_state["last_egx_error"] = None
-                print(f"[Scheduler] ✅ EGX snapshot #{scheduler_state['total_egx_syncs']} saved successfully.", flush=True)
-                
-                # Auto-sync to Google Sheets if configured
-                try:
-                    from core.google_sheets import get_google_config, sync_to_google_sheets
-                    g_cfg = get_google_config()
-                    if g_cfg.get("auto_sync") and g_cfg.get("webhook_url"):
-                        print("[Scheduler] 📊 Triggering Google Sheets Auto-Sync...", flush=True)
-                        sync_to_google_sheets()
-                except Exception as ge:
-                    print(f"[Scheduler] Google Sheets auto-sync notice: {ge}", flush=True)
-            except Exception as e:
-                scheduler_state["last_egx_error"] = str(e)
-                print(f"[Scheduler Error] EGX hourly sync failed: {e}", flush=True)
-        else:
-            print(f"[Scheduler] ⏸️ EGX check: {desc}. Next check at {scheduler_state['next_egx_sync']}.", flush=True)
+        try:
+            now_cairo = get_cairo_datetime()
+            is_open, desc = check_egx_market_status(now_cairo)
+            scheduler_state["egx_market_open"] = is_open
+            scheduler_state["egx_market_status"] = desc
             
-        time.sleep(3600)  # 1 hour
+            now_epoch = time.time()
+            next_epoch = now_epoch + 3600
+            scheduler_state["next_egx_epoch"] = next_epoch
+            scheduler_state["next_egx_sync"] = datetime.fromtimestamp(next_epoch, tz=CAIRO_TZ).strftime("%H:%M:%S")
+
+            if is_open:
+                try:
+                    now_str = now_cairo.strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"[Scheduler] 🏛️ EGX Market is OPEN. Fetching hourly snapshot at {now_str}...", flush=True)
+                    data = fetch_investors_from_egx(sb="1")
+                    save_institution_snapshot(data)
+                    scheduler_state["last_egx_sync"] = now_str
+                    scheduler_state["total_egx_syncs"] += 1
+                    scheduler_state["last_egx_error"] = None
+                    print(f"[Scheduler] ✅ EGX snapshot #{scheduler_state['total_egx_syncs']} saved successfully.", flush=True)
+                    
+                    # Auto-sync to Google Sheets if configured
+                    try:
+                        from core.google_sheets import get_google_config, sync_to_google_sheets
+                        g_cfg = get_google_config()
+                        if g_cfg.get("auto_sync") and g_cfg.get("webhook_url"):
+                            print("[Scheduler] 📊 Triggering Google Sheets Auto-Sync...", flush=True)
+                            sync_to_google_sheets()
+                    except Exception as ge:
+                        print(f"[Scheduler] Google Sheets auto-sync notice: {ge}", flush=True)
+                except Exception as e:
+                    scheduler_state["last_egx_error"] = str(e)
+                    print(f"[Scheduler Error] EGX hourly sync failed: {e}", flush=True)
+            else:
+                print(f"[Scheduler] ⏸️ EGX check: {desc}. Next check at {scheduler_state['next_egx_sync']}.", flush=True)
+                
+            time.sleep(3600)  # 1 hour
+        except Exception as loop_err:
+            print(f"[Scheduler Critical] Error in EGX sync loop: {loop_err}", flush=True)
+            time.sleep(60)
 
 _scheduler_started = False
+
+
+def get_market_status_info() -> Dict[str, Any]:
+    """Returns a full snapshot of Cairo time, market operational status, and sync countdowns."""
+    now_cairo = get_cairo_datetime()
+    is_open, status_desc = check_egx_market_status(now_cairo)
+    
+    scheduler_state["egx_market_open"] = is_open
+    scheduler_state["egx_market_status"] = status_desc
+    
+    now_epoch = time.time()
+    next_curr_epoch = scheduler_state.get("next_currency_epoch") or (now_epoch + 300)
+    countdown_curr_sec = max(0, int(next_curr_epoch - now_epoch))
+    
+    return {
+        "cairo_time": now_cairo.strftime("%Y-%m-%d %H:%M:%S"),
+        "cairo_time_formatted": now_cairo.strftime("%I:%M:%S %p").replace("AM", "صباحاً").replace("PM", "مساءً"),
+        "cairo_date_formatted": now_cairo.strftime("%Y-%m-%d"),
+        "weekday_ar": ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"][now_cairo.weekday()],
+        "is_market_open": is_open,
+        "status_description": status_desc,
+        "last_currency_sync": scheduler_state["last_currency_sync"],
+        "next_currency_sync": scheduler_state["next_currency_sync"],
+        "currency_countdown_sec": countdown_curr_sec,
+        "total_currency_syncs": scheduler_state["total_currency_syncs"],
+        "last_egx_sync": scheduler_state["last_egx_sync"],
+        "next_egx_sync": scheduler_state["next_egx_sync"],
+        "total_egx_syncs": scheduler_state["total_egx_syncs"]
+    }
 
 def start_scheduler():
     """Starts background synchronization threads if not already started."""
@@ -260,5 +268,5 @@ def start_scheduler():
     t_egx.start()
     
     print("🚀 Background Auto-Sync Scheduler initialized:", flush=True)
-    print("   - Currencies/Crypto/Oil: Every 10 minutes", flush=True)
+    print("   - Currencies/Crypto/Oil: Active 5-minute sync (09:00-16:00) + 23:00 Closing snapshot", flush=True)
     print("   - EGX Market: Hourly during 10:00 AM - 02:00 PM Cairo Time (Sun-Thu, excluding holidays)", flush=True)

@@ -1,4 +1,3 @@
-import unicodedata  # Added by PromptMaster Auto-Fix
 import time
 import json
 import os
@@ -185,6 +184,12 @@ def fetch_ta3weem_data(force_refresh: bool = False) -> Dict[str, Any]:
                 existing_cache = json.load(f)
         except Exception:
             pass
+
+    # Fast Cache Return: Sub-millisecond TTFB without blocking network requests
+    if not force_refresh and existing_cache:
+        cache_ts = existing_cache.get("cached_at") or existing_cache.get("ta3weem_scraped_at", 0)
+        if (now - cache_ts) < TA3WEEM_CACHE_TTL and existing_cache.get("currencies") and existing_cache.get("banks"):
+            return existing_cache
 
     should_scrape_ta3weem = force_refresh or (not existing_cache) or (now - existing_cache.get("ta3weem_scraped_at", 0) > TA3WEEM_CACHE_TTL)
 

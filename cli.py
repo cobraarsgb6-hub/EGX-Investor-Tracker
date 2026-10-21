@@ -1,4 +1,5 @@
 import sys
+import os
 import argparse
 import time
 from core.scraper import fetch_investors_from_egx, MARKET_SEGMENTS
@@ -32,7 +33,30 @@ def main():
     parser.add_argument("--sb", default="1", choices=["1", "2", "3", "4"], help="نوع السوق (1=الكل، 2=الأسهم، 3=السندات، 4=الأذون)")
     parser.add_argument("--rate", type=float, default=None, help="سعر صرف مخصص للدولار (اختياري)")
     parser.add_argument("--export", default=None, help="مسار تصدير ملف الإكسيل")
+    parser.add_argument("--fx-report", action="store_true", help="توليد تقرير مقارنة أسعار الصرف بتعاملات ومبيعات الأجانب")
     args = parser.parse_args()
+
+    if args.fx_report:
+        from core.fx_foreign_analysis import analyze_fx_foreign_flows, generate_markdown_report, export_fx_report_to_excel, export_fx_report_to_html
+        print_separator("=")
+        print("📊 تقرير مقارنة أسعار الصرف (USD/EGP) مع تعاملات ومبيعات الأجانب")
+        print_separator("=")
+        analysis = analyze_fx_foreign_flows(sb=args.sb)
+        print(generate_markdown_report(analysis))
+        
+        # Save Excel & HTML
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        data_dir = os.path.join(base_dir, "data")
+        os.makedirs(data_dir, exist_ok=True)
+        t_stamp = time.strftime("%Y%m%d_%H%M%S")
+        excel_out = os.path.join(data_dir, f"EGX_FX_Foreign_Report_{t_stamp}.xlsx")
+        html_out = os.path.join(data_dir, f"EGX_FX_Foreign_Report_{t_stamp}.html")
+        export_fx_report_to_excel(analysis, excel_out)
+        export_fx_report_to_html(analysis, html_out)
+        print(f"\n💾 تم حفظ ملفات التقرير بنجاح:")
+        print(f"   -> Excel: {excel_out}")
+        print(f"   -> HTML:  {html_out}")
+        return
 
     print_separator("=")
     print("📈 برنامج متابعة فئات المستثمرين في البورصة المصرية (EGX Investor Flow)")

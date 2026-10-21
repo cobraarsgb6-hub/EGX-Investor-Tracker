@@ -53,9 +53,18 @@ def init_db():
             total_net_usd REAL DEFAULT 0,
             
             created_at TEXT NOT NULL,
+            source TEXT DEFAULT 'egx_live',
+            is_verified INTEGER DEFAULT 1,
             UNIQUE(date, sb)
         )
         """)
+        # Check and migrate columns if missing
+        cursor.execute("PRAGMA table_info(institution_daily_flows)")
+        existing_cols = [c[1] for c in cursor.fetchall()]
+        if "source" not in existing_cols:
+            cursor.execute("ALTER TABLE institution_daily_flows ADD COLUMN source TEXT DEFAULT 'egx_live'")
+        if "is_verified" not in existing_cols:
+            cursor.execute("ALTER TABLE institution_daily_flows ADD COLUMN is_verified INTEGER DEFAULT 1")
         conn.commit()
 
 init_db()
@@ -181,7 +190,8 @@ def get_weekly_summary(sb: str = "1") -> List[Dict[str, Any]]:
         cursor = conn.cursor()
         cursor.execute("""
         SELECT 
-            strftime('%Y-W%W', date) AS week_period,
+            date(date, '-' || strftime('%w', date) || ' days') AS sunday_week_start,
+            strftime('%Y-W%U', date) AS week_period,
             MIN(date) AS start_date,
             MAX(date) AS end_date,
             COUNT(*) AS trading_days,
@@ -199,8 +209,8 @@ def get_weekly_summary(sb: str = "1") -> List[Dict[str, Any]]:
             SUM(egypt_net_usd) AS egypt_net_usd
         FROM institution_daily_flows
         WHERE sb = ?
-        GROUP BY week_period
-        ORDER BY start_date DESC
+        GROUP BY sunday_week_start
+        ORDER BY sunday_week_start DESC
         """, (sb,))
         return [dict(r) for r in cursor.fetchall()]
 

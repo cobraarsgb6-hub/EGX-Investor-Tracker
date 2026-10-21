@@ -1673,43 +1673,46 @@
 
         // Formatters
         function formatNumber(num) {
-            if (num === null || num === undefined) return "--";
-            return Number(num).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            if (num === null || num === undefined || isNaN(num)) return "--";
+            return Math.abs(Number(num)).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
         }
 
         function formatUSD(num) {
-            if (num === null || num === undefined) return "--";
-            return "$" + Number(num).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            if (num === null || num === undefined || isNaN(num)) return "--";
+            return "$" + Math.abs(Number(num)).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
         }
 
-        // DYNAMIC CELL RENDERER (Respects currentCurrencyView completely)
-        function renderCell(egpVal, usdVal, isNet = false) {
-            let egpStr = formatNumber(egpVal) + " ج.م";
-            let realUsd = fixedUsdRate > 0 ? (egpVal / fixedUsdRate) : usdVal;
+        // DYNAMIC CELL RENDERER (Strict BiDi protection, no double minus, preserves session rate)
+        function renderCell(egpVal, usdVal, isNet = false, sessionRate = null) {
+            let egpNum = Number(egpVal) || 0;
+            let rate = sessionRate || (fixedUsdRate > 0 ? fixedUsdRate : 54.52);
+            let realUsd = (usdVal !== null && usdVal !== undefined && Number(usdVal) !== 0) ? Number(usdVal) : (egpNum / rate);
+            
+            let egpStr = formatNumber(egpNum) + " ج.م";
             let usdStr = formatUSD(realUsd);
 
             if (isNet) {
-                let isBuy = egpVal >= 0;
+                let isBuy = egpNum >= 0;
                 let sign = isBuy ? "+" : "-";
                 let badgeClass = isBuy ? "net-positive" : "net-negative";
                 
                 if (currentCurrencyView === 'egp') {
-                    return `<span class="${badgeClass}">${sign}${egpStr}</span>`;
+                    return `<bdi dir="ltr" class="${badgeClass}">${sign}${egpStr}</bdi>`;
                 } else if (currentCurrencyView === 'usd') {
-                    return `<span class="${badgeClass}">${sign}${usdStr}</span>`;
+                    return `<bdi dir="ltr" class="${badgeClass}">${sign}${usdStr}</bdi>`;
                 } else {
                     return `
-                        <span class="${badgeClass}">${sign}${egpStr}</span>
-                        <span class="secondary-val">${sign}${usdStr}</span>
+                        <bdi dir="ltr" class="${badgeClass}">${sign}${egpStr}</bdi>
+                        <bdi dir="ltr" class="secondary-val">${sign}${usdStr}</bdi>
                     `;
                 }
             } else {
                 if (currentCurrencyView === 'egp') {
-                    return `<strong>${egpStr}</strong>`;
+                    return `<bdi dir="ltr"><strong>${egpStr}</strong></bdi>`;
                 } else if (currentCurrencyView === 'usd') {
-                    return `<strong>${usdStr}</strong>`;
+                    return `<bdi dir="ltr"><strong>${usdStr}</strong></bdi>`;
                 } else {
-                    return `<strong>${egpStr}</strong><span class="secondary-val">${usdStr}</span>`;
+                    return `<bdi dir="ltr"><strong>${egpStr}</strong></bdi><bdi dir="ltr" class="secondary-val">${usdStr}</bdi>`;
                 }
             }
         }
@@ -2145,12 +2148,16 @@
             });
         }
 
+        let isRefreshingTa3weem = false;
         function refreshTa3weem(silent = false) {
+            if (isRefreshingTa3weem) return;
+            isRefreshingTa3weem = true;
             if (!silent) document.getElementById("loading-overlay").style.display = "flex";
-            fetch('/api/ta3weem?refresh=1&_t=' + Date.now())
-
+            let refreshParam = silent ? "0" : "1";
+            fetch('/api/ta3weem?refresh=' + refreshParam + '&_t=' + Date.now())
             .then(res => res.json())
             .then(data => {
+                isRefreshingTa3weem = false;
                 if (!silent) document.getElementById("loading-overlay").style.display = "none";
                 if (data.status === 'success') {
                     ta3weemData = data.data;
@@ -2338,7 +2345,7 @@
 
             tbody.innerHTML = "";
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 35px; color: var(--primary); font-weight: 700; font-size: 1rem;"><i class="fa-solid fa-circle-check" style="color: var(--green-text); margin-left: 8px;"></i> تم تصفير الأرشيف الاسترشادي بنجاح. سيبدأ التسجيل والأرشفة التلقائية الحقيقية 100% لجلسات التداول الفورية بدءاً من 1 أكتوبر.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 35px; color: var(--primary); font-weight: 700; font-size: 1rem;"><i class="fa-solid fa-circle-check" style="color: var(--green-text); margin-left: 8px;"></i> لا توجد جلسات تداول مسجلة في هذه الفترة الزمنية.</td></tr>`;
                 return;
             }
 
@@ -2347,14 +2354,16 @@
                 let tr = document.createElement("tr");
                 let label = r.date || (r.week_period ? `${r.start_date} إلى ${r.end_date}` : r.month_period);
 
+                let sRate = r.usd_rate || fixedUsdRate || 54.52;
+                let badgeHtml = r.is_verified === 0 ? ' <span style="font-size:0.7rem; background:rgba(234,179,8,0.15); color:#eab308; padding:2px 6px; border-radius:4px; font-weight:600;">استرشادي</span>' : '';
                 tr.innerHTML = `
-                    <td><strong>${label}</strong></td>
-                    <td>${renderCell(r.total_inflow_egp, r.total_inflow_usd)}</td>
-                    <td>${renderCell(r.total_outflow_egp, r.total_outflow_usd)}</td>
-                    <td>${renderCell(r.total_net_egp, r.total_net_usd, true)}</td>
-                    <td>${renderCell(r.foreign_net_egp, r.foreign_net_usd, true)}</td>
-                    <td>${renderCell(r.arab_net_egp, r.arab_net_usd, true)}</td>
-                    <td>${renderCell(r.egypt_net_egp, r.egypt_net_usd, true)}</td>
+                    <td><strong>${label}</strong>${badgeHtml}</td>
+                    <td>${renderCell(r.total_inflow_egp, r.total_inflow_usd, false, sRate)}</td>
+                    <td>${renderCell(r.total_outflow_egp, r.total_outflow_usd, false, sRate)}</td>
+                    <td>${renderCell(r.total_net_egp, r.total_net_usd, true, sRate)}</td>
+                    <td>${renderCell(r.foreign_net_egp, r.foreign_net_usd, true, sRate)}</td>
+                    <td>${renderCell(r.arab_net_egp, r.arab_net_usd, true, sRate)}</td>
+                    <td>${renderCell(r.egypt_net_egp, r.egypt_net_usd, true, sRate)}</td>
                 `;
                 tbody.appendChild(tr);
             });

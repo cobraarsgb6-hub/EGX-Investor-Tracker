@@ -1,19 +1,25 @@
 import os
 import time
 import json
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, Response
 from core.scraper import fetch_investors_from_egx, MARKET_SEGMENTS
-from core.converter import get_usd_egp_rate
 from core.ta3weem import fetch_ta3weem_data
 from core.archive import get_daily_history, get_weekly_summary, get_monthly_summary
 from core.exporter import export_to_excel, export_archive_to_excel
 from core.scheduler import start_scheduler, get_market_status_info
+from core.google_sheets import (
+    get_google_config,
+    save_google_config,
+    sync_to_google_sheets,
+    generate_archive_csv,
+    generate_rates_csv,
+    GOOGLE_APPS_SCRIPT_TEMPLATE
+)
 
 app = Flask(__name__)
 
-# Start background sync threads (currencies every 10m, EGX hourly during market hours)
+# Start background sync threads (currencies every 5m/23:00, EGX hourly during market hours)
 start_scheduler()
-
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -29,24 +35,21 @@ def get_settings():
             pass
     return {
         "currency_view": "both",
-        "fixed_usd_rate": 52.07,
-        "selected_bank": "البنك الأهلي المصري (NBE)"
+        "fixed_usd_rate": None,
+        "selected_bank": "البنك المركزي المصري (CBE)"
     }
 
-def save_settings(settings):
-    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
-        json.dump(settings, f, ensure_ascii=False, indent=2)
+def save_settings(settings_dict):
+    try:
+        with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+            json.dump(settings_dict, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        print(f"Error saving settings: {e}")
+        return False
 
-if not os.path.exists(SETTINGS_FILE):
-    save_settings({
-        "currency_view": "both",
-        "fixed_usd_rate": 52.07,
-        "selected_bank": "البنك الأهلي المصري (NBE)"
-    })
-
-
-def get_latest_cached_data(sb: str = "1"):
-    cache_path = os.path.join(DATA_DIR, f"latest_sb_{sb}.json")
+def get_latest_cached_data(sb="1"):
+    cache_path = os.path.join(DATA_DIR, f"live_investor_data_sb_{sb}.json")
     if os.path.exists(cache_path):
         try:
             with open(cache_path, "r", encoding="utf-8") as f:
@@ -59,10 +62,14 @@ def get_latest_cached_data(sb: str = "1"):
 def index():
     initial_sb = request.args.get("sb", "1")
     cached = get_latest_cached_data(initial_sb)
-    ta3weem = fetch_ta3weem_data()
+    ta3weem = fetch_ta3weem_data(force_refresh=False)
     settings = get_settings()
     
-    usd_rate = settings.get("fixed_usd_rate") or ta3weem.get("usd_rate", 52.07)
+    fixed_rate = settings.get("fixed_usd_rate")
+    if fixed_rate and isinstance(fixed_rate, (int, float)) and fixed_rate > 0:
+        usd_rate = float(fixed_rate)
+    else:
+        usd_rate = float(ta3weem.get("usd_rate") or ta3weem.get("cbe_usd_rate") or 54.52)
     
     daily_history = get_daily_history(initial_sb)
     weekly_summary = get_weekly_summary(initial_sb)
@@ -90,7 +97,7 @@ def api_market_status():
 
 @app.route("/api/banks", methods=["GET"])
 def api_banks():
-    t_data = fetch_ta3weem_data()
+    t_data = fetch_ta3weem_data(force_refresh=False)
     return jsonify({
         "status": "success",
         "banks": t_data.get("banks", []),
@@ -119,14 +126,14 @@ def api_fetch():
         cached = get_latest_cached_data(sb)
         if cached:
             return jsonify({
-                "status": "success",
-                "data": cached,
-                "warning": f"تم استخدام آخر لقطة مسجلة للجلسة بسبب ضغط خادم البورصة: {str(e)}"
+                "status": "cached",
+                "message": f"فشل التحديث الحي: {str(e)}. تم عرض البيانات المحفوظة.",
+                "data": cached
             })
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route("/api/latest-egx", methods=["GET"])
-def api_latest_egx():
+@app.route("/api/cached", methods=["GET"])
+def api_cached():
     sb = request.args.get("sb", "1")
     cached = get_latest_cached_data(sb)
     if cached:
@@ -141,7 +148,6 @@ def api_ta3weem():
         return jsonify({"status": "success", "data": data})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 @app.route("/api/settings", methods=["GET", "POST"])
 def api_settings():
@@ -161,20 +167,22 @@ def api_archive():
     monthly = get_monthly_summary(sb)
     return jsonify({
         "status": "success",
-        "sb": sb,
-        "daily": daily,
-        "weekly": weekly,
-        "monthly": monthly
+        "data": {
+            "daily": daily,
+            "weekly": weekly,
+            "monthly": monthly
+        }
     })
 
 @app.route("/export/excel", methods=["GET"])
 def export_excel_route():
     sb = request.args.get("sb", "1")
+    rate_param = request.args.get("rate")
     settings = get_settings()
-    custom_rate = request.args.get("rate", None)
-    if custom_rate:
+    
+    if rate_param:
         try:
-            custom_rate = float(custom_rate)
+            custom_rate = float(rate_param)
         except ValueError:
             custom_rate = None
     else:
@@ -183,6 +191,8 @@ def export_excel_route():
     cached = get_latest_cached_data(sb)
     if not cached:
         cached = fetch_investors_from_egx(sb=sb, custom_usd_rate=custom_rate)
+    if not cached:
+        return jsonify({"status": "error", "message": "تعذر جلب البيانات للتصدير"}), 500
         
     export_filename = f"EGX_Investors_SB_{sb}_{time.strftime('%Y%m%d_%H%M%S')}.xlsx"
     filepath = os.path.join(DATA_DIR, export_filename)
@@ -212,21 +222,16 @@ def export_archive_excel_route():
 # ==========================================
 # GOOGLE SHEETS INTEGRATION ROUTES
 # ==========================================
-from flask import Response
-from core.google_sheets import (
-    get_google_config,
-    save_google_config,
-    sync_to_google_sheets,
-    generate_archive_csv,
-    generate_rates_csv,
-    GOOGLE_APPS_SCRIPT_TEMPLATE
-)
 
 @app.route("/api/google-sheets/config", methods=["GET", "POST"])
 def api_google_config():
     if request.method == "POST":
         data = request.get_json() or {}
         cfg = get_google_config()
+        # Protect against SSRF: only allow valid Google Apps Script URLs
+        webhook = data.get("webhook_url", "")
+        if webhook and not webhook.startswith("https://script.google.com/macros/s/"):
+            return jsonify({"status": "error", "message": "رابط الويب هوك غير صالح. يجب أن يبدأ بـ https://script.google.com/macros/s/"}), 400
         cfg.update(data)
         save_google_config(cfg)
         return jsonify({"status": "success", "config": cfg})
@@ -234,11 +239,13 @@ def api_google_config():
 
 @app.route("/api/google-sheets/sync", methods=["POST"])
 def api_google_sync():
-    req_data = request.get_json() or {}
-    webhook_url = req_data.get("webhook_url")
-    sb = req_data.get("sb", "1")
-    result = sync_to_google_sheets(webhook_url=webhook_url, sb=sb)
-    return jsonify(result)
+    req = request.get_json() or {}
+    webhook = req.get("webhook_url")
+    if webhook and not webhook.startswith("https://script.google.com/macros/s/"):
+        return jsonify({"status": "error", "message": "رابط الويب هوك غير مصرح به"}), 400
+    sb = req.get("sb", "1")
+    res = sync_to_google_sheets(webhook_url=webhook, sb=sb)
+    return jsonify(res)
 
 @app.route("/api/google-sheets/apps-script", methods=["GET"])
 def api_google_script():
