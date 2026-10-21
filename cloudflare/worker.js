@@ -548,9 +548,21 @@ function parseTa3weemFxHtml(html) {
 }
 
 async function fetchTa3weemFxPage(code) {
-  const res = await fetch(`https://ta3weem.com/ar/currency-exchange-rates/${code}-EGP`, { headers: { "User-Agent": UA }, signal: timeoutSignal(6000) });
-  if (!res.ok) throw new Error(`${code} HTTP ${res.status}`);
-  return parseTa3weemFxHtml(await res.text());
+  const url = `https://ta3weem.com/ar/currency-exchange-rates/${code}-EGP`;
+  let lastErr = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const ua = attempt === 0 ? UA : "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0";
+      const res = await fetch(url, { headers: { "User-Agent": ua }, signal: timeoutSignal(9000) });
+      if (res.ok) {
+        return parseTa3weemFxHtml(await res.text());
+      }
+      lastErr = new Error(`${code} HTTP ${res.status}`);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error(`${code} fetch failed`);
 }
 
 /**
