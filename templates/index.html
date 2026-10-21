@@ -834,6 +834,11 @@
             }
         }
 
+        
+        .mobile-nav-bar {
+            display: none;
+        }
+
         /* P1 Accessibility & Mobile Enhancements */
         :focus-visible {
             outline: 2px solid var(--accent) !important;
@@ -899,26 +904,70 @@
         }
 
         @media (max-width: 768px) {
+            .mobile-nav-bar {
+                display: flex !important;
+                align-items: center;
+                justify-content: flex-end;
+            }
+            .mobile-toggle-btn {
+                background: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 1.1rem;
+                cursor: pointer;
+            }
             .navbar {
-                padding: 10px 12px;
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 8px 12px !important;
             }
             .navbar-brand {
-                font-size: 1.05rem;
-                justify-content: center;
-                text-align: center;
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+                font-size: 0.88rem !important;
+                justify-content: flex-start !important;
+                text-align: right !important;
+            }
+            .navbar-brand span {
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                max-width: calc(100vw - 110px) !important;
+            }
+            .mobile-nav-bar {
+                display: flex !important;
+                align-items: center;
+                justify-content: flex-end;
+                flex: 0 0 auto;
+            }
+            .mobile-toggle-btn {
+                background: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                color: white;
+                padding: 4px 10px;
+                border-radius: 8px;
+                font-size: 1.1rem;
+                cursor: pointer;
             }
             .market-clock-pill {
-                justify-content: center;
-                font-size: 0.78rem;
-                width: 100%;
+                display: none !important;
             }
             .navbar-corner-controls {
-                flex-direction: column;
-                width: 100%;
-                gap: 8px;
+                order: 4;
+                width: 100% !important;
+                display: none !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid rgba(255, 255, 255, 0.15);
+            }
+            .navbar-corner-controls.mobile-open {
+                display: flex !important;
             }
             .nav-currency-switcher {
                 width: 100%;
@@ -1013,6 +1062,12 @@
             <span>منظومة تتبع البورصة المصرية ومؤشرات الأسواق</span>
         </div>
 
+                <!-- Mobile Header Row -->
+        <div class="mobile-nav-bar">
+            <button class="mobile-toggle-btn" id="btn-mobile-menu" onclick="toggleMobileMenu()" aria-label="تبديل القائمة">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
         <!-- Cairo Time & EGX Market Status Badge -->
         <div class="market-clock-pill" title="توقيت القاهرة وحالة جلسة التداول الرسمية">
             <span class="pulse-dot {% if market_status.is_market_open %}pulse-green{% else %}pulse-red{% endif %}" id="market-pulse-dot"></span>
@@ -1436,7 +1491,7 @@
     </div>
 
     <!-- MODAL 1: 25 BANKS USD RATES LIST (When Clicking USD Card) -->
-    <div class="modal-overlay" id="modal-banks" onclick="if(event.target === this) closeBanksModal()">
+    <div class="modal-overlay" role="dialog" aria-modal="true" id="modal-banks" onclick="if(event.target === this) closeBanksModal()">
         <div class="modal-box">
             <div class="modal-header">
                 <h3><i class="fa-solid fa-building-columns"></i> أسعار الدولار في البنوك المصرية (25 بنكاً) - موقع تعويم</h3>
@@ -1493,7 +1548,7 @@
     </div>
 
     <!-- MODAL 2: FULL MULTI-CURRENCY & COMMODITIES CALCULATOR -->
-    <div class="modal-overlay" id="modal-calculator" onclick="if(event.target === this) closeCurrencyCalculatorModal()">
+    <div class="modal-overlay" role="dialog" aria-modal="true" id="modal-calculator" onclick="if(event.target === this) closeCurrencyCalculatorModal()">
         <div class="modal-box" style="max-width: 950px;">
             <div class="modal-header">
                 <h3><i class="fa-solid fa-calculator" style="color: #fde047;"></i> حاسبة التحويل الشاملة بين كافة العملات والسلع</h3>
@@ -1586,7 +1641,7 @@
     </div>
 
     <!-- MODAL 3: EGX MARKET HOURS & TRADING SESSIONS GUIDE -->
-    <div class="modal-overlay" id="modal-egx-hours" onclick="if(event.target === this) closeEGXHoursModal()">
+    <div class="modal-overlay" role="dialog" aria-modal="true" id="modal-egx-hours" onclick="if(event.target === this) closeEGXHoursModal()">
         <div class="modal-box" style="max-width: 800px;">
             <div class="modal-header">
                 <h3><i class="fa-solid fa-clock"></i> مواعيد وساعات التداول الرسمية في البورصة المصرية (EGX)</h3>
@@ -1653,7 +1708,7 @@
     </div>
 
     <!-- MODAL 4: GOOGLE SHEETS INTEGRATION & SYNC -->
-    <div class="modal-overlay" id="modal-google-sheets" onclick="if(event.target === this) closeGoogleSheetsModal()">
+    <div class="modal-overlay" role="dialog" aria-modal="true" id="modal-google-sheets" onclick="if(event.target === this) closeGoogleSheetsModal()">
         <div class="modal-box" style="max-width: 860px;">
             <div class="modal-header" style="background: linear-gradient(135deg, #0f9d58 0%, #0b8043 100%); color: white;">
                 <h3 style="color: white; display: flex; align-items: center; gap: 10px;">
@@ -2133,6 +2188,18 @@
         }
 
         // View Switching
+        
+        function toggleMobileMenu() {
+            const controls = document.querySelector(".navbar-corner-controls");
+            if (controls) {
+                controls.classList.toggle("mobile-open");
+                const btn = document.getElementById("btn-mobile-menu");
+                if (btn) {
+                    btn.innerHTML = controls.classList.contains("mobile-open") ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-bars"></i>';
+                }
+            }
+        }
+
         function switchMainView(view) {
             document.querySelectorAll(".navbar-nav .nav-btn").forEach(b => {
                 if (b.id === 'nav-live' || b.id === 'nav-archive') b.classList.remove("active");
@@ -2283,23 +2350,42 @@
             });
         }
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         function renderBanksModalTable(banks) {
             const tbody = document.getElementById("tbl-modal-banks-body");
             if (!tbody || !banks) return;
             tbody.innerHTML = "";
             banks.forEach(b => {
                 const tr = document.createElement("tr");
+                const safeBankName = escapeHtml(b.bank);
+                const safeBuy = parseFloat(b.buy) || 0;
+                const safeSell = parseFloat(b.sell) || 0;
+                const safeAvg = parseFloat(b.avg) || 0;
+                
                 tr.innerHTML = `
-                    <td><strong>${b.bank}</strong></td>
-                    <td style="color: var(--green-text); font-weight: 800;">${b.buy} ج.م</td>
-                    <td style="color: var(--primary); font-weight: 800;">${b.sell} ج.م</td>
-                    <td style="color: var(--text-muted); font-weight: 700;">${b.avg} ج.م</td>
+                    <td><strong>${safeBankName}</strong></td>
+                    <td style="color: var(--green-text); font-weight: 800;">${safeBuy.toFixed(2)} ج.م</td>
+                    <td style="color: var(--primary); font-weight: 800;">${safeSell.toFixed(2)} ج.م</td>
+                    <td style="color: var(--text-muted); font-weight: 700;">${safeAvg.toFixed(2)} ج.م</td>
                     <td>
-                        <button class="btn btn-accent" style="padding: 4px 10px; font-size: 0.78rem;" onclick="selectBankDirect('${b.buy}', '${b.sell}', '${b.bank}')">
+                        <button class="btn btn-accent btn-select-bank" style="padding: 4px 10px; font-size: 0.78rem;">
                             <i class="fa-solid fa-check"></i> اعتماد هذا السعر
                         </button>
                     </td>
                 `;
+                const btn = tr.querySelector(".btn-select-bank");
+                if (btn) {
+                    btn.addEventListener("click", () => selectBankDirect(safeBuy, safeSell, b.bank));
+                }
                 tbody.appendChild(tr);
             });
         }
@@ -2393,17 +2479,19 @@
             fetch(`/api/archive?sb=${currentSb}`)
             .then(res => res.json())
             .then(data => {
-                if (data.status === 'success') {
+                if (data.status === 'success' || data.status === 'cached') {
+                    let payload = (data && data.data) ? data.data : data;
                     archiveData = {
-                        daily: data.daily || [],
-                        weekly: data.weekly || [],
-                        monthly: data.monthly || []
+                        daily: payload.daily || [],
+                        weekly: payload.weekly || [],
+                        monthly: payload.monthly || []
                     };
                     if (document.getElementById("view-archive-section").classList.contains("active")) {
                         updateArchiveView();
                     }
                 }
-            });
+            })
+            .catch(err => console.error("Archive fetch error:", err));
         }
 
         // Archive Functions
@@ -2424,10 +2512,11 @@
                 sumOutflowEgp += (r.total_outflow_egp || 0);
                 sumNetEgp += (r.total_net_egp || 0);
                 
-                // Recalculate USD based on fixedUsdRate
-                let realInflowUsd = fixedUsdRate > 0 ? (r.total_inflow_egp / fixedUsdRate) : (r.total_inflow_usd || 0);
-                let realOutflowUsd = fixedUsdRate > 0 ? (r.total_outflow_egp / fixedUsdRate) : (r.total_outflow_usd || 0);
-                let realNetUsd = fixedUsdRate > 0 ? (r.total_net_egp / fixedUsdRate) : (r.total_net_usd || 0);
+                // Historical Truth: Use recorded session rate or stored USD, never recalculate history with today's rate
+                let sRate = r.usd_rate || fixedUsdRate || 54.52;
+                let realInflowUsd = (r.total_inflow_usd && Number(r.total_inflow_usd) !== 0) ? Number(r.total_inflow_usd) : (r.total_inflow_egp / sRate);
+                let realOutflowUsd = (r.total_outflow_usd && Number(r.total_outflow_usd) !== 0) ? Number(r.total_outflow_usd) : (r.total_outflow_egp / sRate);
+                let realNetUsd = (r.total_net_usd && Number(r.total_net_usd) !== 0) ? Number(r.total_net_usd) : (r.total_net_egp / sRate);
 
                 sumInflowUsd += realInflowUsd;
                 sumOutflowUsd += realOutflowUsd;
@@ -2790,7 +2879,8 @@
             if (e.key === 'Escape' || e.keyCode === 27) {
                 const openModals = document.querySelectorAll('.modal-overlay');
                 openModals.forEach(m => {
-                    if (m.style.display === 'flex') m.style.display = 'none';
+                    m.classList.remove('active');
+                    m.style.display = 'none';
                 });
             }
         });

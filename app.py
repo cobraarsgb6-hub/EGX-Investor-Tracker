@@ -49,13 +49,20 @@ def save_settings(settings_dict):
         return False
 
 def get_latest_cached_data(sb="1"):
-    cache_path = os.path.join(DATA_DIR, f"live_investor_data_sb_{sb}.json")
-    if os.path.exists(cache_path):
-        try:
-            with open(cache_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
+    candidates = [
+        os.path.join(DATA_DIR, f"latest_sb_{sb}.json"),
+        os.path.join(DATA_DIR, f"live_investor_data_sb_{sb}.json"),
+        os.path.join(DATA_DIR, "live_dashboard_data.json")
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    d = json.load(f)
+                    if d and (d.get("tables") or d.get("egx_institutions") or d.get("archive")):
+                        return d
+            except Exception:
+                pass
     return None
 
 @app.route("/")
@@ -132,6 +139,7 @@ def api_fetch():
             })
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route("/api/latest-egx", methods=["GET"])
 @app.route("/api/cached", methods=["GET"])
 def api_cached():
     sb = request.args.get("sb", "1")
@@ -162,11 +170,15 @@ def api_settings():
 @app.route("/api/archive", methods=["GET"])
 def api_archive():
     sb = request.args.get("sb", "1")
-    daily = get_daily_history(sb)
-    weekly = get_weekly_summary(sb)
-    monthly = get_monthly_summary(sb)
+    verified_only = request.args.get("verified_only", "0") == "1"
+    daily = get_daily_history(sb, verified_only=verified_only)
+    weekly = get_weekly_summary(sb, verified_only=verified_only)
+    monthly = get_monthly_summary(sb, verified_only=verified_only)
     return jsonify({
         "status": "success",
+        "daily": daily,
+        "weekly": weekly,
+        "monthly": monthly,
         "data": {
             "daily": daily,
             "weekly": weekly,

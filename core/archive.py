@@ -163,32 +163,42 @@ def save_institution_snapshot(data: Dict[str, Any]) -> bool:
         conn.commit()
     return True
 
-def get_daily_history(sb: str = "1", limit: int = 30) -> List[Dict[str, Any]]:
+def get_daily_history(sb: str = "1", limit: int = 30, verified_only: bool = False) -> List[Dict[str, Any]]:
     """
     Returns daily history of institution flows.
     """
     init_db()
+    where_sql = "WHERE sb = ?"
+    params = [sb]
+    if verified_only:
+        where_sql += " AND is_verified = 1"
+    params.append(limit)
+
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(f"""
         SELECT * FROM institution_daily_flows
-        WHERE sb = ?
+        {where_sql}
         ORDER BY date DESC
         LIMIT ?
-        """, (sb, limit))
+        """, tuple(params))
         rows = [dict(r) for r in cursor.fetchall()]
         return rows
 
-def get_weekly_summary(sb: str = "1") -> List[Dict[str, Any]]:
+def get_weekly_summary(sb: str = "1", verified_only: bool = False) -> List[Dict[str, Any]]:
     """
     Aggregates institution flows by week (كام دخل وكام خرج أسبوعياً).
     """
     init_db()
+    where_sql = "WHERE sb = ?"
+    if verified_only:
+        where_sql += " AND is_verified = 1"
+
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(f"""
         SELECT 
             date(date, '-' || strftime('%w', date) || ' days') AS sunday_week_start,
             strftime('%Y-W%U', date) AS week_period,
@@ -208,21 +218,25 @@ def get_weekly_summary(sb: str = "1") -> List[Dict[str, Any]]:
             SUM(egypt_net_egp) AS egypt_net_egp,
             SUM(egypt_net_usd) AS egypt_net_usd
         FROM institution_daily_flows
-        WHERE sb = ?
+        {where_sql}
         GROUP BY sunday_week_start
         ORDER BY sunday_week_start DESC
         """, (sb,))
         return [dict(r) for r in cursor.fetchall()]
 
-def get_monthly_summary(sb: str = "1") -> List[Dict[str, Any]]:
+def get_monthly_summary(sb: str = "1", verified_only: bool = False) -> List[Dict[str, Any]]:
     """
     Aggregates institution flows by month (كام دخل وكام خرج شهرياً).
     """
     init_db()
+    where_sql = "WHERE sb = ?"
+    if verified_only:
+        where_sql += " AND is_verified = 1"
+
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(f"""
         SELECT 
             strftime('%Y-%m', date) AS month_period,
             COUNT(*) AS trading_days,
@@ -239,7 +253,7 @@ def get_monthly_summary(sb: str = "1") -> List[Dict[str, Any]]:
             SUM(egypt_net_egp) AS egypt_net_egp,
             SUM(egypt_net_usd) AS egypt_net_usd
         FROM institution_daily_flows
-        WHERE sb = ?
+        {where_sql}
         GROUP BY month_period
         ORDER BY month_period DESC
         """, (sb,))
