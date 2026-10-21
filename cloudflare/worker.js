@@ -667,7 +667,7 @@ async function getCachedDashboardData() {
   if (!sheetCache.timestamp || (now - sheetCache.timestamp > 60000)) {
     let fetched = false;
     try {
-      const sSignal = AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined;
+      const sSignal = AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined;
       const sRes = await fetch(DATA_API_URL, {
         headers: { "User-Agent": "Cloudflare-Worker-EGX" },
         signal: sSignal
@@ -682,10 +682,10 @@ async function getCachedDashboardData() {
       }
     } catch(eSheet) {}
 
-    // في حال تعذر Google Apps Script أو تأخره، يتم السحب الفوري من مستودع GitHub Raw
+    // في حال تعذر Google Apps Script أو تأخره، يتم السحب الفوري من مستودع GitHub Raw المحدث كل 15 دقيقة
     if (!fetched) {
       try {
-        const ghRes = await fetch(GITHUB_RAW_DATA_URL, {
+        const ghRes = await fetch(GITHUB_RAW_DATA_URL + "?_t=" + now, {
           headers: { "User-Agent": "Cloudflare-Worker-EGX" }
         });
         if (ghRes && ghRes.ok) {
@@ -705,12 +705,6 @@ async function getCachedDashboardData() {
       for (let i = 1; i < arch.length; i++) {
         const prev = cleanArch[cleanArch.length - 1];
         const curr = arch[i];
-        // If two consecutive dates have identical foreign_net and total_net, keep only the older genuine trading session
-        const prevFo = Number(prev.foreign_net !== undefined ? prev.foreign_net : prev.foreign_net_egp);
-        const currFo = Number(curr.foreign_net !== undefined ? curr.foreign_net : curr.foreign_net_egp);
-        const prevTot = Number(prev.total_net !== undefined ? prev.total_net : prev.total_net_egp);
-        const currTot = Number(curr.total_net !== undefined ? curr.total_net : curr.total_net_egp);
-        // لا يتم حذف أي جلسة إلا إذا كان التاريخ نفسه مكرراً (Duplicate Date)
         if (prev.date === curr.date) {
           cleanArch[cleanArch.length - 1] = curr;
         } else {
@@ -730,34 +724,60 @@ async function getCachedDashboardData() {
     fetchTa3weemLiveCurrencies()
   ]);
 
-  // البنك المركزي المصري: 100% حي ومستقل عن شيت جوجل
-  const cbeBuy = (ta3weemResult && ta3weemResult.cbe && ta3weemResult.cbe.buy > 40)
-    ? ta3weemResult.cbe.buy
-    : (tvMarket?.usd_egp > 40 ? tvMarket.usd_egp : 54.45);
-  const cbeSell = (ta3weemResult && ta3weemResult.cbe && ta3weemResult.cbe.sell > 40)
-    ? ta3weemResult.cbe.sell
-    : 54.59;
-  const cbeTime = (ta3weemResult && ta3weemResult.cbe && ta3weemResult.cbe.updated_at)
-    ? ta3weemResult.cbe.updated_at : liveClock;
+  // 🏛 البنك المركزي المصري (CBE) - السعر الرسمي المعتمد:
+  // 1. من تعويم المباشر إذا وُجد
+  // 2. أو من شيت المزامنة / GitHub Raw (وهو سعر البنك المركزي الفعلي 54.45 شراء / 54.59 بيع)
+  // 3. والبديل الافتراضي 54.45 / 54.59 (تجنب استخدام TradingView interbank لأنه سعر فوري خارجي وليس سعر البنك المركزي)
+  let cbeBuy = 54.45;
+  let cbeSell = 54.59;
+  let cbeTime = liveClock;
 
-  // سعر الدولار المعتمد: من تعويم المباشر أو البنك المركزي (بدون أي شيت)
-  const usdRate = (ta3weemCurrs && ta3weemCurrs["USD"] && ta3weemCurrs["USD"].price > 40)
-    ? ta3weemCurrs["USD"].price
-    : (cbeBuy > 40 ? cbeBuy : 54.49);
+  if (ta3weemResult && ta3weemResult.cbe && Number(ta3weemResult.cbe.buy) > 40) {
+    cbeBuy = Number(ta3weemResult.cbe.buy);
+    cbeSell = Number(ta3weemResult.cbe.sell || 54.59);
+    cbeTime = ta3weemResult.cbe.updated_at || liveClock;
+  } else if (sheetData.cbe_usd_buy && Number(sheetData.cbe_usd_buy) > 40) {
+    cbeBuy = Number(Number(sheetData.cbe_usd_buy).toFixed(2));
+    cbeSell = Number(Number(sheetData.cbe_usd_sell || 54.59).toFixed(2));
+    cbeTime = sheetData.cbe_updated_at ? formatCleanTime(sheetData.cbe_updated_at, "en") : (sheetData.timestamp ? extractTimeFromTimestamp(sheetData.timestamp) : liveClock);
+  }
 
+  // سعر الدولار المعتمد للمحفظة والتحويلات
+  let usdRate = cbeBuy;
+  if (ta3weemCurrs && ta3weemCurrs["USD"] && Number(ta3weemCurrs["USD"].price) > 40) {
+    usdRate = Number(ta3weemCurrs["USD"].price);
+  } else if (sheetData.usd_rate && Number(sheetData.usd_rate) > 40) {
+    usdRate = Number(Number(sheetData.usd_rate).toFixed(2));
+  }
+
+  // 🏦 أسعار الدولار في البنوك المصرية (25 بنكاً):
+  // 1. سحب مباشر من موقع تعويم إذا نجح
+  // 2. أو من كاش شيت المزامنة / GitHub Raw المحدث دورياً بالـ 25 بنكاً الحية
+  // 3. أو البديل الاحتياطي اليومي
   const defaultBanks = [
-    { bank: "بنك نكست (NXT)", buy: 54.49, sell: 54.59, updated_at: liveClock },
-    { bank: "الأهلي الكويتي (ABK)", buy: 54.48, sell: 54.52, updated_at: liveClock },
-    { bank: "اتش اس بي سي (HSBC)", buy: 54.48, sell: 54.58, updated_at: liveClock },
-    { bank: "البنك الأهلي المصري (NBE)", buy: 54.45, sell: 54.55, updated_at: liveClock },
-    { bank: "بنك مصر (BM)", buy: 54.45, sell: 54.55, updated_at: liveClock },
-    { bank: "البنك التجاري الدولي (CIB)", buy: 54.45, sell: 54.55, updated_at: liveClock },
-    { bank: "كريدي أجريكول (CA)", buy: 54.42, sell: 54.52, updated_at: liveClock },
-    { bank: "أبوظبي الإسلامي (ADIB)", buy: 54.40, sell: 54.50, updated_at: liveClock }
+    { bank: "أبوظبي الإسلامي (ADIB)", buy: 54.50, sell: 54.60, updated_at: liveClock },
+    { bank: "الأهلي الكويتي (ABK)", buy: 54.47, sell: 54.57, updated_at: liveClock },
+    { bank: "قناة السويس (SCB)", buy: 54.45, sell: 54.55, updated_at: liveClock },
+    { bank: "أبوظبي التجاري (ADCB)", buy: 54.43, sell: 54.53, updated_at: liveClock },
+    { bank: "بنك الشركة المصرفية (SAIB)", buy: 54.33, sell: 54.43, updated_at: liveClock },
+    { bank: "البنك الأهلي المصري (NBE)", buy: 54.31, sell: 54.41, updated_at: liveClock },
+    { bank: "بنك مصر (BM)", buy: 54.31, sell: 54.41, updated_at: liveClock },
+    { bank: "كريدي أجريكول (CA)", buy: 54.27, sell: 54.37, updated_at: liveClock },
+    { bank: "بنك نكست (NXT)", buy: 54.25, sell: 54.35, updated_at: liveClock },
+    { bank: "البنك التجاري الدولي (CIB)", buy: 54.12, sell: 54.22, updated_at: liveClock }
   ];
-  let banks = (ta3weemResult && ta3weemResult.banks && ta3weemResult.banks.length > 0)
-    ? ta3weemResult.banks
-    : defaultBanks;
+
+  let banks = defaultBanks;
+  if (ta3weemResult && ta3weemResult.banks && Array.isArray(ta3weemResult.banks) && ta3weemResult.banks.length > 0) {
+    banks = ta3weemResult.banks;
+  } else if (sheetData.banks && Array.isArray(sheetData.banks) && sheetData.banks.length > 0) {
+    banks = sheetData.banks.map(b => ({
+      bank: b.bank,
+      buy: Number(b.buy),
+      sell: Number(b.sell),
+      updated_at: b.updated_at || liveClock
+    }));
+  }
   // ترتيب البنوك دائماً حسب أعلى سعر شراء
   banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
 
