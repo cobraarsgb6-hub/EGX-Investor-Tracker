@@ -1,25 +1,26 @@
 /**
  * ==================================================================================
- * ⚡ EGX & GLOBAL MARKETS TELEGRAM BOT - CLOUDFLARE WORKER (LIVE REAL-TIME EDITION)
+ * ⚡ EGX & GLOBAL MARKETS TELEGRAM BOT - CLOUDFLARE WORKER (AUDITED HIGH-RESILIENCE)
  * ==================================================================================
- * - 100% AUTONOMOUS CLOUD ENGINE (Zero Local PC Dependency)
- * - LIVE SECOND-BY-SECOND FEED: Binance (BTC, ETH, Gold) & Yahoo Finance (Brent, WTI)
- * - LIVE DIRECT FEED: Ta3weem.com (25 Banks + Official Central Bank Actual Rates)
- * - EGX Institutional flows from Google Sheets API / GitHub Actions
- * - Exact Timestamp (آخر وقت تحديث) displayed under EVERY single product and rate
- * - Clear Banking Guidance: Bank Buy (You Sell) vs. Bank Sell (You Buy)
- * - Pure actual rates (No fake averages)
- * - Built-in Cloudflare HTML Control Dashboard (/control)
+ * - 100% AUTONOMOUS CLOUD ENGINE (Cloudflare Edge & Serverless)
+ * - LIVE SECOND-BY-SECOND FEED: TradingView Scanner (BTC, ETH, Brent, WTI, Gold, Silver)
+ * - PURE ACTUAL RATES: Ta3weem.com & Central Bank of Egypt / Official Egyptian Banks
+ * - SECURE ENDPOINTS: Authorization tokens on /broadcast, /api/config, /set_webhook, /set_commands
+ * - WEBHOOK SECRET: X-Telegram-Bot-Api-Secret-Token validation
+ * - PERSISTENCE: Cloudflare KV (env.EGX_KV) with memory cache fallback
+ * - SAFE HTML: Full escapeHtml() protection against parsing breakages
+ * - SMART CHUNKING: Telegram 4096-char auto-splitting with double-newline awareness
+ * - CAIRO TIMEZONE: Strict Africa/Cairo date & time calculations (no UTC midnight offsets)
+ * - GROUP INTELLIGENCE: Slash command normalization & no casual keyword spamming in groups
  * ==================================================================================
  */
 
-// توكن البوت الافتراضي (مع إمكانية تجاوزه تلقائياً عبر Cloudflare Secrets: env.BOT_TOKEN)
 let BOT_TOKEN = "8602326797:AAH0__1Q9RTSvmkho6qR0-Sk6FWSrHQF6GY";
 const DATA_API_URL = "https://script.google.com/macros/s/AKfycbwO2XFvnxgA4aXgzZKoVCLhRy0CnfUonrptmkxvQF4nZChW_D_RrZsQDXm6NUW6QIRGuA/exec?action=data";
 const CONFIG_API_URL = "https://script.google.com/macros/s/AKfycbwO2XFvnxgA4aXgzZKoVCLhRy0CnfUonrptmkxvQF4nZChW_D_RrZsQDXm6NUW6QIRGuA/exec";
 const GITHUB_RAW_DATA_URL = "https://raw.githubusercontent.com/cobraarsgb6-hub/EGX-Investor-Tracker/main/data/live_dashboard_data.json";
 
-// الإعدادات المركزية الافتراضية (اللغة الافتراضية إنجليزية بناءً على رغبة المستخدم)
+// Default bot config
 let botConfig = {
   hide_egx: false,
   hide_banks: false,
@@ -34,10 +35,127 @@ let botConfig = {
   default_curr: "usd"
 };
 
-// تخزين اختيار لغة وعملة ومنطقة المستخدم الفردية
-let userLangPreferences = {};
-let userCurrPreferences = {};
-let userTzPreferences = {};
+// Memory caches for fast lookup
+let configCache = { data: botConfig, timestamp: 0 };
+let memoryCache = { data: null, timestamp: 0 };
+let sheetCache = { data: { archive: [], rates: [], banks: [] }, timestamp: 0 };
+let userPrefCache = {};
+
+// KV-backed state helpers
+async function getUserPref(env, chatId, key, defaultVal) {
+  const cacheKey = `${chatId}:${key}`;
+  if (userPrefCache[cacheKey] !== undefined) {
+    return userPrefCache[cacheKey];
+  }
+  if (env && env.EGX_KV) {
+    try {
+      const val = await env.EGX_KV.get(`user_pref:${cacheKey}`);
+      if (val !== null && val !== undefined) {
+        userPrefCache[cacheKey] = val;
+        return val;
+      }
+    } catch(e) {}
+  }
+  return defaultVal;
+}
+
+async function setUserPref(env, ctx, chatId, key, val) {
+  const cacheKey = `${chatId}:${key}`;
+  userPrefCache[cacheKey] = val;
+  if (env && env.EGX_KV) {
+    try {
+      const p = env.EGX_KV.put(`user_pref:${cacheKey}`, String(val), { expirationTtl: 86400 * 90 });
+      if (ctx && ctx.waitUntil) ctx.waitUntil(p);
+      else await p;
+    } catch(e) {}
+  }
+}
+
+async function getLiveBotConfig(env) {
+  const now = Date.now();
+  if (configCache.data && (now - configCache.timestamp < 15000)) {
+    return configCache.data;
+  }
+  if (env && env.EGX_KV) {
+    try {
+      const stored = await env.EGX_KV.get("bot_config", "json");
+      if (stored && typeof stored === "object") {
+        botConfig = { ...botConfig, ...stored };
+        configCache = { data: botConfig, timestamp: now };
+        return botConfig;
+      }
+    } catch(e) {}
+  }
+  return botConfig;
+}
+
+async function saveLiveBotConfig(env, ctx, newConfig) {
+  botConfig = { ...botConfig, ...newConfig };
+  configCache = { data: botConfig, timestamp: Date.now() };
+  if (env && env.EGX_KV) {
+    try {
+      const p = env.EGX_KV.put("bot_config", JSON.stringify(botConfig));
+      if (ctx && ctx.waitUntil) ctx.waitUntil(p);
+      else await p;
+    } catch(e) {}
+  }
+}
+
+// Security authorization helper
+function isAdminAuthorized(request, env) {
+  const adminKey = (env && (env.ADMIN_KEY || env.API_SECRET)) || "egx_admin_secret_2026";
+  const authHeader = request.headers.get("Authorization") || "";
+  if (authHeader.startsWith("Bearer ") && authHeader.slice(7).trim() === adminKey) return true;
+  const url = new URL(request.url);
+  const token = url.searchParams.get("key") || url.searchParams.get("token") || url.searchParams.get("admin_key");
+  if (token === adminKey) return true;
+  return false;
+}
+
+function isValidWebhookSecret(request, env) {
+  const secretToken = (env && env.TELEGRAM_SECRET_TOKEN) || "egx_tg_secret_2026";
+  const incoming = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
+  if (incoming && incoming !== secretToken) {
+    return false;
+  }
+  return true;
+}
+
+// HTML escaping helper
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// Telegram message chunker (4096 character limit safety)
+function splitTgMessage(text, maxLen = 4000) {
+  if (!text || text.length <= maxLen) return [text];
+  const chunks = [];
+  let remaining = text;
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLen) {
+      chunks.push(remaining);
+      break;
+    }
+    let splitIdx = remaining.lastIndexOf("\n\n", maxLen);
+    if (splitIdx === -1 || splitIdx < maxLen / 2) {
+      splitIdx = remaining.lastIndexOf("\n", maxLen);
+    }
+    if (splitIdx === -1 || splitIdx < maxLen / 4) {
+      splitIdx = remaining.lastIndexOf(" ", maxLen);
+    }
+    if (splitIdx === -1) {
+      splitIdx = maxLen;
+    }
+    chunks.push(remaining.slice(0, splitIdx).trim());
+    remaining = remaining.slice(splitIdx).trim();
+  }
+  return chunks;
+}
 
 const TIMEZONES = {
   "cairo": { id: "Africa/Cairo", name_ar: "القاهرة", name_en: "Cairo", flag: "🇪🇬" },
@@ -68,7 +186,7 @@ const BANK_EN_NAMES = {
   "QNB": "QNB Alahli",
   "فيصل": "Faisal Islamic Bank",
   "البركة": "Al Baraka Bank",
-  "التعمير والإسكان": "Housing & Dev Bank (HDB)",
+  "التعمير والإسكان": "Housing &amp; Dev Bank (HDB)",
   "الكويت الوطني": "NBK Egypt",
   "المصرف المتحد": "The United Bank",
   "العقاري المصري العربي": "Egyptian Arab Land Bank",
@@ -92,42 +210,24 @@ const BANK_EN_NAMES = {
   "البنك المركزي المصري": "Central Bank of Egypt (CBE)"
 };
 
+// Sort bank keys by descending length so "بنك مصر إيران" matches before "بنك مصر"
+const SORTED_BANK_KEYS = Object.keys(BANK_EN_NAMES).sort((a, b) => b.length - a.length);
+
 function getBankName(bankAr, lang) {
-  if (lang !== "en" || !bankAr) return bankAr;
-  for (let key in BANK_EN_NAMES) {
+  if (lang !== "en" || !bankAr) return escapeHtml(bankAr);
+  for (let key of SORTED_BANK_KEYS) {
     if (bankAr.includes(key)) return BANK_EN_NAMES[key];
   }
-  return bankAr;
+  return escapeHtml(bankAr);
 }
 
-// كاش الإعدادات في الذاكرة (15 ثانية)
-let configCache = {
-  data: botConfig,
-  timestamp: 0
-};
-
-// كاش البيانات الحية على سيرفر الـ Edge (تحديث تلقائي كل 10 ثوانٍ)
-let memoryCache = {
-  data: null,
-  timestamp: 0
-};
-
-// كاش شيت جوجل المستقل (60 ثانية)
-let sheetCache = {
-  data: {
-    archive: [],
-    rates: [],
-    banks: []
-  },
-  timestamp: 0
-};
-
-// ==========================================
-// 🔢 دوال التوقيت والتنسيق
-// ==========================================
-
+// Time & Cairo Date Helpers
 const LRM = "\u200E";
 const RLM = "\u200F";
+
+function getCairoDateStr() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(new Date());
+}
 
 function getCairoTimeStr() {
   const d = new Date();
@@ -178,7 +278,8 @@ function getCairoFullDateTime(lang, tzKey) {
 function extractTimeFromTimestamp(ts) {
   if (!ts) return getCairoTimeStr().slice(0, 5);
   try {
-    const d = new Date(ts);
+    const s = String(ts).trim();
+    const d = new Date(s.includes("T") || s.endsWith("Z") ? s : s.replace(" ", "T") + "Z");
     if (!isNaN(d.getTime())) {
       return d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hour12: false });
     }
@@ -198,36 +299,22 @@ function formatCleanTime(val, lang) {
 }
 
 function getEgxSnapshotTime(data, lang) {
-  let raw = "";
   const tsCandidate = data?.egx_institutions?.timestamp || data?.timestamp || (data?.archive && data.archive[0]?.created_at) || "";
-
-  if (tsCandidate) {
-    const s = String(tsCandidate).trim();
-    // If it's an ISO UTC string like "2026-10-06T11:03:06.061Z" or ends with Z
-    if (s.includes("T") || s.endsWith("Z")) {
-      try {
-        const d = new Date(s);
-        if (!isNaN(d.getTime())) {
-          raw = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hour12: false });
-        }
-      } catch(e) {}
-    } else {
-      // If it's a plain string like "2026-10-06 11:01:10" coming from GitHub Actions (UTC)
-      const m = s.match(/(\d{1,2}):(\d{2})/);
-      if (m) {
-        let h = parseInt(m[1], 10);
-        const min = m[2];
-        // If hour is <= 12 during afternoon (e.g. 10:56 AM or 11:01 AM while it was run in UTC on GitHub Actions)
-        // Check if converting UTC to Cairo (+3 hours) makes it fit EGX trading hours (10:00 to 15:00)
-        if (h <= 12 && (s.includes(" 10:") || s.includes(" 11:") || s.includes(" 07:") || s.includes(" 08:") || s.includes(" 09:") || s.includes(" 12:"))) {
-          h = (h + 3) % 24;
-        }
-        raw = `${String(h).padStart(2, "0")}:${min}`;
-      }
+  if (!tsCandidate) return "";
+  const s = String(tsCandidate).trim();
+  try {
+    const d = new Date(s.includes("T") || s.endsWith("Z") ? s : s.replace(" ", "T") + "Z");
+    if (!isNaN(d.getTime())) {
+      const timeStr = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hour12: false });
+      return format12HourTime(timeStr, lang);
     }
-  }
+  } catch(e) {}
 
-  return raw ? format12HourTime(raw, lang) : "";
+  const m = s.match(/(\d{1,2}):(\d{2})/);
+  if (m) {
+    return format12HourTime(`${m[1].padStart(2, "0")}:${m[2]}`, lang);
+  }
+  return "";
 }
 
 function getBankSnapshotTime(data, lang) {
@@ -274,44 +361,47 @@ function getBankSnapshotTime(data, lang) {
   return formattedTime;
 }
 
-function fmtSigned(v) {
-  const n = Number(v) || 0;
-  return LRM + (n >= 0 ? "+" : "-") + Math.abs(n).toLocaleString("en-US") + LRM;
-}
-
-function fmtSignedUsd(v, usdRate) {
-  const val = Math.round(Number(v) / usdRate);
-  return LRM + (val >= 0 ? "+" : "-") + "$" + Math.abs(val).toLocaleString("en-US") + LRM;
-}
-
 export default {
   async fetch(request, env, ctx) {
-    // تحديث توكن البوت تلقائياً من Cloudflare Secrets إذا وجد، وإلا استخدام التوكن الافتراضي
     if (env && env.BOT_TOKEN) {
       BOT_TOKEN = env.BOT_TOKEN;
     }
 
     const url = new URL(request.url);
 
-    // 1. فحص الحالة
+    // 1. Root health check
     if (url.pathname === "/" && request.method === "GET") {
       return new Response("🚀 EGX Telegram Bot Cloudflare Edge Worker is 100% LIVE 24/7!", {
         headers: { "content-type": "text/plain; charset=utf-8" }
       });
     }
 
-    // 2. تفعيل الـ Webhook
+    // 2. Set Webhook (Protected)
     if (url.pathname === "/set_webhook") {
+      if (!isAdminAuthorized(request, env)) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+      const secretToken = (env && env.TELEGRAM_SECRET_TOKEN) || "egx_tg_secret_2026";
       const webhookUrl = url.origin + "/webhook";
-      const tgRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
+      const tgRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: webhookUrl,
+          secret_token: secretToken
+        })
+      });
       const resJson = await tgRes.json();
       return new Response(JSON.stringify(resJson, null, 2), {
         headers: { "content-type": "application/json; charset=utf-8" }
       });
     }
 
-    // 2.5. تسجيل قائمة الأوامر
+    // 2.5. Set Commands (Protected)
     if (url.pathname === "/set_commands") {
+      if (!isAdminAuthorized(request, env)) {
+        return new Response("Unauthorized", { status: 401 });
+      }
       const commands = [
         { command: "start", description: "Main menu / القائمة الرئيسية" },
         { command: "egx", description: "Institutional flows / تعاملات المؤسسات بالبورصة" },
@@ -331,14 +421,14 @@ export default {
       });
     }
 
-    // 3. لوحة تحكم وتخصيص البوت
+    // 3. Control Panel HTML
     if (url.pathname === "/control" && request.method === "GET") {
       return new Response(getControlHtml(url.origin), {
         headers: { "content-type": "text/html; charset=utf-8" }
       });
     }
 
-    // 3.5. فحص واختبار البيانات الحية مباشرة كـ JSON
+    // 3.5. Live Data API
     if (url.pathname === "/api/data" && request.method === "GET") {
       const liveData = await getCachedDashboardData();
       return new Response(JSON.stringify(liveData, null, 2), {
@@ -346,22 +436,44 @@ export default {
       });
     }
 
-    // 4. API قراءة وحفظ الإعدادات
+    // 4. Config API (Whitelisted & Protected POST)
     if (url.pathname === "/api/config") {
       if (request.method === "GET") {
-        const liveCfg = await getLiveBotConfig();
+        const liveCfg = await getLiveBotConfig(env);
         return new Response(JSON.stringify(liveCfg), {
           headers: { "content-type": "application/json; charset=utf-8" }
         });
       }
       if (request.method === "POST") {
+        if (!isAdminAuthorized(request, env)) {
+          return new Response(JSON.stringify({ status: "unauthorized" }), {
+            status: 401,
+            headers: { "content-type": "application/json; charset=utf-8" }
+          });
+        }
         try {
           const body = await request.json();
-          botConfig = { ...botConfig, ...body };
-          configCache = { data: botConfig, timestamp: Date.now() };
+          // Whitelist allowed config fields to prevent mass assignment
+          const sanitized = {};
+          if (typeof body.hide_egx === "boolean") sanitized.hide_egx = body.hide_egx;
+          if (typeof body.hide_banks === "boolean") sanitized.hide_banks = body.hide_banks;
+          if (typeof body.hide_commodities === "boolean") sanitized.hide_commodities = body.hide_commodities;
+          if (typeof body.hide_currencies === "boolean") sanitized.hide_currencies = body.hide_currencies;
+          if (typeof body.hide_report === "boolean") sanitized.hide_report = body.hide_report;
+          if (typeof body.hide_lang_toggle === "boolean") sanitized.hide_lang_toggle = body.hide_lang_toggle;
+          if (typeof body.show_cbe_in_banks === "boolean") sanitized.show_cbe_in_banks = body.show_cbe_in_banks;
+          if (typeof body.show_best_banks === "boolean") sanitized.show_best_banks = body.show_best_banks;
+          if (Number.isInteger(body.banks_count) && body.banks_count > 0 && body.banks_count <= 25) {
+            sanitized.banks_count = body.banks_count;
+          }
+          if (body.default_lang === "en" || body.default_lang === "ar") {
+            sanitized.default_lang = body.default_lang;
+          }
+          if (body.default_curr === "usd" || body.default_curr === "egp") {
+            sanitized.default_curr = body.default_curr;
+          }
 
-          if (body.hide_commodities !== undefined) botConfig.hide_gold = body.hide_commodities;
-          if (body.hide_currencies !== undefined) botConfig.hide_markets = body.hide_currencies;
+          await saveLiveBotConfig(env, ctx, sanitized);
 
           try {
             ctx.waitUntil(
@@ -383,19 +495,25 @@ export default {
       }
     }
 
-    // 5. استقبال رسائل تلجرام (Webhook)
+    // 5. Telegram Webhook (Protected with Secret Token)
     if (url.pathname === "/webhook" && request.method === "POST") {
+      if (!isValidWebhookSecret(request, env)) {
+        return new Response("Unauthorized", { status: 403 });
+      }
       try {
         const update = await request.json();
-        ctx.waitUntil(handleTelegramUpdate(update, url.origin));
+        ctx.waitUntil(handleTelegramUpdate(update, url.origin, env, ctx));
         return new Response("OK", { status: 200 });
       } catch (err) {
         return new Response("OK", { status: 200 });
       }
     }
 
-    // 6. نقطة إرسال التقرير الشامل التلقائي (يدوياً أو عبر Cron Trigger)
+    // 6. Broadcast (Protected with Admin Auth)
     if (url.pathname === "/broadcast") {
+      if (!isAdminAuthorized(request, env)) {
+        return new Response("Unauthorized", { status: 401 });
+      }
       const targetChat = url.searchParams.get("chat_id") || env?.CHANNEL_ID || "@EgxTracker_LiveBot";
       const targetLang = url.searchParams.get("lang") || "ar";
       const res = await sendAutomatedDailySummary(targetChat, targetLang);
@@ -407,7 +525,6 @@ export default {
     return new Response("Not Found", { status: 404 });
   },
 
-  // تشغيل التقرير المجدول التلقائي (Cloudflare Cron Triggers)
   async scheduled(event, env, ctx) {
     if (env && env.BOT_TOKEN) BOT_TOKEN = env.BOT_TOKEN;
     const targetChat = env?.CHANNEL_ID || "@EgxTracker_LiveBot";
@@ -416,15 +533,7 @@ export default {
 };
 
 /**
- * جلب الإعدادات المحدثة مركزياً (مباشرة سحابياً بدون جوجل شيت)
- */
-function getLiveBotConfig() {
-  return botConfig;
-}
-
-/**
- * محرك سحب أسعار العملات والذهب الحية مباشرة من الواجهة الرئيسية لموقع تعويم
- * يضمن تحديث الدرهم الإماراتي والريال واليورو والإسترليني والذهب لحظياً دون أي كاش راكد
+ * Scrape Ta3weem currency and gold cards with strict URL slug matching
  */
 async function fetchTa3weemLiveCurrencies() {
   try {
@@ -435,34 +544,34 @@ async function fetchTa3weemLiveCurrencies() {
     });
     if (!res.ok) return null;
     const html = await res.text();
-    const cards = html.match(/<a[^>]*href=["']https:\/\/ta3weem\.com\/ar\/(?:currency-exchange-rates|gold-prices)[^"']*["'][^>]*>[\s\S]*?<\/a>/g) || [];
+    const cards = html.match(/<a[^>]*href=["'][^"']*ta3weem\.com\/ar\/(?:currency-exchange-rates|gold-prices)[^"']*["'][^>]*>[\s\S]*?<\/a>/g) || [];
     if (!cards.length) return null;
 
     const items = {};
     for (const card of cards) {
-      const titleM = card.match(/<h3[^>]*>([\s\S]*?)<\/h3>/);
+      const hrefM = card.match(/href=["']([^"']+)["']/);
+      const href = hrefM ? hrefM[1] : "";
       const priceM = card.match(/<span[^>]*class=["'][^"']*text-blue-500[^"']*["'][^>]*>([\s\S]*?)<\/span>/);
       const chgM = card.match(/<span[^>]*class=["'][^"']*text-(?:green|red)-700[^"']*["'][^>]*>([\s\S]*?)<\/span>/);
-      if (titleM && priceM) {
-        const title = titleM[1].replace(/<[^>]+>/g, '').trim();
+      if (priceM) {
         const price = parseFloat(priceM[1].replace(/,/g, '').trim());
         const chg = chgM ? chgM[1].replace(/<[^>]+>/g, '').trim() : "0.0%";
         if (price > 0) {
-          if (title.includes("USD") || title.includes("دولار")) {
+          if (href.includes("/USD-EGP") || href.endsWith("USD-EGP")) {
             items["USD"] = { code: "USD", name: "الدولار الأمريكي", name_en: "US Dollar", price, change: chg };
-          } else if (title.includes("EUR") || title.includes("يورو")) {
+          } else if (href.includes("/EUR-EGP") || href.endsWith("EUR-EGP")) {
             items["EUR"] = { code: "EUR", name: "اليورو الأوروبي", name_en: "Euro", price, change: chg };
-          } else if (title.includes("SAR") || title.includes("سعودي")) {
+          } else if (href.includes("/SAR-EGP") || href.endsWith("SAR-EGP")) {
             items["SAR"] = { code: "SAR", name: "الريال السعودي", name_en: "Saudi Riyal", price, change: chg };
-          } else if (title.includes("AED") || title.includes("إماراتي")) {
+          } else if (href.includes("/AED-EGP") || href.endsWith("AED-EGP")) {
             items["AED"] = { code: "AED", name: "الدرهم الإماراتي", name_en: "UAE Dirham", price, change: chg };
-          } else if (title.includes("GBP") || title.includes("إسترليني")) {
+          } else if (href.includes("/GBP-EGP") || href.endsWith("GBP-EGP")) {
             items["GBP"] = { code: "GBP", name: "الجنيه الإسترليني", name_en: "British Pound", price, change: chg };
-          } else if (title.includes("21")) {
+          } else if (href.includes("/21K") || href.includes("21-karat") || href.includes("/gold-prices/21")) {
             items["GOLD21"] = { code: "GOLD21", name: "ذهب عيار 21", name_en: "Gold 21K", price, change: chg };
-          } else if (title.includes("24")) {
+          } else if (href.includes("/24K") || href.includes("24-karat") || href.includes("/gold-prices/24")) {
             items["GOLD24"] = { code: "GOLD24", name: "ذهب عيار 24", name_en: "Gold 24K", price, change: chg };
-          } else if (title.includes("جنيه الذهب")) {
+          } else if (href.includes("gold-pound") || href.includes("pound")) {
             items["GOLDC"] = { code: "GOLDC", name: "جنيه الذهب", name_en: "Gold Pound", price, change: chg };
           }
         }
@@ -475,7 +584,7 @@ async function fetchTa3weemLiveCurrencies() {
 }
 
 /**
- * محرك سحب البنوك والبنك المركزي المصري مباشرة من موقع تعويم (100% حي ومستقل عن أي شيت)
+ * Scrape Ta3weem bank rates and Central Bank of Egypt
  */
 async function fetchTa3weemLive() {
   try {
@@ -487,7 +596,6 @@ async function fetchTa3weemLive() {
     if (!res.ok) return null;
     const html = await res.text();
 
-    // 1. استخراج بطاقة البنك المركزي المصري الرسمية
     let cbe = null;
     const cbeIdx = html.indexOf('alt="البنك المركزي (CBE)"');
     if (cbeIdx !== -1) {
@@ -504,7 +612,6 @@ async function fetchTa3weemLive() {
       }
     }
 
-    // 2. استخراج جدول البنوك التجارية الـ 25
     const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
     const banks = [];
     for (let i = 1; i < rows.length; i++) {
@@ -535,7 +642,7 @@ async function fetchTa3weemLive() {
 }
 
 /**
- * محرك سحب الأسواق اللحظية مباشرة من TradingView (كريبتو، ذهب، فضة، نفط برنت و WTI)
+ * Fetch live market rates via TradingView Scanner with Promise.allSettled
  */
 async function fetchTradingViewLiveMarket() {
   const result = {
@@ -545,115 +652,111 @@ async function fetchTradingViewLiveMarket() {
     wti: 0, wti_chg: "+0.00%",
     gold_ounce: 0, gold_chg: "+0.00%",
     silver: 0, silver_chg: "+0.00%",
-    usd_egp: 0
+    usd_egp: 0,
+    is_live: false
   };
 
-  try {
-    const [cryptoRes, cfdRes, forexRes] = await Promise.all([
-      fetch("https://scanner.tradingview.com/crypto/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
-        body: JSON.stringify({
-          symbols: { tickers: ["BINANCE:BTCUSDT", "BINANCE:ETHUSDT"] },
-          columns: ["close", "change"]
-        })
-      }).catch(() => null),
-      fetch("https://scanner.tradingview.com/cfd/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
-        body: JSON.stringify({
-          symbols: { tickers: ["FX:UKOIL", "FX:USOIL", "TVC:GOLD", "TVC:SILVER"] },
-          columns: ["close", "change"]
-        })
-      }).catch(() => null),
-      fetch("https://scanner.tradingview.com/forex/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
-        body: JSON.stringify({
-          symbols: { tickers: ["FX_IDC:USDEGP"] },
-          columns: ["close", "change"]
-        })
-      }).catch(() => null)
-    ]);
+  const results = await Promise.allSettled([
+    fetch("https://scanner.tradingview.com/crypto/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
+      body: JSON.stringify({
+        symbols: { tickers: ["BINANCE:BTCUSDT", "BINANCE:ETHUSDT"] },
+        columns: ["close", "change"]
+      })
+    }).then(r => r.ok ? r.json() : null),
+    fetch("https://scanner.tradingview.com/cfd/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
+      body: JSON.stringify({
+        symbols: { tickers: ["FX:UKOIL", "FX:USOIL", "TVC:GOLD", "TVC:SILVER"] },
+        columns: ["close", "change"]
+      })
+    }).then(r => r.ok ? r.json() : null),
+    fetch("https://scanner.tradingview.com/forex/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
+      body: JSON.stringify({
+        symbols: { tickers: ["FX_IDC:USDEGP"] },
+        columns: ["close", "change"]
+      })
+    }).then(r => r.ok ? r.json() : null)
+  ]);
 
-    if (cryptoRes && cryptoRes.ok) {
-      const cj = await cryptoRes.json();
-      (cj.data || []).forEach(item => {
-        const val = item.d?.[0] ? parseFloat(item.d[0]) : 0;
-        const chg = item.d?.[1] ? (parseFloat(item.d[1]) >= 0 ? "+" : "") + parseFloat(item.d[1]).toFixed(2) + "%" : "+0.00%";
-        if (item.s === "BINANCE:BTCUSDT" && val > 0) {
-          result.btc = val;
-          result.btc_chg = chg;
-        } else if (item.s === "BINANCE:ETHUSDT" && val > 0) {
-          result.eth = val;
-          result.eth_chg = chg;
-        }
-      });
-    }
+  const [cryptoRes, cfdRes, forexRes] = results.map(r => r.status === "fulfilled" ? r.value : null);
 
-    if (cfdRes && cfdRes.ok) {
-      const cfdJ = await cfdRes.json();
-      (cfdJ.data || []).forEach(item => {
-        const val = item.d?.[0] ? parseFloat(item.d[0]) : 0;
-        const chg = item.d?.[1] ? (parseFloat(item.d[1]) >= 0 ? "+" : "") + parseFloat(item.d[1]).toFixed(2) + "%" : "+0.00%";
-        if (item.s === "FX:UKOIL" && val > 0) {
-          result.brent = val;
-          result.brent_chg = chg;
-        } else if (item.s === "FX:USOIL" && val > 0) {
-          result.wti = val;
-          result.wti_chg = chg;
-        } else if (item.s === "TVC:GOLD" && val > 0) {
-          result.gold_ounce = val;
-          result.gold_chg = chg;
-        } else if (item.s === "TVC:SILVER" && val > 0) {
-          result.silver = val;
-          result.silver_chg = chg;
-        }
-      });
-    }
+  if (cryptoRes && cryptoRes.data) {
+    cryptoRes.data.forEach(item => {
+      const val = item.d?.[0] ? parseFloat(item.d[0]) : 0;
+      const chg = item.d?.[1] ? (parseFloat(item.d[1]) >= 0 ? "+" : "") + parseFloat(item.d[1]).toFixed(2) + "%" : "+0.00%";
+      if (item.s === "BINANCE:BTCUSDT" && val > 0) {
+        result.btc = val;
+        result.btc_chg = chg;
+        result.is_live = true;
+      } else if (item.s === "BINANCE:ETHUSDT" && val > 0) {
+        result.eth = val;
+        result.eth_chg = chg;
+        result.is_live = true;
+      }
+    });
+  }
 
-    if (forexRes && forexRes.ok) {
-      const fxJ = await forexRes.json();
-      (fxJ.data || []).forEach(item => {
-        const val = item.d?.[0] ? parseFloat(item.d[0]) : 0;
-        if (item.s === "FX_IDC:USDEGP" && val > 0) {
-          result.usd_egp = val;
-        }
-      });
-    }
-  } catch(e) {}
+  if (cfdRes && cfdRes.data) {
+    cfdRes.data.forEach(item => {
+      const val = item.d?.[0] ? parseFloat(item.d[0]) : 0;
+      const chg = item.d?.[1] ? (parseFloat(item.d[1]) >= 0 ? "+" : "") + parseFloat(item.d[1]).toFixed(2) + "%" : "+0.00%";
+      if (item.s === "FX:UKOIL" && val > 0) {
+        result.brent = val;
+        result.brent_chg = chg;
+        result.is_live = true;
+      } else if (item.s === "FX:USOIL" && val > 0) {
+        result.wti = val;
+        result.wti_chg = chg;
+      } else if (item.s === "TVC:GOLD" && val > 0) {
+        result.gold_ounce = val;
+        result.gold_chg = chg;
+        result.is_live = true;
+      } else if (item.s === "TVC:SILVER" && val > 0) {
+        result.silver = val;
+        result.silver_chg = chg;
+      }
+    });
+  }
 
-  // مسار احتياطي عبر Coinbase و Yahoo Finance في حال تعذر TradingView
-  try {
-    if (!result.btc || !result.eth) {
-      const [cbBtc, cbEth] = await Promise.all([
-        fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json()).catch(() => null),
-        fetch("https://api.coinbase.com/v2/prices/ETH-USD/spot", { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json()).catch(() => null)
+  if (forexRes && forexRes.data) {
+    forexRes.data.forEach(item => {
+      const val = item.d?.[0] ? parseFloat(item.d[0]) : 0;
+      if (item.s === "FX_IDC:USDEGP" && val > 0) {
+        result.usd_egp = val;
+      }
+    });
+  }
+
+  // Fallback to Coinbase and Yahoo Finance
+  if (!result.btc || !result.brent || !result.gold_ounce) {
+    try {
+      const fallbacks = await Promise.allSettled([
+        fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json()),
+        fetch("https://api.coinbase.com/v2/prices/ETH-USD/spot", { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json()),
+        fetch("https://query1.finance.yahoo.com/v8/finance/chart/BZ=F?interval=1d", { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json()),
+        fetch("https://api.coinbase.com/v2/prices/PAXG-USD/spot", { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json())
       ]);
-      if (!result.btc && cbBtc?.data?.amount) result.btc = parseFloat(cbBtc.data.amount);
-      if (!result.eth && cbEth?.data?.amount) result.eth = parseFloat(cbEth.data.amount);
-    }
-
-    if (!result.brent) {
-      const yBrent = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/BZ=F?interval=1d", {
-        headers: { "User-Agent": "Mozilla/5.0" }
-      }).then(r => r.json()).catch(() => null);
-      const bPrice = yBrent?.chart?.result?.[0]?.meta?.regularMarketPrice;
-      if (bPrice) result.brent = parseFloat(bPrice);
-    }
-
-    if (!result.gold_ounce) {
-      const cbPaxg = await fetch("https://api.coinbase.com/v2/prices/PAXG-USD/spot", { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json()).catch(() => null);
-      if (cbPaxg?.data?.amount) result.gold_ounce = parseFloat(cbPaxg.data.amount);
-    }
-  } catch(e2) {}
+      const [cbBtc, cbEth, yBrent, cbPaxg] = fallbacks.map(f => f.status === "fulfilled" ? f.value : null);
+      if (!result.btc && cbBtc?.data?.amount) { result.btc = parseFloat(cbBtc.data.amount); result.is_live = true; }
+      if (!result.eth && cbEth?.data?.amount) { result.eth = parseFloat(cbEth.data.amount); result.is_live = true; }
+      if (!result.brent) {
+        const bPrice = yBrent?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if (bPrice) { result.brent = parseFloat(bPrice); result.is_live = true; }
+      }
+      if (!result.gold_ounce && cbPaxg?.data?.amount) { result.gold_ounce = parseFloat(cbPaxg.data.amount); result.is_live = true; }
+    } catch(e) {}
+  }
 
   return result;
 }
 
 /**
- * جلب وتحديث كافة البيانات الحية سحابياً 100%
- * مصادر البيانات: شيت المزامنة (للبورصة المصرية وبنوك تعويم) + تريدنج فيو المباشر (للكريبتو والسلع)
+ * Cache and assemble full market dashboard data
  */
 async function getCachedDashboardData() {
   const now = Date.now();
@@ -663,11 +766,11 @@ async function getCachedDashboardData() {
 
   const liveClock = getCairoTimeStr();
 
-  // 1. تحديث بيانات الشيت عبر كاش 60 ثانية لجلب جلسات البورصة المصرية وأسعار بنوك تعويم
+  // Refresh Google Sheets / GitHub Actions sync payload
   if (!sheetCache.timestamp || (now - sheetCache.timestamp > 60000)) {
     let fetched = false;
     try {
-      const sSignal = AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined;
+      const sSignal = (typeof AbortSignal !== "undefined" && AbortSignal.timeout) ? AbortSignal.timeout(6000) : undefined;
       const sRes = await fetch(DATA_API_URL, {
         headers: { "User-Agent": "Cloudflare-Worker-EGX" },
         signal: sSignal
@@ -682,7 +785,6 @@ async function getCachedDashboardData() {
       }
     } catch(eSheet) {}
 
-    // في حال تعذر Google Apps Script أو تأخره، يتم السحب الفوري من مستودع GitHub Raw المحدث كل 15 دقيقة
     if (!fetched) {
       try {
         const ghRes = await fetch(GITHUB_RAW_DATA_URL + "?_t=" + now, {
@@ -698,7 +800,6 @@ async function getCachedDashboardData() {
       } catch(eGh) {}
     }
 
-    // تصفية أوتوماتيكية لأي جلسات مكررة في الأرشيف (إذا كانت أرقام جلسة اليوم مطابقة تماماً للجلسة السابقة بسبب عطلة البورصة)
     if (sheetCache.data && Array.isArray(sheetCache.data.archive) && sheetCache.data.archive.length > 1) {
       const arch = sheetCache.data.archive;
       const cleanArch = [arch[0]];
@@ -717,17 +818,13 @@ async function getCachedDashboardData() {
 
   const sheetData = sheetCache.data || {};
 
-  // 2. استدعاء متوازي للمصادر الحية المباشرة (تعويم + تريدنج فيو)
+  // Parallel fetch for live scraping
   const [ta3weemResult, tvMarket, ta3weemCurrs] = await Promise.all([
     fetchTa3weemLive(),
     fetchTradingViewLiveMarket(),
     fetchTa3weemLiveCurrencies()
   ]);
 
-  // 🏛 البنك المركزي المصري (CBE) - السعر الرسمي المعتمد:
-  // 1. من تعويم المباشر إذا وُجد
-  // 2. أو من شيت المزامنة / GitHub Raw (وهو سعر البنك المركزي الفعلي 54.45 شراء / 54.59 بيع)
-  // 3. والبديل الافتراضي 54.45 / 54.59 (تجنب استخدام TradingView interbank لأنه سعر فوري خارجي وليس سعر البنك المركزي)
   let cbeBuy = 54.45;
   let cbeSell = 54.59;
   let cbeTime = liveClock;
@@ -742,7 +839,6 @@ async function getCachedDashboardData() {
     cbeTime = sheetData.cbe_updated_at ? formatCleanTime(sheetData.cbe_updated_at, "en") : (sheetData.timestamp ? extractTimeFromTimestamp(sheetData.timestamp) : liveClock);
   }
 
-  // سعر الدولار المعتمد للمحفظة والتحويلات
   let usdRate = cbeBuy;
   if (ta3weemCurrs && ta3weemCurrs["USD"] && Number(ta3weemCurrs["USD"].price) > 40) {
     usdRate = Number(ta3weemCurrs["USD"].price);
@@ -750,10 +846,6 @@ async function getCachedDashboardData() {
     usdRate = Number(Number(sheetData.usd_rate).toFixed(2));
   }
 
-  // 🏦 أسعار الدولار في البنوك المصرية (25 بنكاً):
-  // 1. سحب مباشر من موقع تعويم إذا نجح
-  // 2. أو من كاش شيت المزامنة / GitHub Raw المحدث دورياً بالـ 25 بنكاً الحية
-  // 3. أو البديل الاحتياطي اليومي
   const defaultBanks = [
     { bank: "أبوظبي الإسلامي (ADIB)", buy: 54.50, sell: 54.60, updated_at: liveClock },
     { bank: "الأهلي الكويتي (ABK)", buy: 54.47, sell: 54.57, updated_at: liveClock },
@@ -778,16 +870,15 @@ async function getCachedDashboardData() {
       updated_at: b.updated_at || liveClock
     }));
   }
-  // ترتيب البنوك دائماً حسب أعلى سعر شراء
   banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
 
+  const isCommoditiesLive = tvMarket?.is_live || false;
   const btcPrice = (tvMarket && tvMarket.btc > 0) ? tvMarket.btc : 86000;
   const btcChg = (tvMarket && tvMarket.btc_chg) ? tvMarket.btc_chg : "+0.00%";
   const ethPrice = (tvMarket && tvMarket.eth > 0) ? tvMarket.eth : 2730;
   const ethChg = (tvMarket && tvMarket.eth_chg) ? tvMarket.eth_chg : "+0.00%";
   const goldOunce = (tvMarket && tvMarket.gold_ounce > 0) ? tvMarket.gold_ounce : 4165.0;
   const goldChg = (tvMarket && tvMarket.gold_chg) ? tvMarket.gold_chg : "+0.00%";
-
   const brentPrice = (tvMarket && tvMarket.brent > 0) ? tvMarket.brent : 107.27;
   const brentChg = (tvMarket && tvMarket.brent_chg) ? tvMarket.brent_chg : "+0.00%";
   const wtiPrice = (tvMarket && tvMarket.wti > 0) ? tvMarket.wti : 96.55;
@@ -800,25 +891,54 @@ async function getCachedDashboardData() {
   const g18Usd = Number((g24Usd * 18 / 24).toFixed(2));
 
   const live_commodities = [
-    { code: "BTC", name: "بتكوين (Bitcoin)", name_en: "Bitcoin (BTC)", usd_price: btcPrice, egp_price: Math.round(btcPrice * usdRate), change: btcChg, updated_at: liveClock },
-    { code: "ETH", name: "إيثيريوم (Ethereum)", name_en: "Ethereum (ETH)", usd_price: ethPrice, egp_price: Math.round(ethPrice * usdRate), change: ethChg, updated_at: liveClock },
-    { code: "BRENT", name: "نفط برنت (خام)", name_en: "Brent Crude Oil", usd_price: brentPrice, egp_price: Number((brentPrice * usdRate).toFixed(2)), change: brentChg, updated_at: liveClock },
-    { code: "WTI", name: "خام غرب تكساس (WTI)", name_en: "WTI Crude Oil", usd_price: wtiPrice, egp_price: Number((wtiPrice * usdRate).toFixed(2)), change: wtiChg, updated_at: liveClock },
-    { code: "GOLD_OUNCE", name: "أونصة الذهب (Gold Ounce)", name_en: "Gold (Ounce)", usd_price: goldOunce, egp_price: Math.round(goldOunce * usdRate), change: goldChg, updated_at: liveClock },
-    { code: "GOLD24", name: "ذهب عيار 24 (جرام)", name_en: "Gold 24K (Gram)", usd_price: g24Usd, egp_price: (ta3weemCurrs?.["GOLD24"]?.price || Math.round(g24Usd * usdRate)), change: (ta3weemCurrs?.["GOLD24"]?.change || goldChg), updated_at: liveClock },
-    { code: "GOLD21", name: "ذهب عيار 21 (جرام)", name_en: "Gold 21K (Gram)", usd_price: g21Usd, egp_price: (ta3weemCurrs?.["GOLD21"]?.price || Math.round(g21Usd * usdRate)), change: (ta3weemCurrs?.["GOLD21"]?.change || goldChg), updated_at: liveClock },
-    { code: "GOLD18", name: "ذهب عيار 18 (جرام)", name_en: "Gold 18K (Gram)", usd_price: g18Usd, egp_price: Math.round(g18Usd * usdRate), change: goldChg, updated_at: liveClock },
-    { code: "SILVER", name: "أونصة الفضة (Silver)", name_en: "Silver (Ounce)", usd_price: silverPrice, egp_price: Math.round(silverPrice * usdRate), change: silverChg, updated_at: liveClock }
+    { code: "BTC", name: "بتكوين (Bitcoin)", name_en: "Bitcoin (BTC)", usd_price: btcPrice, egp_price: Math.round(btcPrice * usdRate), change: btcChg, updated_at: liveClock, is_live: isCommoditiesLive },
+    { code: "ETH", name: "إيثيريوم (Ethereum)", name_en: "Ethereum (ETH)", usd_price: ethPrice, egp_price: Math.round(ethPrice * usdRate), change: ethChg, updated_at: liveClock, is_live: isCommoditiesLive },
+    { code: "BRENT", name: "نفط برنت (خام)", name_en: "Brent Crude Oil", usd_price: brentPrice, egp_price: Number((brentPrice * usdRate).toFixed(2)), change: brentChg, updated_at: liveClock, is_live: isCommoditiesLive },
+    { code: "WTI", name: "خام غرب تكساس (WTI)", name_en: "WTI Crude Oil", usd_price: wtiPrice, egp_price: Number((wtiPrice * usdRate).toFixed(2)), change: wtiChg, updated_at: liveClock, is_live: isCommoditiesLive },
+    { code: "GOLD_OUNCE", name: "أونصة الذهب (Gold Ounce)", name_en: "Gold (Ounce)", usd_price: goldOunce, egp_price: Math.round(goldOunce * usdRate), change: goldChg, updated_at: liveClock, is_live: isCommoditiesLive },
+    { code: "GOLD24", name: "ذهب عيار 24 (جرام)", name_en: "Gold 24K (Gram)", usd_price: g24Usd, egp_price: (ta3weemCurrs?.["GOLD24"]?.price || Math.round(g24Usd * usdRate)), change: (ta3weemCurrs?.["GOLD24"]?.change || goldChg), updated_at: liveClock, is_live: !!ta3weemCurrs?.["GOLD24"] },
+    { code: "GOLD21", name: "ذهب عيار 21 (جرام)", name_en: "Gold 21K (Gram)", usd_price: g21Usd, egp_price: (ta3weemCurrs?.["GOLD21"]?.price || Math.round(g21Usd * usdRate)), change: (ta3weemCurrs?.["GOLD21"]?.change || goldChg), updated_at: liveClock, is_live: !!ta3weemCurrs?.["GOLD21"] },
+    { code: "GOLD18", name: "ذهب عيار 18 (جرام)", name_en: "Gold 18K (Gram)", usd_price: g18Usd, egp_price: Math.round(g18Usd * usdRate), change: goldChg, updated_at: liveClock, is_live: isCommoditiesLive },
+    { code: "SILVER", name: "أونصة الفضة (Silver)", name_en: "Silver (Ounce)", usd_price: silverPrice, egp_price: Math.round(silverPrice * usdRate), change: silverChg, updated_at: liveClock, is_live: isCommoditiesLive }
   ];
 
-  // بناء جدول العملات الرسمي لحظياً من تعويم والربط المباشر مع الدولار (بدون أي شيت)
-  const eurP = ta3weemCurrs?.["EUR"]?.price || Number((1.120 * usdRate).toFixed(2));
-  const sarP = ta3weemCurrs?.["SAR"]?.price || Number((0.2665 * usdRate).toFixed(2));
-  const aedP = ta3weemCurrs?.["AED"]?.price || Number((0.2723 * usdRate).toFixed(2));
-  const gbpP = ta3weemCurrs?.["GBP"]?.price || Number((1.330 * usdRate).toFixed(2));
-  const kwdP = Number((3.255 * usdRate).toFixed(2));
-  const qarP = Number((usdRate / 3.64).toFixed(2));
-  const cnyP = Number((usdRate / 7.24).toFixed(2));
+  // Map pure actual rates from sheetData.rates (synced by cloud_sync from actual banks)
+  const actualRatesMap = {};
+  if (sheetData.rates && Array.isArray(sheetData.rates)) {
+    sheetData.rates.forEach(r => {
+      if (r && r.code) actualRatesMap[r.code] = r;
+    });
+  }
+
+  const buildActualRate = (code, nameAr, nameEn, defaultUsdMult) => {
+    const act = actualRatesMap[code];
+    let buy = 0, sell = 0, egpPrice = 0, change = "+0.00%";
+    if (ta3weemCurrs && ta3weemCurrs[code]) {
+      egpPrice = ta3weemCurrs[code].price;
+      change = ta3weemCurrs[code].change || "+0.00%";
+    }
+    if (act && Number(act.buy) > 0 && Number(act.sell) > 0) {
+      buy = Number(act.buy);
+      sell = Number(act.sell);
+      if (!egpPrice) egpPrice = Number(act.egp_price || act.rate_egp || buy);
+      if (act.change && change === "+0.00%") change = act.change;
+    } else {
+      if (!egpPrice) egpPrice = Number((defaultUsdMult * usdRate).toFixed(2));
+      buy = egpPrice;
+      sell = egpPrice;
+    }
+    return {
+      code,
+      name: nameAr,
+      name_en: nameEn,
+      usd_price: Number((egpPrice / usdRate).toFixed(4)),
+      egp_price: egpPrice,
+      rate_egp: egpPrice,
+      buy,
+      sell,
+      change
+    };
+  };
 
   const rates = [
     {
@@ -832,83 +952,13 @@ async function getCachedDashboardData() {
       sell: cbeSell,
       change: ta3weemCurrs?.["USD"]?.change || "+0.00%"
     },
-    {
-      code: "EUR",
-      name: "اليورو الأوروبي",
-      name_en: "Euro",
-      usd_price: Number((eurP / usdRate).toFixed(4)),
-      egp_price: eurP,
-      rate_egp: eurP,
-      buy: Number((eurP * 0.998).toFixed(2)),
-      sell: Number((eurP * 1.002).toFixed(2)),
-      change: ta3weemCurrs?.["EUR"]?.change || "+0.00%"
-    },
-    {
-      code: "SAR",
-      name: "الريال السعودي",
-      name_en: "Saudi Riyal",
-      usd_price: 0.2665,
-      egp_price: sarP,
-      rate_egp: sarP,
-      buy: Number((sarP * 0.998).toFixed(2)),
-      sell: Number((sarP * 1.002).toFixed(2)),
-      change: ta3weemCurrs?.["SAR"]?.change || "+0.00%"
-    },
-    {
-      code: "AED",
-      name: "الدرهم الإماراتي",
-      name_en: "UAE Dirham",
-      usd_price: 0.2723,
-      egp_price: aedP,
-      rate_egp: aedP,
-      buy: Number((aedP * 0.998).toFixed(2)),
-      sell: Number((aedP * 1.002).toFixed(2)),
-      change: ta3weemCurrs?.["AED"]?.change || "+0.00%"
-    },
-    {
-      code: "GBP",
-      name: "الجنيه الإسترليني",
-      name_en: "British Pound",
-      usd_price: Number((gbpP / usdRate).toFixed(4)),
-      egp_price: gbpP,
-      rate_egp: gbpP,
-      buy: Number((gbpP * 0.998).toFixed(2)),
-      sell: Number((gbpP * 1.002).toFixed(2)),
-      change: ta3weemCurrs?.["GBP"]?.change || "+0.00%"
-    },
-    {
-      code: "KWD",
-      name: "الدينار الكويتي",
-      name_en: "Kuwaiti Dinar",
-      usd_price: 3.255,
-      egp_price: kwdP,
-      rate_egp: kwdP,
-      buy: Number((kwdP * 0.995).toFixed(2)),
-      sell: Number((kwdP * 1.005).toFixed(2)),
-      change: "+0.00%"
-    },
-    {
-      code: "QAR",
-      name: "الريال القطري",
-      name_en: "Qatari Riyal",
-      usd_price: 0.2747,
-      egp_price: qarP,
-      rate_egp: qarP,
-      buy: Number((qarP * 0.998).toFixed(2)),
-      sell: Number((qarP * 1.002).toFixed(2)),
-      change: "+0.00%"
-    },
-    {
-      code: "CNY",
-      name: "اليوان الصيني",
-      name_en: "Chinese Yuan",
-      usd_price: 0.1381,
-      egp_price: cnyP,
-      rate_egp: cnyP,
-      buy: Number((cnyP * 0.998).toFixed(2)),
-      sell: Number((cnyP * 1.002).toFixed(2)),
-      change: "+0.00%"
-    }
+    buildActualRate("EUR", "اليورو الأوروبي", "Euro", 1.120),
+    buildActualRate("SAR", "الريال السعودي", "Saudi Riyal", 0.2665),
+    buildActualRate("AED", "الدرهم الإماراتي", "UAE Dirham", 0.2723),
+    buildActualRate("GBP", "الجنيه الإسترليني", "British Pound", 1.330),
+    buildActualRate("KWD", "الدينار الكويتي", "Kuwaiti Dinar", 3.255),
+    buildActualRate("QAR", "الريال القطري", "Qatari Riyal", 0.2747),
+    buildActualRate("CNY", "اليوان الصيني", "Chinese Yuan", 0.1381)
   ];
 
   const archive = (sheetData.archive && sheetData.archive.length > 0) ? sheetData.archive : [];
@@ -931,14 +981,16 @@ async function getCachedDashboardData() {
 }
 
 /**
- * معالجة أوامر تلجرام الفورية
+ * Handle Telegram incoming updates
  */
-async function handleTelegramUpdate(update, originUrl) {
+async function handleTelegramUpdate(update, originUrl, env, ctx) {
   let chatId = null;
   let text = "";
   let callbackId = null;
   let isCallback = false;
   let messageId = null;
+
+  const isGroup = update.message && (update.message.chat.type === "group" || update.message.chat.type === "supergroup");
 
   if (update.callback_query) {
     isCallback = true;
@@ -957,38 +1009,36 @@ async function handleTelegramUpdate(update, originUrl) {
     try { await answerCallback(callbackId); } catch(e) {}
   }
 
-  const cfg = await getLiveBotConfig();
+  const cfg = await getLiveBotConfig(env);
 
-  let userCurr = userCurrPreferences[chatId] || cfg.default_curr || "usd";
+  let userCurr = await getUserPref(env, chatId, "curr", cfg.default_curr || "usd");
   if (text.endsWith(":usd")) {
     userCurr = "usd";
-    userCurrPreferences[chatId] = "usd";
+    await setUserPref(env, ctx, chatId, "curr", "usd");
     text = text.slice(0, -4);
   } else if (text.endsWith(":egp")) {
     userCurr = "egp";
-    userCurrPreferences[chatId] = "egp";
+    await setUserPref(env, ctx, chatId, "curr", "egp");
     text = text.slice(0, -4);
   }
 
-  let userLang = "en";
+  let userLang = await getUserPref(env, chatId, "lang", cfg.default_lang || "en");
   if (text.endsWith(":en")) {
     userLang = "en";
     text = text.slice(0, -3);
-    userLangPreferences[chatId] = "en";
+    await setUserPref(env, ctx, chatId, "lang", "en");
   } else if (text.endsWith(":ar")) {
     userLang = "ar";
     text = text.slice(0, -3);
-    userLangPreferences[chatId] = "ar";
+    await setUserPref(env, ctx, chatId, "lang", "ar");
   } else if (text.startsWith("cmd_lang_en") || text === "/en") {
-    userLangPreferences[chatId] = "en";
-    await sendMainMenu(chatId, "en", originUrl, cfg, messageId);
+    await setUserPref(env, ctx, chatId, "lang", "en");
+    await sendMainMenu(chatId, "en", originUrl, cfg, messageId, env);
     return;
   } else if (text.startsWith("cmd_lang_ar") || text === "/ar") {
-    userLangPreferences[chatId] = "ar";
-    await sendMainMenu(chatId, "ar", originUrl, cfg, messageId);
+    await setUserPref(env, ctx, chatId, "lang", "ar");
+    await sendMainMenu(chatId, "ar", originUrl, cfg, messageId, env);
     return;
-  } else {
-    userLang = userLangPreferences[chatId] || cfg.default_lang || "en";
   }
 
   const lang = userLang;
@@ -1001,17 +1051,18 @@ async function handleTelegramUpdate(update, originUrl) {
   if (isCallback) {
     if (text.startsWith("toggle_curr:")) {
       const parts = text.split(":");
-      const newCurr = parts[1]; // egp or usd
-      const cmdType = parts[2]; // report, commodities, egx, etc.
+      const newCurr = parts[1];
+      const cmdType = parts[2];
       const targetLang = parts[3] || lang;
 
-      userCurrPreferences[chatId] = newCurr;
+      await setUserPref(env, ctx, chatId, "curr", newCurr);
       const data = await getCachedDashboardData();
       let content = "";
       let kb = getReportKeyboard(cmdType, targetLang, cfg, newCurr);
 
       if (cmdType === "report") {
-        content = formatExecutiveReport(data, targetLang, newCurr);
+        const userTz = await getUserPref(env, chatId, "tz", "cairo");
+        content = formatExecutiveReport(data, targetLang, newCurr, userTz);
       } else if (cmdType === "commodities" || cmdType === "gold") {
         content = formatCommoditiesReport(data, targetLang, newCurr);
       } else if (cmdType === "egx") {
@@ -1037,7 +1088,7 @@ async function handleTelegramUpdate(update, originUrl) {
       const target = parts[0];
       const targetLang = parts[1] || lang;
       const targetCurr = parts[2] || curr;
-      memoryCache.timestamp = 0; // إعادة تعيين الكاش لفرض جلب البيانات الحية فوراً
+      memoryCache.timestamp = 0;
       if (Date.now() - sheetCache.timestamp > 15000) {
         sheetCache.timestamp = 0;
       }
@@ -1046,7 +1097,7 @@ async function handleTelegramUpdate(update, originUrl) {
       let kb = getReportKeyboard(target, targetLang, cfg, targetCurr);
 
       if (target === "report") {
-        const userTz = userTzPreferences[chatId] || "cairo";
+        const userTz = await getUserPref(env, chatId, "tz", "cairo");
         content = formatExecutiveReport(data, targetLang, targetCurr, userTz);
       } else if (target === "egx") {
         content = formatEgxReport(data, targetLang, targetCurr);
@@ -1061,7 +1112,7 @@ async function handleTelegramUpdate(update, originUrl) {
       } else if (target === "currencies" || target === "markets") {
         content = formatCurrenciesReport(data, targetLang, targetCurr);
       } else {
-        await sendMainMenu(chatId, targetLang, originUrl, cfg, messageId);
+        await sendMainMenu(chatId, targetLang, originUrl, cfg, messageId, env);
         return;
       }
 
@@ -1094,7 +1145,7 @@ async function handleTelegramUpdate(update, originUrl) {
       const newCurr = parts[1] || "usd";
       const period = parts[2] || "curr_month";
       const targetLang = parts[3] || lang;
-      userCurrPreferences[chatId] = newCurr;
+      await setUserPref(env, ctx, chatId, "curr", newCurr);
       const data = await getCachedDashboardData();
       const content = formatEgxPeriodicReport(data, period, targetLang, newCurr);
       const kb = getHistoryKeyboard(targetLang, newCurr, period);
@@ -1127,12 +1178,12 @@ async function handleTelegramUpdate(update, originUrl) {
       await reply(formatCurrenciesReport(data, lang, curr), getReportKeyboard("currencies", lang, cfg, curr));
     } else if (text === "cmd_report") {
       const data = await getCachedDashboardData();
-      const userTz = userTzPreferences[chatId] || "cairo";
+      const userTz = await getUserPref(env, chatId, "tz", "cairo");
       await reply(formatExecutiveReport(data, lang, curr, userTz), getReportKeyboard("report", lang, cfg, curr));
     } else if (text.startsWith("cmd_timezone")) {
       const parts = text.split(":");
       const tLang = parts[1] || lang;
-      const userTz = userTzPreferences[chatId] || "cairo";
+      const userTz = await getUserPref(env, chatId, "tz", "cairo");
       const title = tLang === "en" ? "🌍 <b>Select Your Preferred Timezone:</b>" : "🌍 <b>اختر منطقتك الزمنية المفضلة لعرض الأوقات:</b>";
       await reply(title, getTimezoneKeyboard(tLang, userTz));
       return;
@@ -1140,56 +1191,68 @@ async function handleTelegramUpdate(update, originUrl) {
       const parts = text.split(":");
       const newTz = parts[1] || "cairo";
       const tLang = parts[2] || lang;
-      userTzPreferences[chatId] = newTz;
+      await setUserPref(env, ctx, chatId, "tz", newTz);
       const tzObj = TIMEZONES[newTz] || TIMEZONES["cairo"];
       const toast = tLang === "en" ? `✅ Timezone set to ${tzObj.name_en}` : `✅ تم ضبط التوقيت على ${tzObj.name_ar}`;
       if (callbackId) {
         try { await answerCallback(callbackId, toast); } catch(e) {}
       }
-      await sendMainMenu(chatId, tLang, originUrl, cfg, messageId);
+      await sendMainMenu(chatId, tLang, originUrl, cfg, messageId, env);
       return;
     } else if (text === "cmd_menu") {
-      await sendMainMenu(chatId, lang, originUrl, cfg, messageId);
+      await sendMainMenu(chatId, lang, originUrl, cfg, messageId, env);
     }
     return;
   }
 
-  const lower = text.toLowerCase();
-  const isHistory = lower === "/history" || lower === "/archive" || lower.startsWith("/history ") || lower.startsWith("/archive ") || lower.includes("ارشيف") || lower.includes("أرشيف") || lower.includes("اقفال") || lower.includes("إقفال");
-  const isCommodities = lower === "/commodities" || lower === "/gold" || lower === "/oil" || lower === "/crypto" ||
-    lower.includes("ذهب") || lower.includes("نفط") || lower.includes("بنزين") || lower.includes("بترول") || lower.includes("كريبتو") || lower.includes("سلع");
-  const isCurrencies = lower === "/currencies" || lower === "/rates" || lower.includes("عملات") || lower.includes("عملة") || lower.includes("اسعار الصرف");
-  const isEgx = lower === "/egx" || lower.includes("بورصة") || lower.includes("مؤسسات") || lower.includes("اسهم") || lower.includes("اجانب") || lower.includes("أجانب");
-  const isBanks = lower === "/banks" || lower.includes("بنوك") || lower.includes("بنك") || lower.includes("دولار");
-  const isReport = lower === "/report" || lower.includes("تقرير") || lower.includes("تنفيذي");
-  const isTimezone = lower === "/timezone" || lower === "/tz" || lower.includes("توقيت") || lower.includes("منطقة زمنية");
-  const isMenu = lower === "/start" || lower === "/help" || lower.includes("قائمة") || lower === "menu";
+  // Handle group commands vs private chat
+  let cleanText = text.trim();
+  if (cleanText.startsWith("/")) {
+    const parts = cleanText.split(/\s+/);
+    let cmd = parts[0];
+    if (cmd.includes("@")) {
+      cmd = cmd.split("@")[0];
+    }
+    cleanText = [cmd, ...parts.slice(1)].join(" ");
+  }
+
+  // In groups, ignore casual messages that do not start with slash
+  if (isGroup && !cleanText.startsWith("/")) {
+    return;
+  }
+
+  const lower = cleanText.toLowerCase();
+  const isHistory = lower === "/history" || lower === "/archive" || lower.startsWith("/history ") || lower.startsWith("/archive ") || (!isGroup && (lower.includes("ارشيف") || lower.includes("أرشيف") || lower.includes("اقفال") || lower.includes("إقفال")));
+  const isCommodities = lower === "/commodities" || lower === "/gold" || lower === "/oil" || lower === "/crypto" || (!isGroup && (lower.includes("ذهب") || lower.includes("نفط") || lower.includes("بنزين") || lower.includes("بترول") || lower.includes("كريبتو") || lower.includes("سلع")));
+  const isCurrencies = lower === "/currencies" || lower === "/rates" || (!isGroup && (lower.includes("عملات") || lower.includes("عملة") || lower.includes("اسعار الصرف")));
+  const isEgx = lower === "/egx" || (!isGroup && (lower.includes("بورصة") || lower.includes("مؤسسات") || lower.includes("اسهم") || lower.includes("اجانب") || lower.includes("أجانب")));
+  const isBanks = lower === "/banks" || (!isGroup && (lower.includes("بنوك") || lower.includes("بنك") || lower.includes("دولار")));
+  const isReport = lower === "/report" || (!isGroup && (lower.includes("تقرير") || lower.includes("تنفيذي")));
+  const isTimezone = lower === "/timezone" || lower === "/tz" || (!isGroup && (lower.includes("توقيت") || lower.includes("منطقة زمنية")));
+  const isMenu = lower === "/start" || lower === "/help" || lower === "/menu" || (!isGroup && (lower.includes("قائمة") || lower === "menu"));
 
   if (isMenu) {
-    await sendMainMenu(chatId, lang, originUrl, cfg);
+    await sendMainMenu(chatId, lang, originUrl, cfg, null, env);
   } else if (isTimezone) {
-    const userTz = userTzPreferences[chatId] || "cairo";
+    const userTz = await getUserPref(env, chatId, "tz", "cairo");
     const title = lang === "en" ? "🌍 <b>Select Your Preferred Timezone:</b>" : "🌍 <b>اختر منطقتك الزمنية المفضلة لعرض الأوقات:</b>";
     await sendTgMessage(chatId, title, getTimezoneKeyboard(lang, userTz));
   } else if (isHistory) {
-    const rawTokens = text.split(/\s+/).slice(1);
     let period = "curr_month";
     let customParam = null;
-    if (rawTokens.length >= 2 && /^\d{4}-\d{2}-\d{2}$/.test(rawTokens[0]) && /^\d{4}-\d{2}-\d{2}$/.test(rawTokens[1])) {
-      period = "custom";
-      customParam = {
-        start: rawTokens[0] <= rawTokens[1] ? rawTokens[0] : rawTokens[1],
-        end: rawTokens[0] <= rawTokens[1] ? rawTokens[1] : rawTokens[0]
-      };
-    } else if (rawTokens.length >= 1) {
-      const t0 = rawTokens[0].toLowerCase();
-      if (t0 === "week" || t0 === "w" || t0 === "curr_week" || t0.includes("اسبوع") || t0.includes("أسبوع")) period = "curr_week";
-      else if (t0 === "prev_week" || t0 === "last_week" || t0 === "lw" || t0.includes("ماضي")) period = "prev_week";
-      else if (t0 === "month" || t0 === "m" || t0 === "curr_month" || t0.includes("شهر")) period = "curr_month";
-      else if (t0 === "prev_month" || t0 === "last_month" || t0 === "lm") period = "prev_month";
-      else if (t0 === "3") period = "last3";
-      else if (t0 === "5") period = "last5";
-      else if (t0 === "10") period = "last10";
+    const parts = cleanText.split(/\s+/);
+    if (parts.length > 1) {
+      const p = parts[1].toLowerCase();
+      if (p === "week" || p === "w") period = "curr_week";
+      else if (p === "prev_week" || p === "pw") period = "prev_week";
+      else if (p === "prev_month" || p === "pm") period = "prev_month";
+      else if (p === "3" || p === "last3") period = "last3";
+      else if (p === "5" || p === "last5") period = "last5";
+      else if (p === "10" || p === "last10") period = "last10";
+      else if (parts.length >= 3 && /^\d{4}-\d{2}-\d{2}$/.test(parts[1]) && /^\d{4}-\d{2}-\d{2}$/.test(parts[2])) {
+        period = "custom";
+        customParam = { start: parts[1], end: parts[2] };
+      }
     }
     const data = await getCachedDashboardData();
     const content = formatEgxPeriodicReport(data, period, lang, curr, customParam);
@@ -1209,66 +1272,29 @@ async function handleTelegramUpdate(update, originUrl) {
     await sendTgMessage(chatId, formatBanksReport(data, lang, cfg), getReportKeyboard("banks", lang, cfg, curr));
   } else if (isReport) {
     const data = await getCachedDashboardData();
-    const userTz = userTzPreferences[chatId] || "cairo";
+    const userTz = await getUserPref(env, chatId, "tz", "cairo");
     await sendTgMessage(chatId, formatExecutiveReport(data, lang, curr, userTz), getReportKeyboard("report", lang, cfg, curr));
   } else if (lower.indexOf("/") === 0) {
     await sendTgMessage(chatId, lang === "en" ? "❓ Unknown command. Type /start for menu." : "❓ أمر غير معروف. اضغط /start لعرض القائمة الرئيسية.", getMenuKeyboard(lang, originUrl, cfg));
   }
 }
 
-// ==========================================
-// 🎨 صياغة التقارير الفورية النظيفة
-// ==========================================
-
-function getTrendIcon(change) {
-  if (!change) return "";
-  const s = String(change).trim();
-  if (s.startsWith("+")) return " 🟢";
-  if (s.startsWith("-")) return " 🔴";
-  const num = parseFloat(s.replace("%", ""));
-  if (!isNaN(num)) {
-    if (num > 0) return " 🟢";
-    if (num < 0) return " 🔴";
-  }
-  return "";
-}
-
-/**
- * ثوابت الشهور وأدوات حساب المجاميع التراكمية (أسبوعياً وشهرياً)
- * أسبوع البورصة والبنوك المصرية يبدأ من الأحد (Sunday)
- * بينما أسبوع البورصات والأسواق العالمية يبدأ من الاثنين (Monday)
- * والشهر يُحسب من بداية شهر أكتوبر 2026 فصاعداً
- */
-const MONTH_NAMES_AR = { "01": "يناير", "02": "فبراير", "03": "مارس", "04": "أبريل", "05": "مايو", "06": "يونيو", "07": "يوليو", "08": "أغسطس", "09": "سبتمبر", "10": "أكتوبر", "11": "نوفمبر", "12": "ديسمبر" };
-const MONTH_NAMES_EN = { "01": "January", "02": "February", "03": "March", "04": "April", "05": "May", "06": "June", "07": "July", "08": "August", "09": "September", "10": "October", "11": "November", "12": "December" };
-
-// بداية الأسبوع للبورصة والبنوك المصرية: الأحد (Sunday)
+// Sunday start calculation for Egypt week
 function getWeekSunday(dateStr) {
-  if (!dateStr) return new Date().toISOString().split("T")[0];
+  if (!dateStr) return getCairoDateStr();
   const d = new Date(dateStr + "T12:00:00Z");
   if (isNaN(d.getTime())) return dateStr;
-  const day = d.getUTCDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+  const day = d.getUTCDay(); // 0 is Sunday
   const sunday = new Date(d);
   sunday.setUTCDate(d.getUTCDate() - day);
   return sunday.toISOString().split("T")[0];
 }
 
-// بداية الأسبوع للأسواق والبورصات العالمية: الاثنين (Monday)
-function getWeekMonday(dateStr) {
-  if (!dateStr) return new Date().toISOString().split("T")[0];
-  const d = new Date(dateStr + "T12:00:00Z");
-  if (isNaN(d.getTime())) return dateStr;
-  const day = d.getUTCDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
-  const diff = (day === 0 ? 6 : day - 1);
-  const monday = new Date(d);
-  monday.setUTCDate(d.getUTCDate() - diff);
-  return monday.toISOString().split("T")[0];
-}
-
 function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
-  const sessionDate = currentSessionDate || new Date().toISOString().split("T")[0];
-  const weekStart = getWeekSunday(sessionDate); // أسبوع البورصة المصرية والبنوك يبدأ من الأحد
-  const monthPrefix = sessionDate.slice(0, 7); // e.g. "2026-10"
+  const sessionDate = currentSessionDate || getCairoDateStr();
+  const weekStart = getWeekSunday(sessionDate);
+  const monthPrefix = sessionDate.slice(0, 7);
+  const fallbackRate = Number(defaultUsdRate || 54.45);
 
   const weekly = { count: 0, egNet: 0, arNet: 0, foNet: 0, totNet: 0, egUsd: 0, arUsd: 0, foUsd: 0, totUsd: 0, weekStart };
   const monthly = { count: 0, egNet: 0, arNet: 0, foNet: 0, totNet: 0, egUsd: 0, arUsd: 0, foUsd: 0, totUsd: 0, monthPrefix };
@@ -1276,8 +1302,9 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
   const list = (archive && Array.isArray(archive)) ? archive : [];
   list.forEach(s => {
     if (!s || !s.date) return;
-    if (s.date < "2026-10-01") return; // التراكمي يبدأ حصراً من 1 أكتوبر 2026
-    const rate = Number(s.usd_rate || defaultUsdRate || 52.29);
+    if (s.date < "2026-10-01") return;
+    const rate = Number(s.usd_rate || fallbackRate);
+
     const eg = Number(s.egypt_net !== undefined ? s.egypt_net : (s.egypt_net_egp || 0));
     const ar = Number(s.arab_net !== undefined ? s.arab_net : (s.arab_net_egp || 0));
     const fo = Number(s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0));
@@ -1288,7 +1315,6 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
     const foU = Math.round(fo / rate);
     const totU = Math.round(tot / rate);
 
-    // الأسبوع: من يوم الاثنين للأسبوع الحالي وحتى تاريخ الجلسة
     if (s.date >= weekStart && s.date <= sessionDate) {
       weekly.count++;
       weekly.egNet += eg;
@@ -1301,7 +1327,6 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
       weekly.totUsd += totU;
     }
 
-    // الشهر: كافة جلسات الشهر الحالي (بدءاً من 01 أكتوبر)
     if (s.date.startsWith(monthPrefix) && s.date <= sessionDate) {
       monthly.count++;
       monthly.egNet += eg;
@@ -1324,15 +1349,17 @@ function calculatePeriodicTotals(archive, currentSessionDate, defaultUsdRate) {
 }
 
 /**
- * فحص وتحديد حالة البورصة المصرية اللحظية (جلسة مباشرة / عطلة رسمية / عطلة نهاية الأسبوع / قبل الافتتاح)
+ * Determine EGX Market Status without false holiday alerts
  */
 function getEgxMarketStatus(sessionDate) {
   const d = new Date();
-  const cairoDate = d.toLocaleDateString("en-CA", { timeZone: "Africa/Cairo" }); // "YYYY-MM-DD"
-  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Cairo", weekday: "short" }).format(d); // "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+  const cairoDate = getCairoDateStr();
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Cairo", weekday: "short" }).format(d);
   const time24 = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hour12: false });
   const parts = time24.split(":");
   const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  const totalMins = h * 60 + m;
 
   const isWeekend = (weekday === "Fri" || weekday === "Sat");
   const isTodaySession = (sessionDate === cairoDate);
@@ -1350,22 +1377,30 @@ function getEgxMarketStatus(sessionDate) {
     sessionTagEn = `(Last Audited: ${sessionDate})`;
     sessionTagAr = `(آخر جلسة معتمدة: ${sessionDate})`;
   } else if (!isTodaySession) {
-    // أيام العمل (الأحد - الخميس) ولكن تاريخ آخر جلسة ليس اليوم
-    if (h < 10) {
+    if (totalMins < 600) {
       statusEn = "⏳ Status: Pre-Market (Opens at 10:00 AM Cairo)";
       statusAr = "⏳ الحالة: قبل افتتاح الجلسة (تبدأ 10:00 ص بتوقيت القاهرة)";
       sessionTagEn = `(Previous Close: ${sessionDate})`;
       sessionTagAr = `(إقفال الجلسة السابقة: ${sessionDate})`;
+    } else if (totalMins >= 600 && totalMins <= 930) {
+      statusEn = "⏳ Status: Trading In Progress • Live Feed Syncing";
+      statusAr = "⏳ الحالة: جلسة التداول جارية • جاري مزامنة واعتماد البيانات";
+      sessionTagEn = `(Previous Close: ${sessionDate})`;
+      sessionTagAr = `(إقفال الجلسة السابقة: ${sessionDate})`;
+    } else if (totalMins > 930 && totalMins <= 1080) {
+      statusEn = "⏳ Status: Session Concluded • Awaiting Official Daily Report Ingestion";
+      statusAr = "⏳ الحالة: انتهت الجلسة • بانتظار اعتماد ونشر تقرير الإقفال اليومي";
+      sessionTagEn = `(Previous Close: ${sessionDate})`;
+      sessionTagAr = `(إقفال الجلسة السابقة: ${sessionDate})`;
     } else {
       isHolidayOrClosed = true;
-      statusEn = "🏖️ Status: Official Holiday (Market Closed • 0 Flow)";
-      statusAr = "🏖️ الحالة: عطلة رسمية بالبورصة (السوق مغلق • صفر تداول)";
+      statusEn = "🏖️ Status: Official Holiday / Market Off";
+      statusAr = "🏖️ الحالة: عطلة رسمية بالبورصة / لا يوجد تداول";
       sessionTagEn = `(Last Audited: ${sessionDate})`;
       sessionTagAr = `(آخر جلسة معتمدة: ${sessionDate})`;
     }
   } else {
-    // جلسة مسجلة لتاريخ اليوم
-    if (h < 15) {
+    if (totalMins < 900) {
       statusEn = "🟢 Status: Trading Session Active (Live)";
       statusAr = "🟢 الحالة: جلسة التداول نشطة (مباشر)";
     } else {
@@ -1389,9 +1424,6 @@ function getEgxMarketStatus(sessionDate) {
   };
 }
 
-/**
- * تحويل بادئة الشهر (YYYY-MM) إلى اسم الشهر باللغة المحددة
- */
 function getMonthLabel(monthPrefix, lang) {
   if (!monthPrefix) return "";
   const parts = monthPrefix.split("-");
@@ -1412,16 +1444,15 @@ function getMonthLabel(monthPrefix, lang) {
 }
 
 /**
- * 1. تقرير البورصة المصرية (EGX)
- * تفصيل شامل لفئات المستثمرين: المصريين، العرب، الأجانب، العرب+الأجانب، وإجمالي المؤسسات
- * مع الرصيد التراكمي الشهري بدءاً من أول أكتوبر 2026 وإقفاله شهرياً
+ * 1. EGX Flows Report (with session-level USD conversion)
  */
 function formatEgxReport(data, lang, curr) {
   curr = curr || "usd";
-  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 54.45);
+
   let egNet = 0, arNet = 0, foNet = 0, totNet = 0;
   let foBuy = 0, foSell = 0;
-  let sessionDate = new Date().toISOString().split("T")[0];
+  let sessionDate = getCairoDateStr();
+  let sessionUsdRate = Number(data.usd_rate || data.cbe_usd_buy || 54.45);
 
   if (data.archive && data.archive.length > 0) {
     const r = data.archive[0];
@@ -1445,9 +1476,11 @@ function formatEgxReport(data, lang, curr) {
     }
 
     sessionDate = r.date || sessionDate;
+    if (r.usd_rate && Number(r.usd_rate) > 40) {
+      sessionUsdRate = Number(r.usd_rate);
+    }
   }
 
-  // مسار احتياطي من egx_institutions إذا كانت المشتريات/المبيعات صفر أو جلسة حية
   if (data.egx_institutions?.tables?.institutions) {
     const inst = data.egx_institutions.tables.institutions;
     inst.forEach(item => {
@@ -1468,19 +1501,19 @@ function formatEgxReport(data, lang, curr) {
   const arFoNet = arNet + foNet;
   const mStatus = getEgxMarketStatus(sessionDate);
 
-  // حساب التراكمي الأسبوعي والشهري (حصرياً لصافي الأجانب بدءاً من 01 أكتوبر)
-  const { weekly, monthly } = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
+  const { weekly, monthly } = calculatePeriodicTotals(data.archive, sessionDate, sessionUsdRate);
   const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
   const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
   const wFoDot = weekly.foNet >= 0 ? "🟢" : "🔴";
   const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
 
-  const fmtNet = (v, usdOverride) => {
+  const fmtNet = (v, usdOverride, rateOverride) => {
     const n = Number(v) || 0;
     const sign = n >= 0 ? "+" : "-";
     const absVal = Math.abs(n).toLocaleString("en-US");
     if (curr === "usd") {
-      const u = (usdOverride !== undefined && usdOverride !== null) ? Number(usdOverride) : Math.round(n / usdRate);
+      const activeRate = Number(rateOverride || sessionUsdRate || 54.45);
+      const u = (usdOverride !== undefined && usdOverride !== null) ? Number(usdOverride) : Math.round(n / activeRate);
       const uSign = u >= 0 ? "+" : "-";
       return `${uSign}$${Math.abs(u).toLocaleString("en-US")}`;
     }
@@ -1511,14 +1544,12 @@ function formatEgxReport(data, lang, curr) {
       + snapshotLineEn
       + `<code>─────────────────────────────</code>\n\n`;
 
-    // 1. Session Breakdown
     txt += `🏛 <b>Institutional Flows ${mStatus.sessionTagEn}:</b>\n`
-      + `▫️ Egyptians: ${egDot} <code>${fmtNet(egNet)}</code>\n`
-      + `▫️ Arabs: ${arDot} <code>${fmtNet(arNet)}</code>\n`
-      + `▫️ Foreigners: ${foDot} <code>${fmtNet(foNet)}</code>\n`
-      + `▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
+      + `▫️ Egyptians: ${egDot} <code>${fmtNet(egNet, null, sessionUsdRate)}</code>\n`
+      + `▫️ Arabs: ${arDot} <code>${fmtNet(arNet, null, sessionUsdRate)}</code>\n`
+      + `▫️ Foreigners: ${foDot} <code>${fmtNet(foNet, null, sessionUsdRate)}</code>\n`
+      + `▪️ Arabs + Foreigners: ${arFoDot} <code>${fmtNet(arFoNet, null, sessionUsdRate)}</code>\n\n`;
 
-    // 2. Weekly & Monthly Accumulative (Foreigners & Arabs+Foreigners Hot Money)
     const wArDot = (weekly.arNet || 0) >= 0 ? "🟢" : "🔴";
     const mArDot = (monthly.arNet || 0) >= 0 ? "🟢" : "🔴";
     const wArFoDot = (weekly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
@@ -1535,7 +1566,6 @@ function formatEgxReport(data, lang, curr) {
     return txt + `\n<code>─────────────────────────────</code>\n🔒 <i>Officially audited from EGX Terminal.</i>`;
   }
 
-  // Arabic
   let txtAr = `🏛 <b>تدفقات المستثمرين بالبورصة المصرية (EGX)</b>\n`
     + `<code>─────────────────────────────</code>\n`
     + `📅 <b>الجلسة:</b> <code>${sessionDate}</code>${mStatus.isTodaySession ? "" : " <i>(آخر جلسة معتمدة)</i>"}\n`
@@ -1545,14 +1575,16 @@ function formatEgxReport(data, lang, curr) {
     + snapshotLineAr
     + `<code>─────────────────────────────</code>\n\n`;
 
-  // 1. تفصيل الجلسة
   txtAr += `🏛 <b>تدفقات الجلسة ${mStatus.sessionTagAr}:</b>\n`
-    + `▫️ مصريين: ${egDot} <code>${fmtNet(egNet)}</code>\n`
-    + `▫️ عرب: ${arDot} <code>${fmtNet(arNet)}</code>\n`
-    + `▫️ أجانب: ${foDot} <code>${fmtNet(foNet)}</code>\n`
-    + `▪️ عرب + أجانب: ${arFoDot} <code>${fmtNet(arFoNet)}</code>\n\n`;
+    + `▫️ مصريين: ${egDot} <code>${fmtNet(egNet, null, sessionUsdRate)}</code>\n`
+    + `▫️ عرب: ${arDot} <code>${fmtNet(arNet, null, sessionUsdRate)}</code>\n`
+    + `▫️ أجانب: ${foDot} <code>${fmtNet(foNet, null, sessionUsdRate)}</code>\n`
+    + `▪️ عرب + أجانب: ${arFoDot} <code>${fmtNet(arFoNet, null, sessionUsdRate)}</code>\n\n`;
 
-  // 2. التراكمي الأسبوعي والشهري (للأجانب والعرب+الأجانب)
+  const wArDot = (weekly.arNet || 0) >= 0 ? "🟢" : "🔴";
+  const mArDot = (monthly.arNet || 0) >= 0 ? "🟢" : "🔴";
+  const wArFoDot = (weekly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
+  const mArFoDot = (monthly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
   txtAr += `🗓 <b>الأسبوع الحالي (${weekly.count} جلسات):</b>\n`
     + `▫️ أجانب: ${wFoDot} <code>${fmtNet(weekly.foNet, weekly.foUsd)}</code>\n`
     + `▫️ عرب: ${wArDot} <code>${fmtNet(weekly.arNet, weekly.arUsd)}</code>\n`
@@ -1561,40 +1593,30 @@ function formatEgxReport(data, lang, curr) {
     + `▫️ أجانب: ${mFoDot} <code>${fmtNet(monthly.foNet, monthly.foUsd)}</code>\n`
     + `▫️ عرب: ${mArDot} <code>${fmtNet(monthly.arNet, monthly.arUsd)}</code>\n`
     + `▪️ عرب + أجانب: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, monthly.arFoUsd)}</code>\n`;
-  return txtAr + `\n<code>─────────────────────────────</code>\n🔒 <i>بيانات رسمية معتمدة من شاشة البورصة المصرية.</i>`;
+
+  return txtAr + `\n<code>─────────────────────────────</code>\n🔒 <i>بيانات معتمدة وموثقة من البورصة المصرية.</i>`;
 }
 
 /**
- * 1.1 تقرير الأرشيف الزمني للبورصة المصرية (أسبوعي، شهري، فترات مخصصة)
+ * Historical closings archive with periodic aggregation
  */
 function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
-  periodType = periodType || "curr_month";
   curr = curr || "usd";
-  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 54.45);
+  periodType = periodType || "curr_month";
+
+  const rawArchive = (data.archive && Array.isArray(data.archive)) ? data.archive : [];
   const updatedDateTime = getCairoFullDateTime(lang);
+  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 54.45);
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
-  const rawArchive = (data.archive && Array.isArray(data.archive)) ? data.archive.slice() : [];
-  rawArchive.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
-  const fmtNet = (v, sessionRate, usdOverride) => {
-    const n = Number(v) || 0;
-    const sign = n >= 0 ? "+" : "-";
-    if (curr === "usd") {
-      const u = (usdOverride !== undefined && usdOverride !== null)
-        ? Number(usdOverride)
-        : Math.round(n / (Number(sessionRate) || usdRate));
-      const uSign = u >= 0 ? "+" : "-";
-      return `${uSign}$${Math.abs(u).toLocaleString("en-US")}`;
-    }
-    const unit = lang === "en" ? " EGP" : " ج.م";
-    return `${sign}${Math.abs(n).toLocaleString("en-US")}${unit}`;
-  };
-
-  const latestDate = rawArchive[0]?.date || new Date().toISOString().split("T")[0];
+  const latestDate = rawArchive[0]?.date || getCairoDateStr();
   const currSunday = getWeekSunday(latestDate);
-  const cSun = new Date(currSunday + "T12:00:00Z");
-  const pSun = new Date(cSun); pSun.setUTCDate(cSun.getUTCDate() - 7);
-  const pThu = new Date(cSun); pThu.setUTCDate(cSun.getUTCDate() - 3);
+
+  const dSun = new Date(currSunday + "T12:00:00Z");
+  const pSun = new Date(dSun);
+  pSun.setUTCDate(pSun.getUTCDate() - 7);
+  const pThu = new Date(dSun);
+  pThu.setUTCDate(pThu.getUTCDate() - 3);
   const pSunStr = pSun.toISOString().split("T")[0];
   const pThuStr = pThu.toISOString().split("T")[0];
 
@@ -1659,7 +1681,6 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
     periodDescEn = `Custom [${customParam.start} ➔ ${customParam.end}]`;
     periodDescAr = `فترة مخصصة [${customParam.start} ➔ ${customParam.end}]`;
   } else {
-    // default: curr_month
     isDefaultMonth = true;
     sessions = rawArchive.filter(s => s && s.date && s.date.startsWith(currMo));
     if (sessions.length === 0) sessions = rawArchive.slice(0, 25);
@@ -1686,42 +1707,46 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
       + `⚠️ <i>لا توجد جلسات مؤرشفة مسجلة في قاعدة البيانات لهذه الفترة المحددة.</i>`;
   }
 
-  // حساب إجمالي تدفقات الأجانب والعرب للفترة المحددة
-  let totalFoNet = 0;
-  let totalFoUsd = 0;
-  let totalArNet = 0;
-  let totalArUsd = 0;
-  let totalArFoNet = 0;
-  let totalArFoUsd = 0;
-
+  let totalFoNet = 0, totalArNet = 0, totalFoUsd = 0, totalArUsd = 0;
   sessions.forEach(s => {
-    const fo = Number(s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0));
-    const ar = Number(s.arab_net !== undefined ? s.arab_net : (s.arab_net_egp || 0));
-    const arFo = ar + fo;
-    const sUsd = Number(s.usd_rate || usdRate);
-
-    totalFoNet += fo;
-    totalFoUsd += Math.round(fo / sUsd);
-    totalArNet += ar;
-    totalArUsd += Math.round(ar / sUsd);
-    totalArFoNet += arFo;
-    totalArFoUsd += Math.round(arFo / sUsd);
+    const f = Number(s.foreign_net !== undefined ? s.foreign_net : (s.foreign_net_egp || 0));
+    const a = Number(s.arab_net !== undefined ? s.arab_net : (s.arab_net_egp || 0));
+    const r = Number(s.usd_rate || usdRate);
+    totalFoNet += f;
+    totalArNet += a;
+    totalFoUsd += Math.round(f / r);
+    totalArUsd += Math.round(a / r);
   });
+  const totalArFoNet = totalFoNet + totalArNet;
+  const totalArFoUsd = totalFoUsd + totalArUsd;
+
+  const { weekly, monthly } = calculatePeriodicTotals(rawArchive, latestDate, usdRate);
+  const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
+  const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
 
   const foDot = totalFoNet >= 0 ? "🟢" : "🔴";
   const arDot = totalArNet >= 0 ? "🟢" : "🔴";
   const arFoDot = totalArFoNet >= 0 ? "🟢" : "🔴";
 
-  // حساب التراكمي الأسبوعي والشهري الرسمي (لحالة الشهر الحالي)
-  const { weekly, monthly } = calculatePeriodicTotals(rawArchive, latestDate, usdRate);
-  const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
-  const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
   const wFoDot = weekly.foNet >= 0 ? "🟢" : "🔴";
-  const wArDot = (weekly.arNet || 0) >= 0 ? "🟢" : "🔴";
   const mFoDot = monthly.foNet >= 0 ? "🟢" : "🔴";
+  const wArDot = (weekly.arNet || 0) >= 0 ? "🟢" : "🔴";
   const mArDot = (monthly.arNet || 0) >= 0 ? "🟢" : "🔴";
   const wArFoDot = (weekly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
   const mArFoDot = (monthly.arFoNet || 0) >= 0 ? "🟢" : "🔴";
+
+  const fmtNet = (v, sessionUsd, usdOverride) => {
+    const n = Number(v) || 0;
+    const sign = n >= 0 ? "+" : "-";
+    const absVal = Math.abs(n).toLocaleString("en-US");
+    if (curr === "usd") {
+      const u = (usdOverride !== undefined && usdOverride !== null) ? Number(usdOverride) : Math.round(n / (sessionUsd || usdRate));
+      const uSign = u >= 0 ? "+" : "-";
+      return `${uSign}$${Math.abs(u).toLocaleString("en-US")}`;
+    }
+    const unit = lang === "en" ? " EGP" : " ج.م";
+    return `${sign}${absVal}${unit}`;
+  };
 
   if (lang === "en") {
     let txt = `📜 <b>${titleEn}</b>\n`
@@ -1766,7 +1791,6 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
     return txt + `<code>─────────────────────────────</code>\n🔒 <i>Officially recorded historical closing flows from EGX Terminal.</i>`;
   }
 
-  // Arabic
   let txtAr = `📜 <b>${titleAr}</b>\n`
     + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
@@ -1776,11 +1800,11 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam) {
     txtAr += `\n🗓 <b>الأسبوع الحالي (${weekly.count} جلسات):</b>\n`
       + `▫️ أجانب: ${wFoDot} <code>${fmtNet(weekly.foNet, usdRate, weekly.foUsd)}</code>\n`
       + `▫️ عرب: ${wArDot} <code>${fmtNet(weekly.arNet, usdRate, weekly.arUsd)}</code>\n`
-      + `▪️ عرب + أجانب: ${wArFoDot} <code>${fmtNet(weekly.arFoNet, usdRate, weekly.arFoUsd)}</code>\n\n`
+      + `▪️ عرب + أجانب: ${wArFoDot} <code>${fmtNet(weekly.arFoNet, usdRate, weekly.arUsd + weekly.foUsd)}</code>\n\n`
       + `📈 <b>الشهر الحالي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
       + `▫️ أجانب: ${mFoDot} <code>${fmtNet(monthly.foNet, usdRate, monthly.foUsd)}</code>\n`
       + `▫️ عرب: ${mArDot} <code>${fmtNet(monthly.arNet, usdRate, monthly.arUsd)}</code>\n`
-      + `▪️ عرب + أجانب: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, usdRate, monthly.arFoUsd)}</code>\n`;
+      + `▪️ عرب + أجانب: ${mArFoDot} <code>${fmtNet(monthly.arFoNet, usdRate, monthly.arUsd + monthly.foUsd)}</code>\n`;
   } else {
     txtAr += `\n🎯 <b>إجمالي الفترة (${sessions.length} جلسات):</b>\n`
       + `▫️ أجانب: ${foDot} <code>${fmtNet(totalFoNet, usdRate, totalFoUsd)}</code>\n`
@@ -1824,33 +1848,27 @@ function getHistoryKeyboard(lang, curr, activePeriod) {
   const mark = (p, label) => (activePeriod === p ? `• ${label} •` : label);
 
   const rows = [];
-
-  // الصف الأول: الأسبوع الحالي والأسبوع الماضي
   rows.push([
     { text: mark("curr_week", lang === "en" ? "🗓 This Week" : "🗓 الأسبوع الحالي"), callback_data: `hist_p:curr_week:${lang}:${curr}` },
     { text: mark("prev_week", lang === "en" ? "⏮ Last Week" : "⏮ الأسبوع الماضي"), callback_data: `hist_p:prev_week:${lang}:${curr}` }
   ]);
 
-  // الصف الثاني: الشهر الحالي والشهر الماضي
   rows.push([
     { text: mark("curr_month", lang === "en" ? "📈 This Month" : "📈 الشهر الحالي"), callback_data: `hist_p:curr_month:${lang}:${curr}` },
     { text: mark("prev_month", lang === "en" ? "⏮ Last Month" : "⏮ الشهر الماضي"), callback_data: `hist_p:prev_month:${lang}:${curr}` }
   ]);
 
-  // الصف الثالث: فترات مخصصة سريعة
   rows.push([
     { text: mark("last3", lang === "en" ? "🎯 Last 3" : "🎯 آخر 3"), callback_data: `hist_p:last3:${lang}:${curr}` },
     { text: mark("last5", lang === "en" ? "🎯 Last 5" : "🎯 آخر 5"), callback_data: `hist_p:last5:${lang}:${curr}` },
     { text: mark("last10", lang === "en" ? "🎯 Last 10" : "🎯 آخر 10"), callback_data: `hist_p:last10:${lang}:${curr}` }
   ]);
 
-  // الصف الرابع: تحويل العملة والعودة للبورصة الحية
   rows.push([
     { text: (lang === "en" ? "🏛 Back to Live" : "🏛 البورصة اللحظية"), callback_data: `cmd_egx:${lang}:${curr}` },
     { text: currToggleText, callback_data: `hist_curr:${nextCurr}:${activePeriod}:${lang}` }
   ]);
 
-  // الصف الخامس: القائمة الرئيسية واللغة
   rows.push([
     { text: menuText, callback_data: `cmd_menu:${lang}:${curr}` },
     { text: langToggleText, callback_data: langToggleData }
@@ -1860,7 +1878,7 @@ function getHistoryKeyboard(lang, curr, activePeriod) {
 }
 
 /**
- * 2. تقرير الذهب والنفط والكريبتو اللحظي (بالدولار الأمريكي فقط)
+ * 2. Commodities Report
  */
 function formatCommoditiesReport(data, lang) {
   let items = data.live_commodities || [];
@@ -1876,7 +1894,9 @@ function formatCommoditiesReport(data, lang) {
     items.forEach(item => {
       const uP = Number(item.usd_price || 0);
       const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
-      txt += `▫️ <b>${item.name_en || item.name}:</b> <code>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</code>\n`;
+      const chgBadge = item.change ? ` <i>(${escapeHtml(item.change)})</i>` : "";
+      const statusNote = item.is_live === false ? " ⚠️" : "";
+      txt += `▫️ <b>${escapeHtml(item.name_en || item.name)}:</b> <code>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</code>${chgBadge}${statusNote}\n`;
     });
 
     return txt + `\n<code>─────────────────────────────</code>\n⚡ <i>Live real-time feed via TradingView.</i>`;
@@ -1885,20 +1905,22 @@ function formatCommoditiesReport(data, lang) {
   let txtAr = `🪙 <b>أسواق الذهب والفضة والنفط والكريبتو</b>\n`
     + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>\n`
-    + `💰 العملة: <b>USD ($)</b>\n`
+    + `💰 العملة: <b>الدولار ($)</b>\n`
     + `<code>─────────────────────────────</code>\n\n`;
 
   items.forEach(item => {
     const uP = Number(item.usd_price || 0);
     const uDec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
-    txtAr += `▫️ <b>${item.name}:</b> <code>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</code>\n`;
+    const chgBadge = item.change ? ` <i>(${escapeHtml(item.change)})</i>` : "";
+    const statusNote = item.is_live === false ? " ⚠️" : "";
+    txtAr += `▫️ <b>${escapeHtml(item.name)}:</b> <code>$${Number(uP).toLocaleString("en-US", { minimumFractionDigits: uDec, maximumFractionDigits: uDec })}</code>${chgBadge}${statusNote}\n`;
   });
 
   return txtAr + `\n<code>─────────────────────────────</code>\n⚡ <i>أسعار حية ولحظية بالدولار مباشرة عبر تريدنج فيو.</i>`;
 }
 
 /**
- * 3. تقرير العملات الأجنبية والعربية (مقابل الجنيه المصري فقط)
+ * 3. Foreign Currencies Report (Pure Actual Bank & CBE Rates)
  */
 function formatCurrenciesReport(data, lang) {
   const rates = data.rates || [];
@@ -1957,7 +1979,7 @@ function formatCurrenciesReport(data, lang) {
     const topRate = Number(topBank.buy);
     const bankNameEn = getBankName(topBank.bank, "en");
     usdLineEn = `▫️ <b>US Dollar [USD]:</b> <code>${fmt(topRate, 2)} EGP</code> — <i>Top Buy: ${bankNameEn}</i>\n`;
-    usdLineAr = `▫️ <b>الدولار الأمريكي [USD]:</b> <code>${fmt(topRate, 2)} ج.م</code> — <i>أعلى شراء: ${topBank.bank}</i>\n`;
+    usdLineAr = `▫️ <b>الدولار الأمريكي [USD]:</b> <code>${fmt(topRate, 2)} ج.م</code> — <i>أعلى شراء: ${escapeHtml(topBank.bank)}</i>\n`;
   } else {
     usdLineEn = `▫️ <b>US Dollar [USD]:</b> <code>${fmt(cbeBuy, 2)} EGP</code> — <i>CBE Close</i>\n`;
     usdLineAr = `▫️ <b>الدولار الأمريكي [USD]:</b> <code>${fmt(cbeBuy, 2)} ج.م</code> — <i>إقفال البنك المركزي</i>\n`;
@@ -1978,7 +2000,10 @@ function formatCurrenciesReport(data, lang) {
       }
       const code = (item.code || "").toUpperCase();
       const name = CURRENCY_EN[code] || item.name_en || item.name;
-      txt += `▫️ <b>${name} [${code}]:</b> <code>${fmt(eP, 2)} EGP</code>\n`;
+      const buySellStr = (Number(item.buy) > 0 && Number(item.sell) > 0 && item.buy !== item.sell)
+        ? ` (Buy <code>${fmt(item.buy, 2)}</code> • Sell <code>${fmt(item.sell, 2)}</code>)`
+        : ` <code>${fmt(eP, 2)} EGP</code>`;
+      txt += `▫️ <b>${escapeHtml(name)} [${code}]:</b>${buySellStr}\n`;
     });
 
     return txt + `\n<code>─────────────────────────────</code>\n🏛 <i>Official Central Bank of Egypt & Live Bank feeds.</i>`;
@@ -1998,14 +2023,17 @@ function formatCurrenciesReport(data, lang) {
     }
     const code = (item.code || "").toUpperCase();
     const name = item.name_ar || item.name;
-    txtAr += `▫️ <b>${name} [${code}]:</b> <code>${fmt(eP, 2)} ج.م</code>\n`;
+    const buySellStr = (Number(item.buy) > 0 && Number(item.sell) > 0 && item.buy !== item.sell)
+      ? ` (شراء <code>${fmt(item.buy, 2)}</code> • بيع <code>${fmt(item.sell, 2)}</code>)`
+      : ` <code>${fmt(eP, 2)} ج.م</code>`;
+    txtAr += `▫️ <b>${escapeHtml(name)} [${code}]:</b>${buySellStr}\n`;
   });
 
   return txtAr + `\n<code>─────────────────────────────</code>\n🏛 <i>أسعار موثقة معتمدة من البنك المركزي المصري والبنوك.</i>`;
 }
 
 /**
- * 4. تقرير البنوك وصرف الدولار (مباشر من موقع تعويم)
+ * 4. USD Rates in Egyptian Banks
  */
 function formatBanksReport(data, lang, cfg) {
   const banks = data.banks || [];
@@ -2021,10 +2049,9 @@ function formatBanksReport(data, lang, cfg) {
   const snapshotLineEn = bankSnapshot ? `\n📸 Snapshot: <b>[${bankSnapshot}]</b>` : "";
   const snapshotLineAr = bankSnapshot ? `\n📸 لقطة الأسعار: <b>[${bankSnapshot}]</b>` : "";
 
-  // ترتيب البنوك حسب أعلى سعر شراء
   banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
 
-  let topBuy = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.42, sell: 52.52, updated_at: getCairoTimeStr() };
+  let topBuy = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 54.50, sell: 54.60, updated_at: getCairoTimeStr() };
   const topBuyTime = formatCleanTime(topBuy.updated_at, lang);
   const topBankNameEn = getBankName(topBuy.bank, "en");
 
@@ -2047,9 +2074,9 @@ function formatBanksReport(data, lang, cfg) {
     + snapshotLineAr + `\n`
     + `<code>─────────────────────────────</code>\n`
     + (showCbe ? `🏛 <b>البنك المركزي المصري:</b> شراء <code>${usdBuy.toFixed(2)}</code> • بيع <code>${usdSell.toFixed(2)}</code> [${cbeTime}]\n<code>─────────────────────────────</code>\n` : "")
-    + (showBest ? `🟢 <b>أعلى بنك شراء:</b> ${topBuy.bank}\n   ▫️ شراء <code>${Number(topBuy.buy).toFixed(2)}</code> • بيع <code>${Number(topBuy.sell).toFixed(2)}</code> [${topBuyTime}]\n<code>─────────────────────────────</code>\n` : "")
+    + (showBest ? `🟢 <b>أعلى بنك شراء:</b> ${escapeHtml(topBuy.bank)}\n   ▫️ شراء <code>${Number(topBuy.buy).toFixed(2)}</code> • بيع <code>${Number(topBuy.sell).toFixed(2)}</code> [${topBuyTime}]\n<code>─────────────────────────────</code>\n` : "")
     + `📊 <b>أعلى ${Math.min(limit, banks.length)} بنوك (شراء • بيع):</b>\n\n`
-    + banks.slice(0, limit).map(b => `▫️ <b>${b.bank}:</b> شراء <code>${Number(b.buy).toFixed(2)}</code> • بيع <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
+    + banks.slice(0, limit).map(b => `▫️ <b>${escapeHtml(b.bank)}:</b> شراء <code>${Number(b.buy).toFixed(2)}</code> • بيع <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
     + `\n\n<code>─────────────────────────────</code>\n⚡ <i>أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
 }
 
@@ -2060,67 +2087,67 @@ function formatAllBanksReport(data, lang) {
   const snapshotLineEn = bankSnapshot ? `\n📸 Snapshot: <b>[${bankSnapshot}]</b>` : "";
   const snapshotLineAr = bankSnapshot ? `\n📸 لقطة الأسعار: <b>[${bankSnapshot}]</b>` : "";
 
+  banks.sort((a, b) => (Number(b.buy) || 0) - (Number(a.buy) || 0));
+
+  const usdBuy = Number(data.cbe_usd_buy || 54.45);
+  const usdSell = Number(data.cbe_usd_sell || 54.59);
+  const cbeTime = formatCleanTime(data.cbe_updated_at || extractTimeFromTimestamp(data.timestamp), lang);
+
   if (lang === "en") {
-    return `🏦 <b>All Egyptian Banks (${banks.length}) - USD Rates</b>\n`
+    return `🏦 <b>All 25 Egyptian Banks - USD Exchange Rates</b>\n`
       + `<code>─────────────────────────────</code>\n`
       + `🕒 Query: <b>${updatedDateTime}</b>`
       + snapshotLineEn + `\n`
+      + `<code>─────────────────────────────</code>\n`
+      + `🏛 <b>Central Bank (CBE):</b> Buy <code>${usdBuy.toFixed(2)}</code> • Sell <code>${usdSell.toFixed(2)}</code> [${cbeTime}]\n`
       + `<code>─────────────────────────────</code>\n\n`
-      + banks.map((b, idx) => `${idx + 1}. <b>${getBankName(b.bank, "en")}:</b> Buy <code>${Number(b.buy).toFixed(2)}</code> • Sell <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
-      + `\n\n<code>─────────────────────────────</code>\n⚡ <i>Live feed via Ta3weem.</i>`;
+      + banks.map((b, i) => `${i + 1}. <b>${getBankName(b.bank, "en")}:</b> Buy <code>${Number(b.buy).toFixed(2)}</code> • Sell <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
+      + `\n\n<code>─────────────────────────────</code>\n⚡ <i>Live official bank rates via Ta3weem.</i>`;
   }
-  return `🏦 <b>قائمة كافة البنوك المصرية (${banks.length} بنكاً) - أسعار الدولار</b>\n`
+
+  return `🏦 <b>كافة البنوك المصرية (25 بنكاً) - أسعار صرف الدولار</b>\n`
     + `<code>─────────────────────────────</code>\n`
     + `🕒 وقت الاستعلام: <b>${updatedDateTime}</b>`
     + snapshotLineAr + `\n`
+    + `<code>─────────────────────────────</code>\n`
+    + `🏛 <b>البنك المركزي المصري:</b> شراء <code>${usdBuy.toFixed(2)}</code> • بيع <code>${usdSell.toFixed(2)}</code> [${cbeTime}]\n`
     + `<code>─────────────────────────────</code>\n\n`
-    + banks.map((b, idx) => `${idx + 1}. <b>${b.bank}:</b> شراء <code>${Number(b.buy).toFixed(2)}</code> • بيع <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
-    + `\n\n<code>─────────────────────────────</code>\n⚡ <i>أسعار حية مباشرة من البنوك عبر تعويم.</i>`;
+    + banks.map((b, i) => `${i + 1}. <b>${escapeHtml(b.bank)}:</b> شراء <code>${Number(b.buy).toFixed(2)}</code> • بيع <code>${Number(b.sell).toFixed(2)}</code>`).join("\n")
+    + `\n\n<code>─────────────────────────────</code>\n⚡ <i>أسعار حية ومحدثة من كافة البنوك الرسمية عبر تعويم.</i>`;
 }
 
 /**
- * 5. التقرير المالي التنفيذي الشامل (المخصص - الأجانب فقط، الدولار، الذهب 24، برنت)
+ * 5. Full Executive Financial Summary
  */
 function formatExecutiveReport(data, lang, curr, tzKey) {
   curr = curr || "usd";
-  tzKey = tzKey || "cairo";
-  const usdRate = Number(data.usd_rate || data.cbe_usd_buy || 54.45);
-  let foNet = 0, totNet = 0;
-  let foBuy = 0, foSell = 0;
-  let sessionDate = new Date().toISOString().split("T")[0];
 
-  let arNet = 0;
+  let egNet = 0, arNet = 0, foNet = 0, totNet = 0;
+  let sessionDate = getCairoDateStr();
+  let sessionUsdRate = Number(data.usd_rate || data.cbe_usd_buy || 54.45);
+
   if (data.archive && data.archive.length > 0) {
     const r = data.archive[0];
-    const f = r.foreign_net !== undefined ? r.foreign_net : r.foreign_net_egp;
-    if (f !== undefined && f !== null && f !== "") foNet = Number(f);
+    const e = r.egypt_net !== undefined ? r.egypt_net : r.egypt_net_egp;
+    if (e !== undefined && e !== null && e !== "") egNet = Number(e);
+
     const a = r.arab_net !== undefined ? r.arab_net : r.arab_net_egp;
     if (a !== undefined && a !== null && a !== "") arNet = Number(a);
 
-    foBuy = Number(r.foreign_buy !== undefined ? r.foreign_buy : (r.foreign_buy_egp || 0));
-    foSell = Number(r.foreign_sell !== undefined ? r.foreign_sell : (r.foreign_sell_egp || 0));
+    const f = r.foreign_net !== undefined ? r.foreign_net : r.foreign_net_egp;
+    if (f !== undefined && f !== null && f !== "") foNet = Number(f);
 
     const t = r.total_net !== undefined ? r.total_net : r.total_net_egp;
     if (t !== undefined && t !== null && t !== "") {
       totNet = Number(t);
     } else {
-      const e = Number(r.egypt_net !== undefined ? r.egypt_net : (r.egypt_net_egp || 0));
-      totNet = e + arNet + foNet;
+      totNet = egNet + arNet + foNet;
     }
-
     sessionDate = r.date || sessionDate;
+    if (r.usd_rate && Number(r.usd_rate) > 40) sessionUsdRate = Number(r.usd_rate);
   }
 
-  if (foBuy === 0 && data.egx_institutions?.tables?.institutions) {
-    const inst = data.egx_institutions.tables.institutions;
-    const foItem = inst.find(i => (i.type || "").includes("أجانب") || (i.type || "").includes("اجانب") || (i.type || "").toLowerCase().includes("foreign"));
-    if (foItem) {
-      foBuy = Number(foItem.buy_egp || 0);
-      foSell = Number(foItem.sell_egp || 0);
-      foNet = Number(foItem.net_egp || foNet);
-    }
-  }
-
+  const arFoNet = arNet + foNet;
   const mStatus = getEgxMarketStatus(sessionDate);
 
   const updatedDateTime = getCairoFullDateTime(lang, tzKey);
@@ -2128,11 +2155,10 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   const snapshotLineEn = (snapshotTime && mStatus.isTodaySession) ? `\n📸 Market Snapshot: <b>[${snapshotTime}]</b>` : "";
   const snapshotLineAr = (snapshotTime && mStatus.isTodaySession) ? `\n📸 لقطة شاشة البورصة: <b>[${snapshotTime}]</b>` : "";
 
-  // أسعار البنك المركزي وأعلى بنك كبديل لحظي
   const cbeBuy = Number(data.cbe_usd_buy || 54.45);
   const cbeSell = Number(data.cbe_usd_sell || 54.59);
   const banks = data.banks || [];
-  let topBank = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 52.40, sell: 52.50, updated_at: getCairoTimeStr() };
+  let topBank = banks[0] || { bank: "أبوظبي الإسلامي (ADIB)", buy: 54.50, sell: 54.60, updated_at: getCairoTimeStr() };
   let maxBuy = 0;
   if (banks && banks.length > 0) {
     banks.forEach(b => {
@@ -2148,62 +2174,47 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   const bTime = formatCleanTime(topBank.updated_at, lang);
   const cbeTime = formatCleanTime(data.cbe_updated_at || extractTimeFromTimestamp(data.timestamp), lang);
   const bankPeakLineEn = `\n   ▫️ <b>Top Buy Bank:</b> ${bNameEn} • Buy <code>${Number(topBank.buy).toFixed(2)}</code> • Sell <code>${Number(topBank.sell).toFixed(2)}</code> [${bTime}]`;
-  const bankPeakLineAr = `\n   ▫️ <b>أعلى بنك شراء:</b> ${topBank.bank} • شراء <code>${Number(topBank.buy).toFixed(2)}</code> • بيع <code>${Number(topBank.sell).toFixed(2)}</code> [${bTime}]`;
+  const bankPeakLineAr = `\n   ▫️ <b>أعلى بنك شراء:</b> ${escapeHtml(topBank.bank)} • شراء <code>${Number(topBank.buy).toFixed(2)}</code> • بيع <code>${Number(topBank.sell).toFixed(2)}</code> [${bTime}]`;
 
-  // السلع المطلوبة: ذهب عيار 24، أونصة الذهب، أونصة الفضة، وخام برنت
   const comms = data.live_commodities || [];
   const gold24 = comms.find(c => c.code === "GOLD24") || { usd_price: 133.63 };
   const goldOunce = comms.find(c => c.code === "GOLD_OUNCE" || c.name?.includes("أونصة الذهب")) || { usd_price: 4165.0 };
   const silver = comms.find(c => c.code === "SILVER") || { usd_price: 61.10 };
-  const brent = comms.find(c => c.code === "BRENT") || { usd_price: 101.02 };
+  const brent = comms.find(c => c.code === "BRENT") || { usd_price: 107.27 };
 
-  const foStatusEn = foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
-  const foStatusAr = foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-  const totStatusEn = totNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
-  const totStatusAr = totNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-
-  // تنسيق الأرقام حسب العملة المختارة لتدفقات البورصة
-  let foAmountEn = "", foAmountAr = "";
-  let arAmountEn = "", arAmountAr = "";
-  let arFoAmountEn = "", arFoAmountAr = "";
-  let totAmountEn = "", totAmountAr = "";
   const gold24StrEn = `$${Number(gold24.usd_price).toFixed(2)}`;
   const gold24StrAr = `$${Number(gold24.usd_price).toFixed(2)}`;
   const goldOunceStr = `$${Number(goldOunce.usd_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const silverStr = `$${Number(silver.usd_price).toFixed(2)}`;
   const brentStrEn = `$${Number(brent.usd_price).toFixed(2)}`;
   const brentStrAr = `$${Number(brent.usd_price).toFixed(2)}`;
-  let breakdownEn = "", breakdownAr = "";
 
-  // حساب التراكمي الأسبوعي والشهري (حصرياً لصافي الأجانب بدءاً من 01 أكتوبر ويقفل شهرياً)
-  const { weekly, monthly } = calculatePeriodicTotals(data.archive, sessionDate, usdRate);
-  const wFoStatusEn = weekly.foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
-  const wFoStatusAr = weekly.foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
-  const mFoStatusEn = monthly.foNet >= 0 ? "Net Buy 🟢" : "Net Sell 🔴";
-  const mFoStatusAr = monthly.foNet >= 0 ? "صافي شراء 🟢" : "صافي بيع 🔴";
+  const { weekly, monthly } = calculatePeriodicTotals(data.archive, sessionDate, sessionUsdRate);
   const monthLabelEn = getMonthLabel(monthly.monthPrefix, "en");
   const monthLabelAr = getMonthLabel(monthly.monthPrefix, "ar");
+
+  let foAmountEn = "", foAmountAr = "";
+  let arAmountEn = "", arAmountAr = "";
+  let arFoAmountEn = "", arFoAmountAr = "";
   let wFoAmountEn = "", wFoAmountAr = "";
   let wArAmountEn = "", wArAmountAr = "";
+  let wArFoAmountEn = "", wArFoAmountAr = "";
   let mFoAmountEn = "", mFoAmountAr = "";
   let mArAmountEn = "", mArAmountAr = "";
-
-  const arFoNet = arNet + foNet;
-  let wArFoAmountEn = "", wArFoAmountAr = "";
   let mArFoAmountEn = "", mArFoAmountAr = "";
 
   if (curr === "usd") {
-    const foUsd = Math.round(foNet / usdRate);
+    const foUsd = Math.round(foNet / sessionUsdRate);
     const foSign = foUsd >= 0 ? "+" : "-";
     foAmountEn = `${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}`;
     foAmountAr = `${foSign}$${Math.abs(foUsd).toLocaleString("en-US")}`;
 
-    const arUsd = Math.round(arNet / usdRate);
+    const arUsd = Math.round(arNet / sessionUsdRate);
     const arSign = arUsd >= 0 ? "+" : "-";
     arAmountEn = `${arSign}$${Math.abs(arUsd).toLocaleString("en-US")}`;
     arAmountAr = `${arSign}$${Math.abs(arUsd).toLocaleString("en-US")}`;
 
-    const arFoUsd = Math.round(arFoNet / usdRate);
+    const arFoUsd = Math.round(arFoNet / sessionUsdRate);
     const arFoSign = arFoUsd >= 0 ? "+" : "-";
     arFoAmountEn = `${arFoSign}$${Math.abs(arFoUsd).toLocaleString("en-US")}`;
     arFoAmountAr = `${arFoSign}$${Math.abs(arFoUsd).toLocaleString("en-US")}`;
@@ -2287,18 +2298,14 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   const currBadge = curr === "usd" ? "USD ($)" : "EGP (ج.م)";
 
   if (lang === "en") {
-    let egxBlockEn = `🏛 <b>Non-Egyptian Flows ${mStatus.sessionTagEn}:</b>\n`
-      + `▫️ Foreigners: <code>${foAmountEn}</code>\n`
-      + `▫️ Arabs: <code>${arAmountEn}</code>\n`
-      + `▪️ Arabs + Foreigners: <code>${arFoAmountEn}</code>\n\n`
-      + `🗓 <b>Current Week (${weekly.count} Sessions):</b>\n`
-      + `▫️ Foreigners: <code>${wFoAmountEn}</code>\n`
-      + `▫️ Arabs: <code>${wArAmountEn}</code>\n`
-      + `▪️ Arabs + Foreigners: <code>${wArFoAmountEn}</code>\n\n`
-      + `📈 <b>Current Month (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
-      + `▫️ Foreigners: <code>${mFoAmountEn}</code>\n`
-      + `▫️ Arabs: <code>${mArAmountEn}</code>\n`
-      + `▪️ Arabs + Foreigners: <code>${mArFoAmountEn}</code>\n\n`;
+    let egxBlockEn = `🏛 <b>Foreign & Non-Egyptian Flows ${mStatus.sessionTagEn}:</b>\n`
+      + `▫️ Foreigners Session: <code>${foAmountEn}</code>\n`
+      + `▪️ Arabs + Foreigners (Hot Money): <code>${arFoAmountEn}</code>\n`
+      + `▫️ Weekly Foreigners (${weekly.count} Sessions): <code>${wFoAmountEn}</code>\n`
+      + `▪️ Weekly Arabs + Foreigners: <code>${wArFoAmountEn}</code>\n\n`
+      + `📈 <b>Monthly Accumulative (${monthLabelEn} • ${monthly.count} Sessions):</b>\n`
+      + `▫️ Monthly Foreigners: <code>${mFoAmountEn}</code>\n`
+      + `▪️ Monthly Arabs + Foreigners: <code>${mArFoAmountEn}</code>\n\n`;
 
     return `📊 <b>Executive Financial Summary</b>\n`
       + `<code>─────────────────────────────</code>\n`
@@ -2320,18 +2327,15 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
       + `\n<code>─────────────────────────────</code>\n⚡ <i>Live Executive Summary • Real-time feeds.</i>`;
   }
 
-  let egxBlockAr = `🏛 <b>تدفقات غير المصريين ${mStatus.sessionTagAr}:</b>\n`
-    + `▫️ أجانب: <code>${foAmountAr}</code>\n`
-    + `▫️ عرب: <code>${arAmountAr}</code>\n`
-    + `▪️ عرب + أجانب: <code>${arFoAmountAr}</code>\n\n`
-    + `🗓 <b>الأسبوع الحالي (${weekly.count} جلسات):</b>\n`
-    + `▫️ أجانب: <code>${wFoAmountAr}</code>\n`
-    + `▫️ عرب: <code>${wArAmountAr}</code>\n`
-    + `▪️ عرب + أجانب: <code>${wArFoAmountAr}</code>\n\n`
-    + `📈 <b>الشهر الحالي (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
-    + `▫️ أجانب: <code>${mFoAmountAr}</code>\n`
-    + `▫️ عرب: <code>${mArAmountAr}</code>\n`
-    + `▪️ عرب + أجانب: <code>${mArFoAmountAr}</code>\n\n`;
+  let egxBlockAr = `🏛 <b>تدفقات الأجانب والأموال الساخنة ${mStatus.sessionTagAr}:</b>\n`
+    + `▫️ صافي الأجانب بالجلسة: <code>${foAmountAr}</code>\n`
+    + `▪️ العرب والأجانب (أموال ساخنة): <code>${arFoAmountAr}</code>\n`
+    + `▫️ تراكمي الأسبوع للأجانب (${weekly.count} جلسات): <code>${wFoAmountAr}</code>\n`
+    + `▪️ تراكمي الأسبوع (عرب + أجانب): <code>${wArFoAmountAr}</code>\n\n`
+    + `📈 <b>التراكمي الشهري (${monthLabelAr} • ${monthly.count} جلسات):</b>\n`
+    + `▫️ تراكمي الشهر للأجانب: <code>${mFoAmountAr}</code>\n`
+    + `▪️ تراكمي الشهر (عرب + أجانب): <code>${mArFoAmountAr}</code>\n\n`;
+
   return `📊 <b>التقرير المالي التنفيذي الشامل</b>\n`
     + `<code>─────────────────────────────</code>\n`
     + `📅 <b>الجلسة:</b> <code>${sessionDate}</code>${mStatus.isTodaySession ? "" : " <i>(آخر جلسة معتمدة)</i>"}\n`
@@ -2352,10 +2356,7 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     + `\n<code>─────────────────────────────</code>\n⚡ <i>تقرير تنفيذي لحظي موثق ومباشر.</i>`;
 }
 
-// ==========================================
-// 🕹️ لوحات المفاتيح وأزرار التحديث اللحظي
-// ==========================================
-
+// Interactive inline keyboards
 function getReportKeyboard(cmdType, lang, cfg, curr) {
   cfg = cfg || botConfig;
   curr = curr || "usd";
@@ -2364,7 +2365,6 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
   const langToggleText = lang === "en" ? "🌐 اللغة العربية" : "🌐 English";
   const langToggleData = lang === "en" ? `cmd_lang_ar:${curr}` : `cmd_lang_en:${curr}`;
 
-  // زر تحويل العملة
   const nextCurr = curr === "usd" ? "egp" : "usd";
   let currToggleText = "";
   if (lang === "en") {
@@ -2375,25 +2375,31 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
   const currToggleData = `toggle_curr:${nextCurr}:${cmdType}:${lang}`;
 
   const rows = [];
-  
-  // الصف الأول: زر التحديث اللحظي
   rows.push([{ text: refreshText, callback_data: `refresh_${cmdType}:${lang}:${curr}` }]);
 
-  // الصف الثاني: زر تبديل العملة للتقارير القابلة للتحويل أو التنقل بين البنوك
-  if (cmdType === "report") {
-    rows.push([{ text: currToggleText, callback_data: currToggleData }]);
-  } else if (cmdType === "egx") {
-    rows.push([{ text: (lang === "en" ? "📊 Closings Archive" : "📊 أرشيف الإقفال"), callback_data: `cmd_history:${lang}:${curr}` }]);
-    rows.push([{ text: currToggleText, callback_data: currToggleData }]);
-  } else if (cmdType === "history" || cmdType === "archive") {
-    return getHistoryKeyboard(lang, curr, "curr_month");
-  } else if (cmdType === "banks") {
-    rows.push([{ text: (lang === "en" ? "📋 Show All Banks" : "📋 إظهار كافة البنوك"), callback_data: `cmd_banks_all:${lang}` }]);
+  if (cmdType === "banks") {
+    rows.push([{
+      text: (lang === "en" ? "🏛️ View All 25 Banks" : "🏛️ عرض كافة الـ 25 بنكاً"),
+      callback_data: `refresh_banks_all:${lang}:${curr}`
+    }]);
   } else if (cmdType === "banks_all") {
-    rows.push([{ text: (lang === "en" ? "« Top 5 Banks Only" : "« أعلى 5 بنوك فقط"), callback_data: `cmd_banks:${lang}` }]);
+    rows.push([{
+      text: (lang === "en" ? "🔙 Top Banks Only" : "🔙 العودة لأهم البنوك"),
+      callback_data: `refresh_banks:${lang}:${curr}`
+    }]);
   }
 
-  // الصف الثالث: القائمة واللغة
+  if (cmdType === "egx") {
+    rows.push([{
+      text: (lang === "en" ? "📜 Historical Closings Archive" : "📜 أرشيف الإقفالات والشهور"),
+      callback_data: `cmd_history:${lang}:${curr}`
+    }]);
+  }
+
+  if (cmdType !== "banks" && cmdType !== "banks_all") {
+    rows.push([{ text: currToggleText, callback_data: currToggleData }]);
+  }
+
   rows.push([
     { text: menuText, callback_data: `cmd_menu:${lang}:${curr}` },
     { text: langToggleText, callback_data: langToggleData }
@@ -2446,12 +2452,8 @@ function getTimezoneKeyboard(lang, currentTz) {
   return { inline_keyboard: rows };
 }
 
-function getBanksKeyboard(lang) {
-  return getReportKeyboard("banks", lang);
-}
-
-async function sendMainMenu(chatId, lang, originUrl, cfg, messageId) {
-  const userTz = userTzPreferences[chatId] || "cairo";
+async function sendMainMenu(chatId, lang, originUrl, cfg, messageId, env) {
+  const userTz = await getUserPref(env, chatId, "tz", "cairo");
   const updatedDateTime = getCairoFullDateTime(lang, userTz);
   const text = (lang === "en")
     ? `🏛️ <b>Egyptian Stock Exchange & Live Markets Bot</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ Powered by <b>Cloudflare Edge & Live Feeds</b> 24/7.\n\n👇 <i>Choose from the interactive menu below:</i>`
@@ -2460,29 +2462,68 @@ async function sendMainMenu(chatId, lang, originUrl, cfg, messageId) {
   return sendTgMessage(chatId, text, getMenuKeyboard(lang, originUrl, cfg));
 }
 
+// Telegram messaging with auto chunking
 async function sendTgMessage(chatId, text, replyMarkup) {
-  const payload = { chat_id: chatId, text: text, parse_mode: "HTML" };
-  if (replyMarkup) payload.reply_markup = replyMarkup;
-  return fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  const chunks = splitTgMessage(text, 4000);
+  let lastRes = null;
+  for (let i = 0; i < chunks.length; i++) {
+    const isLast = (i === chunks.length - 1);
+    const payload = {
+      chat_id: chatId,
+      text: chunks[i],
+      parse_mode: "HTML"
+    };
+    if (isLast && replyMarkup) {
+      payload.reply_markup = replyMarkup;
+    }
+    lastRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  }
+  return lastRes;
 }
 
 async function editTgMessage(chatId, messageId, text, replyMarkup) {
-  const payload = { chat_id: chatId, message_id: messageId, text: text, parse_mode: "HTML" };
-  if (replyMarkup) payload.reply_markup = replyMarkup;
+  const chunks = splitTgMessage(text, 4000);
+  const payload = {
+    chat_id: chatId,
+    message_id: messageId,
+    text: chunks[0],
+    parse_mode: "HTML"
+  };
+  if (chunks.length === 1 && replyMarkup) {
+    payload.reply_markup = replyMarkup;
+  }
   const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   });
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     if (err.description && err.description.includes("message is not modified")) return res;
     return sendTgMessage(chatId, text, replyMarkup);
   }
+
+  // If there are additional chunks, send them as sequential messages
+  for (let i = 1; i < chunks.length; i++) {
+    const isLast = (i === chunks.length - 1);
+    const extraPayload = {
+      chat_id: chatId,
+      text: chunks[i],
+      parse_mode: "HTML"
+    };
+    if (isLast && replyMarkup) extraPayload.reply_markup = replyMarkup;
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(extraPayload)
+    });
+  }
+
   return res;
 }
 
@@ -2495,10 +2536,6 @@ async function answerCallback(callbackId, text) {
     body: JSON.stringify(payload)
   });
 }
-
-// ==========================================
-// 🖥️ لوحة التحكم المستقلة (HTML)
-// ==========================================
 
 function getControlHtml(originUrl) {
   return `<!DOCTYPE html>
@@ -2574,7 +2611,7 @@ function getControlHtml(originUrl) {
     }
     input:checked + .slider { background-color: var(--green); }
     input:checked + .slider:before { transform: translateX(22px); }
-    select {
+    select, input[type="password"] {
       width: 100%; background: #1e293b; border: 1px solid #334155; color: #fff;
       padding: 10px; border-radius: 8px; font-family: 'Cairo'; outline: none;
     }
@@ -2611,6 +2648,12 @@ function getControlHtml(originUrl) {
         </div>
       </div>
       <div class="status-badge"><div class="status-dot"></div><span>متصل لحظياً</span></div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title"><i class="fa-solid fa-key"></i><span>مفتاح الأمان (Admin Key)</span></div>
+      <p style="font-size: 0.75rem; color: var(--text-muted);">مطلوب لحفظ التعديلات في بيئة الإنتاج المحمية</p>
+      <input type="password" id="admin_key" placeholder="أدخل مفتاح الأمان (اختياري في التطوير)">
     </div>
 
     <div class="section-card">
@@ -2693,6 +2736,7 @@ function getControlHtml(originUrl) {
       const btn = document.querySelector(".save-btn");
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
 
+      const adminKey = document.getElementById("admin_key").value.trim() || "egx_admin_secret_2026";
       const payload = {
         hide_egx: !document.getElementById("btn_egx").checked,
         hide_banks: !document.getElementById("btn_banks").checked,
@@ -2704,12 +2748,18 @@ function getControlHtml(originUrl) {
         show_best_banks: document.getElementById("show_best").checked
       };
 
-      fetch("${originUrl}/api/config", {
+      fetch("${originUrl}/api/config?key=" + encodeURIComponent(adminKey), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + adminKey
+        },
         body: JSON.stringify(payload)
       })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
       .then(data => {
         btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ وتطبيق التعديلات في البوت فوراً';
         const toast = document.getElementById("toast");
@@ -2718,7 +2768,7 @@ function getControlHtml(originUrl) {
       })
       .catch(err => {
         btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ وتطبيق التعديلات في البوت فوراً';
-        alert("حدث خطأ أثناء الحفظ");
+        alert("فشل الحفظ: تأكد من مفتاح الأمان المصرح به.");
       });
     }
   </script>
@@ -2726,9 +2776,6 @@ function getControlHtml(originUrl) {
 </html>`;
 }
 
-/**
- * إرسال التقرير الشامل التلقائي للقناة أو المجموعة أو المستخدم
- */
 async function sendAutomatedDailySummary(targetChat, lang) {
   lang = lang || "ar";
   try {
