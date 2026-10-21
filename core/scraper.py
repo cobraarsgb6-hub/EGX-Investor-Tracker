@@ -36,6 +36,9 @@ def fetch_investors_from_egx(
     Automates bypassing F5 Bot Defense on EGX and fetches live investor flow data.
     Enriches data with USD conversions based on live exchange rates.
     """
+    # Strict validation of sb parameter to prevent injection and path traversal
+    sb = str(sb) if str(sb) in MARKET_SEGMENTS else "1"
+
     if custom_usd_rate is not None and custom_usd_rate > 0:
         usd_rate = custom_usd_rate
     else:
@@ -43,15 +46,18 @@ def fetch_investors_from_egx(
 
     raw_items = []
     
+    browser_args = [
+        '--disable-blink-features=AutomationControlled',
+        '--disable-gpu',
+        '--disable-dev-shm-usage'
+    ]
+    if os.environ.get("CONTAINER") or os.environ.get("DOCKER"):
+        browser_args.append('--no-sandbox')
+
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
-            args=[
-                '--disable-blink-features=AutomationControlled',
-                '--no-sandbox',
-                '--disable-gpu',
-                '--disable-dev-shm-usage'
-            ]
+            args=browser_args
         )
         context = browser.new_context(
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',

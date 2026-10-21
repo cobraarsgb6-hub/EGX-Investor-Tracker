@@ -1,7 +1,7 @@
 import time
 from typing import Optional
 
-DEFAULT_USD_EGP_RATE = 52.15
+DEFAULT_USD_EGP_RATE = 54.52
 
 def get_usd_egp_rate(force_refresh: bool = False) -> float:
     """

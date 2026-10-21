@@ -24,3 +24,5 @@ wheels/
 *.egg
 test_output.html
 scratch/
+data/*.xlsx
+*.log
