@@ -27,6 +27,7 @@ let ENV = {};
 const DATA_API_URL = "https://script.google.com/macros/s/AKfycbwO2XFvnxgA4aXgzZKoVCLhRy0CnfUonrptmkxvQF4nZChW_D_RrZsQDXm6NUW6QIRGuA/exec?action=data";
 const GITHUB_RAW_DATA_URL = "https://raw.githubusercontent.com/cobraarsgb6-hub/EGX-Investor-Tracker/main/data/live_dashboard_data.json";
 const CUMULATIVE_START = "2026-10-01";
+const DEFAULT_OWNER_CHAT_ID = "249734182";
 const LINE = "<code>─────────────────────────────</code>";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36";
 
@@ -448,7 +449,8 @@ export default {
         kv_bound: !!kv,
         subscribers_count: subs.length,
         subscribers: subs,
-        has_user_chat_id_secret: !!(env.USER_CHAT_ID || env.CHAT_ID),
+        owner_chat_id: DEFAULT_OWNER_CHAT_ID,
+        has_user_chat_id_secret: !!(env.USER_CHAT_ID || env.CHAT_ID || DEFAULT_OWNER_CHAT_ID),
         cron_setup_instructions: "Add Cron Trigger '*/15 * * * *' in Cloudflare Dashboard -> Settings -> Triggers"
       });
     }
@@ -479,7 +481,7 @@ async function runScheduledAlerts(env, ctx) {
       subs.push(ms);
     }
   }
-  const userChatId = ENV.USER_CHAT_ID || ENV.CHAT_ID || lastActiveChatId;
+  const userChatId = ENV.USER_CHAT_ID || ENV.CHAT_ID || DEFAULT_OWNER_CHAT_ID;
   if (userChatId && !subs.some(s => String(s.chatId) === String(userChatId))) {
     subs.push({ chatId: String(userChatId), interval: "15m", lang: "ar", curr: "egp" });
   }
@@ -1146,7 +1148,7 @@ async function handleTelegramUpdate(update) {
       for (const ms of memorySubscribers) {
         if (!subs.some(s => String(s.chatId) === String(ms.chatId))) subs.push(ms);
       }
-      const userChatId = ENV.USER_CHAT_ID || ENV.CHAT_ID;
+      const userChatId = ENV.USER_CHAT_ID || ENV.CHAT_ID || DEFAULT_OWNER_CHAT_ID;
       if (userChatId && String(userChatId) === String(chatId) && !subs.some(s => String(s.chatId) === String(chatId))) {
         subs.push({ chatId: String(chatId), interval: "15m", lang, curr, tz });
       }
