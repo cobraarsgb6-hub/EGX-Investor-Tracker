@@ -431,8 +431,46 @@ export default {
     if (!ENV.STATE && ENV.EGX_KV) ENV.STATE = ENV.EGX_KV;
     BOT_TOKEN = ENV.BOT_TOKEN || "";
     if (!BOT_TOKEN) return;
-    const targetChat = ENV.CHANNEL_ID || "@EgxTracker_LiveBot";
-    ctx.waitUntil(sendAutomatedDailySummary(targetChat, "ar"));
+
+    // 1. إرسال الإشعارات الدورية المخصصة لكل المشتركين المسجلين في المحادثة الخاصة
+    ctx.waitUntil((async () => {
+      try {
+        const subs = (await kvGetJson("alerts_subscribers")) || [];
+        const userChatId = ENV.USER_CHAT_ID || ENV.CHAT_ID;
+        if (userChatId && !subs.some(s => String(s.chatId) === String(userChatId))) {
+          subs.push({ chatId: String(userChatId), interval: "15m", lang: "ar", curr: "egp" });
+        }
+        if (!subs.length) return;
+
+        const data = await getCachedDashboardData();
+        const cairoHMStr = cairoHM(new Date());
+        const cairoH = parseInt(cairoHMStr.split(":")[0], 10);
+        const cairoM = parseInt(cairoHMStr.split(":")[1], 10);
+        const d = new Date();
+        const dayOfWeek = d.getUTCDay(); // 0=Sun, 4=Thu
+        const isMarketHours = (dayOfWeek >= 0 && dayOfWeek <= 4) && (cairoH >= 10 && (cairoH < 14 || (cairoH === 14 && cairoM <= 35)));
+
+        for (const sub of subs) {
+          if (!sub.chatId || sub.interval === "off") continue;
+          if (sub.interval === "15m" && !isMarketHours && (cairoH < 9 || cairoH > 17)) continue;
+          
+          const sLang = sub.lang || "ar";
+          const sCurr = sub.curr || "egp";
+          const sTz = sub.tz || "cairo";
+          const text = formatPeriodicAlertReport(data, sLang, sCurr, sTz);
+          const kb = getAlertReportKeyboard(sLang, sCurr);
+          await sendTgMessage(sub.chatId, text, kb).catch(e => console.error("sub alert err:", sub.chatId, e.message));
+        }
+      } catch (err) {
+        console.error("Scheduled alerts batch error:", err.message);
+      }
+    })());
+
+    // 2. القناة العامة (إن وجدت)
+    const targetChat = ENV.CHANNEL_ID;
+    if (targetChat) {
+      ctx.waitUntil(sendAutomatedDailySummary(targetChat, "ar"));
+    }
   }
 };
 
@@ -870,6 +908,7 @@ async function getCachedDashboardData() {
 
 function renderReport(type, data, lang, curr, cfg, tz) {
   switch (type) {
+    case "alert": return formatPeriodicAlertReport(data, lang, curr, tz);
     case "report": return formatExecutiveReport(data, lang, curr, tz);
     case "egx": return formatEgxReport(data, lang, curr, tz);
     case "history": case "archive": return formatEgxPeriodicReport(data, "curr_month", lang, curr, null, tz);
@@ -901,7 +940,7 @@ async function handleTelegramUpdate(update) {
   if (!chatId) return;
 
   // الأزرار التي تعرض رسالة منبثقة تُجاب لاحقاً، والباقي فوراً
-  const toastCbs = ["refresh_", "toggle_curr:", "hist_curr:", "set_tz:"];
+  const toastCbs = ["refresh_", "toggle_curr:", "hist_curr:", "set_tz:", "toggle_alert_lang:", "sub_int:", "sub_test:"];
   if (isCallback && callbackId && !toastCbs.some(p => text.startsWith(p))) {
     try { await answerCallback(callbackId); } catch (e) {}
   }
@@ -944,7 +983,10 @@ async function handleTelegramUpdate(update) {
       const data = await getCachedDashboardData();
       const content = renderReport(type, data, lang, newCurr, cfg, tz);
       await toast(lang === "en" ? `💱 Switched to ${newCurr.toUpperCase()}!` : `💱 تم التحويل إلى ${newCurr === "usd" ? "الدولار" : "الجنيه"}!`);
-      if (content) await reply(content, getReportKeyboard(KB_TYPE[type] || type, lang, cfg, newCurr));
+      if (content) {
+        const kb = (type === "alert") ? getAlertReportKeyboard(lang, newCurr) : getReportKeyboard(KB_TYPE[type] || type, lang, cfg, newCurr);
+        await reply(content, kb);
+      }
       return;
     }
 
@@ -965,6 +1007,71 @@ async function handleTelegramUpdate(update) {
       const period = text.split(":")[1] || "curr_month";
       const data = await getCachedDashboardData();
       await reply(formatEgxPeriodicReport(data, period, lang, curr, null, tz), getHistoryKeyboard(lang, curr, period));
+      return;
+    }
+
+    
+    if (text.startsWith("toggle_alert_lang:")) {
+      const parts = text.split(":");
+      const newLang = parts[1] === "en" ? "en" : "ar";
+      const curCurr = parts[2] || curr || "egp";
+      await setPrefs(chatId, { lang: newLang });
+      const data = await getCachedDashboardData();
+      const content = formatPeriodicAlertReport(data, newLang, curCurr, tz);
+      await toast(newLang === "en" ? "🌐 Switched to English" : "🌐 تم التحويل للغة العربية");
+      if (content) await reply(content, getAlertReportKeyboard(newLang, curCurr));
+      return;
+    }
+
+    if (text.startsWith("refresh_alert:")) {
+      const parts = text.split(":");
+      const curLang = parts[1] || lang || "ar";
+      const curCurr = parts[2] || curr || "egp";
+      const data = await getCachedDashboardData();
+      const content = formatPeriodicAlertReport(data, curLang, curCurr, tz);
+      await toast(curLang === "en" ? "🔄 Updated live!" : "🔄 تم التحديث اللحظي!");
+      if (content) await reply(content, getAlertReportKeyboard(curLang, curCurr));
+      return;
+    }
+
+    if (text.startsWith("cmd_alerts")) {
+      const subs = (await kvGetJson("alerts_subscribers")) || [];
+      const userSub = subs.find(s => String(s.chatId) === String(chatId));
+      const title = lang === "en" 
+        ? "⚙️ <b>Periodic Scheduled Alerts Settings:</b>\n\nChoose your preferred notification frequency to receive updates directly in this chat:"
+        : "⚙️ <b>إعدادات الإشعارات الدورية التلقائية:</b>\n\nاختر وتيرة وصول الإشعارات التلقائية لشاشتك هنا في هذه المحادثة:";
+      await reply(title, getAlertsConfigKeyboard(lang, userSub));
+      return;
+    }
+
+    if (text.startsWith("sub_int:")) {
+      const parts = text.split(":");
+      const chosenInt = parts[1]; // "15m", "1h", "off"
+      let subs = (await kvGetJson("alerts_subscribers")) || [];
+      subs = subs.filter(s => String(s.chatId) !== String(chatId));
+      if (chosenInt !== "off") {
+        subs.push({ chatId: String(chatId), interval: chosenInt, lang, curr, tz });
+      }
+      await kvPutJson("alerts_subscribers", subs);
+      
+      const msg = chosenInt === "off"
+        ? (lang === "en" ? "🛑 Scheduled alerts paused." : "🛑 تم إيقاف الإشعارات الدورية.")
+        : (lang === "en" ? `✅ Alerts set to: Every ${chosenInt === "15m" ? "15 Minutes (Trading Hours)" : "Hour"}` : `✅ تم تفعيل الإشعارات: كل ${chosenInt === "15m" ? "ربع ساعة (أثناء الجلسة)" : "ساعة"}`);
+      await toast(msg);
+      
+      const title = lang === "en" 
+        ? `⚙️ <b>Periodic Alerts Settings:</b>\n\n${msg}`
+        : `⚙️ <b>إعدادات الإشعارات الدورية:</b>\n\n${msg}`;
+      const userSub = subs.find(s => String(s.chatId) === String(chatId));
+      await reply(title, getAlertsConfigKeyboard(lang, userSub));
+      return;
+    }
+
+    if (text.startsWith("sub_test:")) {
+      const data = await getCachedDashboardData();
+      const content = formatPeriodicAlertReport(data, lang, curr, tz);
+      await toast(lang === "en" ? "📤 Sent test alert!" : "📤 تم إرسال الإشعار التجريبي!");
+      await sendTgMessage(chatId, content, getAlertReportKeyboard(lang, curr));
       return;
     }
 
@@ -1020,11 +1127,19 @@ async function handleTelegramUpdate(update) {
   const isEgx = cmd === "/egx" || has("بورصة", "مؤسسات", "اسهم", "اجانب", "أجانب");
   const isBanks = cmd === "/banks" || has("بنوك", "بنك", "دولار");
   const isReport = cmd === "/report" || has("تقرير", "تنفيذي");
+    const isAlerts = ["/alerts", "/alert", "/subscribe"].includes(cmd) || has("اشعارات", "إشعارات", "منبه", "تنبيه");
   const isTimezone = ["/timezone", "/tz"].includes(cmd) || has("توقيت", "منطقة زمنية");
   const isMenu = ["/start", "/help"].includes(cmd) || has("قائمة") || lower === "menu";
 
   if (isMenu) {
     await sendMainMenu(chatId, lang, cfg, null, tz);
+  } else if (isAlerts) {
+    const subs = (await kvGetJson("alerts_subscribers")) || [];
+    const userSub = subs.find(s => String(s.chatId) === String(chatId));
+    const title = lang === "en" 
+      ? "⚙️ <b>Periodic Scheduled Alerts Settings:</b>\n\nChoose your preferred notification frequency to receive updates directly in this chat:"
+      : "⚙️ <b>إعدادات الإشعارات الدورية التلقائية:</b>\n\nاختر وتيرة وصول الإشعارات التلقائية لشاشتك هنا في هذه المحادثة:";
+    await sendTgMessage(chatId, title, getAlertsConfigKeyboard(lang, userSub));
   } else if (isTimezone) {
     const title = lang === "en" ? "🌍 <b>Select Your Preferred Timezone:</b>" : "🌍 <b>اختر منطقتك الزمنية المفضلة لعرض الأوقات:</b>";
     await sendTgMessage(chatId, title, getTimezoneKeyboard(lang, tz));
@@ -1589,6 +1704,160 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
 // 🕹️ لوحات المفاتيح
 // ==========================================
 
+
+/** 6. التقرير الدوري الموحد (الصافي فقط + توقيت كل لقطة + أزرار تبديل العملة واللغة) */
+function formatPeriodicAlertReport(data, lang, curr, tzKey) {
+  curr = curr || "egp";
+  tzKey = tzKey || "cairo";
+  const T = (e, a) => (lang === "en" ? e : a);
+  const isEn = lang === "en";
+  const ltr = isEn ? "\u200E" : "";
+  const usdRate = Number(data.usd_rate) || 54.40;
+  const s = getSessionFlows(data);
+  const rate = s.sessionRate || usdRate;
+  const arFo = s.arNet + s.foNet;
+  const { weekly, monthly } = calculatePeriodicTotals(data.archive, s.sessionDate, rate);
+
+  const f = (v, usd) => fmtFlow(v, curr, lang, rate, usd);
+  const iconSign = v => (Number(v) >= 0 ? "🟢" : "🔴");
+
+  const egxTime = getEgxSnapshotTime(data, lang);
+  const egxTag = egxTime ? ` [${egxTime}]` : "";
+
+  // 1. البورصة: صافي الأجانب + صافي العرب + إجمالي غير المصريين (صافي فقط)
+  let egxBlock = `🏛 <b>${T("EGX Non-Egyptian Net Flows", "صافي تعاملات البورصة (غير المصريين)")}${egxTag}:</b>\n`
+    + `${ltr}▫️ ${T("Foreigners Net", "صافي الأجانب")}: <code>${f(s.foNet)}</code> ${iconSign(s.foNet)}\n`
+    + `${ltr}▫️ ${T("Arabs Net", "صافي العرب")}: <code>${f(s.arNet)}</code> ${iconSign(s.arNet)}\n`
+    + `${ltr}▪️ <b>${T("Total Non-Egyptian Net", "مجموع صافي غير المصريين (عرب + أجانب)")}:</b> <code>${f(arFo)}</code> ${iconSign(arFo)}\n`
+    + `${ltr}▫️ ${T(`Weekly Net (${weekly.count}s)`, `صافي الأسبوع (${weekly.count} جلسات)`)}: <code>${f(weekly.arFoNet, weekly.arFoUsd)}</code> ${iconSign(weekly.arFoNet)}\n`
+    + `${ltr}▫️ ${T(`Monthly Net (${monthly.count}s)`, `صافي الشهر (${monthly.count} جلسات)`)}: <code>${f(monthly.arFoNet, monthly.arFoUsd)}</code> ${iconSign(monthly.arFoNet)}\n`;
+
+  // 2. الدولار مع توقيت البنك المركزي وأعلى بنك
+  const cbeBuy = Number(data.cbe_usd_buy) || 0;
+  const cbeSell = Number(data.cbe_usd_sell) || 0;
+  const topBank = (data.banks && data.banks[0]) || null;
+  const buyL = T("Buy", "شراء"), sellL = T("Sell", "بيع");
+  const cbeTime = formatCleanTime(data.cbe_updated_at || extractTimeFromTimestamp(data.timestamp), lang);
+  const topBankTime = topBank?.updated_at ? ` [${formatCleanTime(topBank.updated_at, lang)}]` : "";
+
+  let usdBlock = `💵 <b>${T("USD Exchange Rates", "أسعار صرف الدولار")}:</b>\n`
+    + `${ltr}▫️ ${T("Central Bank (CBE)", "البنك المركزي")}: ${buyL} <code>${cbeBuy.toFixed(2)}</code> • ${sellL} <code>${cbeSell.toFixed(2)}</code> [${cbeTime}]\n`;
+  if (topBank && Number(topBank.buy) > 0) {
+    usdBlock += `${ltr}▫️ ${T("Top Buy Bank", "أعلى بنك شراء")}: ${bn(topBank.bank, lang)} • <code>${Number(topBank.buy).toFixed(2)}</code> ${T("EGP", "ج.م")}${topBankTime}\n`;
+  }
+
+  // 3. العملات الرئيسية مع توقيت لقطة الأسعار
+  const bankSnapshot = getBankSnapshotTime(data, lang);
+  const fxSnap = bankSnapshot ? ` [${bankSnapshot}]` : "";
+  const rates = Array.isArray(data.rates) ? data.rates : [];
+  const getFx = code => rates.find(r => (r.code || "").toUpperCase() === code);
+  const fxList = ["EUR", "SAR", "AED", "KWD", "GBP"];
+  let fxBlock = `💱 <b>${T("Major Currencies", "العملات الرئيسية")}${fxSnap}:</b>\n`;
+  fxList.forEach(code => {
+    const item = getFx(code);
+    if (!item) return;
+    const meta = CURR_META[code] || {};
+    const flag = meta.flag ? `${meta.flag} ` : "▫️ ";
+    const name = isEn ? (meta.name_en || code) : (meta.name || code);
+    const p = Number(item.egp_price ?? item.rate_egp ?? 0);
+    fxBlock += `${ltr}${flag}${name}: <code>${fmtNum(p)}</code> ${T("EGP", "ج.م")}\n`;
+  });
+
+  // 4. الذهب والمعادن
+  const comms = data.live_commodities || [];
+  const getC = code => comms.find(c => c.code === code) || rates.find(r => r.code === code);
+  const g21 = getC("GOLD21"), gCoin = getC("GOLDC"), gOunce = getC("GOLD_OUNCE"), silv = getC("SILVER");
+  let goldBlock = `🪙 <b>${T("Precious Metals", "الذهب والمعادن")}:</b>\n`;
+  if (g21) {
+    const ep = Number(g21.egp_price || g21.rate_egp || 0);
+    const up = Number(g21.usd_price || (usdRate ? ep / usdRate : 0));
+    goldBlock += `${ltr}🥇 ${T("Gold 21K (Gram)", "ذهب عيار 21")}: <code>${fmtNum(ep)}</code> ${T("EGP", "ج.م")}${up > 0 ? ` (~$${fmtNum(up, 2)})` : ""}\n`;
+  }
+  if (gCoin) {
+    const ep = Number(gCoin.egp_price || gCoin.rate_egp || 0);
+    goldBlock += `${ltr}🪙 ${T("Gold Pound Coin", "جنيه الذهب")}: <code>${fmtNum(ep)}</code> ${T("EGP", "ج.م")}\n`;
+  }
+  if (gOunce && gOunce.usd_price) {
+    goldBlock += `${ltr}🏆 ${T("Gold Spot (Ounce)", "أونصة الذهب عالمياً")}: <code>$${fmtNum(gOunce.usd_price, 2)}</code>\n`;
+  }
+  if (silv && silv.usd_price) {
+    goldBlock += `${ltr}🪙 ${T("Silver Spot (Ounce)", "أونصة الفضة عالمياً")}: <code>$${fmtNum(silv.usd_price, 2)}</code>\n`;
+  }
+
+  // 5. الطاقة والكريبتو
+  const brent = getC("BRENT"), wti = getC("WTI"), btc = getC("BTC"), eth = getC("ETH");
+  let commBlock = `🛢️ <b>${T("Energy & Crypto", "الطاقة والكريبتو")} [${T("Live", "لحظي")}]:</b>\n`;
+  if (brent?.usd_price || wti?.usd_price) {
+    commBlock += `${ltr}🛢️ ${T("Brent", "خام برنت")}: <code>$${fmtNum(brent?.usd_price || 0, 2)}</code> • ${T("WTI", "تكساس")}: <code>$${fmtNum(wti?.usd_price || 0, 2)}</code>\n`;
+  }
+  if (btc?.usd_price || eth?.usd_price) {
+    commBlock += `${ltr}🪙 ${T("Bitcoin", "بتكوين")}: <code>$${fmtNum(btc?.usd_price || 0, 0)}</code> • ${T("Ethereum", "إيثريوم")}: <code>$${fmtNum(eth?.usd_price || 0, 2)}</code>\n`;
+  }
+
+  const queryTime = getCairoFullDateTime(lang, tzKey);
+
+  return `📊 <b>${T("Executive Financial Pulse", "الموجز المالي التنفيذي اللحظي")}</b>\n${LINE}\n`
+    + `🕒 <b>${T("Time", "وقت الإرسال")}:</b> <code>${queryTime}</code>\n`
+    + `💰 <b>${T("Currency", "عملة العرض")}:</b> <b>${currBadge(curr)}</b>\n`
+    + `${LINE}\n\n`
+    + egxBlock + `\n`
+    + usdBlock + `\n`
+    + fxBlock + `\n`
+    + goldBlock + `\n`
+    + commBlock + `\n`
+    + `${LINE}\n⚡ <i>${T("Live Snapshot • Real-time feeds.", "إشعار دوري موثق من شاشات التداول اللحظية.")}</i>`;
+}
+
+function getAlertReportKeyboard(lang, curr) {
+  const T = (e, a) => (lang === "en" ? e : a);
+  const nextCurr = curr === "usd" ? "egp" : "usd";
+  const currToggleText = curr === "usd" ? T("💱 Switch to EGP", "💱 العرض بالجنيه (EGP)") : T("💵 Switch to USD", "💵 العرض بالدولار (USD)");
+  const nextLang = lang === "en" ? "ar" : "en";
+  const langToggleText = lang === "en" ? "🌐 اللغة العربية" : "🌐 English";
+
+  return {
+    inline_keyboard: [
+      [
+        { text: T("🔄 Refresh", "🔄 تحديث لحظي"), callback_data: `refresh_alert:${lang}:${curr}` },
+        { text: currToggleText, callback_data: `toggle_curr:${nextCurr}:alert:${lang}` }
+      ],
+      [
+        { text: langToggleText, callback_data: `toggle_alert_lang:${nextLang}:${curr}` },
+        { text: T("⚙️ Alerts Settings", "⚙️ ضبط الإشعارات"), callback_data: `cmd_alerts:${lang}:${curr}` }
+      ],
+      [
+        { text: T("« Main Menu", "« القائمة الرئيسية"), callback_data: `cmd_menu:${lang}:${curr}` }
+      ]
+    ]
+  };
+}
+
+function getAlertsConfigKeyboard(lang, currentSub) {
+  const T = (e, a) => (lang === "en" ? e : a);
+  const activeInterval = currentSub?.interval || "off";
+  const mark = (val, label) => (activeInterval === val ? `✅ ${label}` : label);
+
+  return {
+    inline_keyboard: [
+      [
+        { text: mark("15m", T("⏱️ Every 15 Min (Market Hours)", "⏱️ كل ربع ساعة (أثناء الجلسة)")), callback_data: `sub_int:15m:${lang}` }
+      ],
+      [
+        { text: mark("1h", T("⏱️ Every Hour (24/7)", "⏱️ كل ساعة (على مدار اليوم)")), callback_data: `sub_int:1h:${lang}` }
+      ],
+      [
+        { text: mark("off", T("🛑 Turn Off Alerts", "🛑 إيقاف الإشعارات")), callback_data: `sub_int:off:${lang}` }
+      ],
+      [
+        { text: T("📤 Send Test Alert Now", "📤 إرسال تجربة فورية الآن"), callback_data: `sub_test:${lang}` }
+      ],
+      [
+        { text: T("« Main Menu", "« القائمة الرئيسية"), callback_data: `cmd_menu:${lang}` }
+      ]
+    ]
+  };
+}
+
 function getHistoryKeyboard(lang, curr, activePeriod) {
   activePeriod = activePeriod || "curr_month";
   const T = (e, a) => (lang === "en" ? e : a);
@@ -1664,6 +1933,7 @@ function getMenuKeyboard(lang, cfg) {
   if (!cfg.hide_report) r3.push({ text: T("📊 Full Executive Report", "📊 التقرير المالي الشامل"), callback_data: `cmd_report:${lang}` });
   r3.push({ text: T("📜 Daily Closings", "📜 أرشيف الإقفال اليومي"), callback_data: `cmd_history:${lang}` });
   rows.push(r3);
+  rows.push([{ text: T("🔔 Scheduled Alerts (15m / 1h)", "🔔 الإشعارات الدورية (كل ربع ساعة / ساعة)"), callback_data: `cmd_alerts:${lang}` }]);
 
   rows.push([
     { text: T("🔄 Refresh Menu", "🔄 تحديث القائمة"), callback_data: `refresh_menu:${lang}` },

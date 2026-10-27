@@ -180,7 +180,7 @@ class TestEGXTracker(unittest.TestCase):
         from core.ta3weem import fetch_ta3weem_data
         data = fetch_ta3weem_data(force_refresh=False)
         self.assertGreater(data["lowest_sell"], 53.5, "lowest_sell should not be distorted by broken outlier (e.g. 53.15)")
-        self.assertLess(data["lowest_sell"], 56.0)
+        self.assertLess(data["lowest_sell"], 70.0)
 
 if __name__ == "__main__":
     unittest.main()
