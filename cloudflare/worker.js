@@ -126,10 +126,16 @@ let memoryCache = { data: null, timestamp: 0 };
 let sheetCache = { data: { archive: [], rates: [], banks: [] }, timestamp: 0, lastTry: 0, stale: false };
 const prefCache = new Map();
 
+function getKV(env) {
+  const e = env || ENV || {};
+  return e.STATE || e.EGX_KV || e.BOT_SETTINGS || e.KV || e.SETTINGS || e.STORAGE || e.DB || null;
+}
+
 async function kvGetJson(key) {
-  if (!ENV.STATE) return null;
+  const kv = getKV(ENV);
+  if (!kv) return null;
   try {
-    const v = await ENV.STATE.get(key);
+    const v = await kv.get(key);
     return v ? JSON.parse(v) : null;
   } catch (e) {
     console.error("KV get failed:", key, e.message);
@@ -138,9 +144,10 @@ async function kvGetJson(key) {
 }
 
 async function kvPutJson(key, val) {
-  if (!ENV.STATE) return false;
+  const kv = getKV(ENV);
+  if (!kv) return false;
   try {
-    await ENV.STATE.put(key, JSON.stringify(val));
+    await kv.put(key, JSON.stringify(val));
     return true;
   } catch (e) {
     console.error("KV put failed:", key, e.message);
@@ -419,6 +426,31 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
+    if (url.pathname === "/cron" || url.pathname === "/trigger_alerts") {
+      return json(await runScheduledAlerts(env, ctx));
+    }
+
+    if (url.pathname === "/alerts_status" || url.pathname === "/api/alerts_status") {
+      const kv = getKV(env);
+      const subs = (await kvGetJson("alerts_subscribers")) || [];
+      const cairoHMStr = cairoHM(new Date());
+      const cairoH = parseInt(cairoHMStr.split(":")[0], 10);
+      const cairoM = parseInt(cairoHMStr.split(":")[1], 10);
+      const d = new Date();
+      const dayOfWeek = d.getUTCDay();
+      const isMarketHours = (dayOfWeek >= 0 && dayOfWeek <= 4) && (cairoH >= 10 && (cairoH < 14 || (cairoH === 14 && cairoM <= 35)));
+      return json({
+        cairo_time: cairoHMStr,
+        day_of_week: dayOfWeek,
+        is_market_hours: isMarketHours,
+        kv_bound: !!kv,
+        subscribers_count: subs.length,
+        subscribers: subs,
+        has_user_chat_id_secret: !!(env.USER_CHAT_ID || env.CHAT_ID),
+        cron_setup_instructions: "Add Cron Trigger '*/15 * * * *' in Cloudflare Dashboard -> Settings -> Triggers"
+      });
+    }
+
     if (url.pathname === "/broadcast") {
       const targetChat = url.searchParams.get("chat_id") || ENV.CHANNEL_ID || "@EgxTracker_LiveBot";
       const targetLang = url.searchParams.get("lang") === "en" ? "en" : "ar";
@@ -428,51 +460,65 @@ export default {
     return new Response("Not Found", { status: 404 });
   },
 
-  async scheduled(event, env, ctx) {
-    ENV = env || {};
-    if (!ENV.STATE && ENV.EGX_KV) ENV.STATE = ENV.EGX_KV;
-    BOT_TOKEN = ENV.BOT_TOKEN || "";
-    if (!BOT_TOKEN) return;
+async function runScheduledAlerts(env, ctx) {
+  ENV = env || ENV || {};
+  if (!ENV.STATE) ENV.STATE = getKV(ENV);
+  BOT_TOKEN = ENV.BOT_TOKEN || BOT_TOKEN || "";
+  if (!BOT_TOKEN) return { status: "error", message: "BOT_TOKEN missing" };
 
-    // 1. إرسال الإشعارات الدورية المخصصة لكل المشتركين المسجلين في المحادثة الخاصة
-    ctx.waitUntil((async () => {
-      try {
-        const subs = (await kvGetJson("alerts_subscribers")) || [];
-        const userChatId = ENV.USER_CHAT_ID || ENV.CHAT_ID;
-        if (userChatId && !subs.some(s => String(s.chatId) === String(userChatId))) {
-          subs.push({ chatId: String(userChatId), interval: "15m", lang: "ar", curr: "egp" });
-        }
-        if (!subs.length) return;
+  let subs = (await kvGetJson("alerts_subscribers")) || [];
+  const userChatId = ENV.USER_CHAT_ID || ENV.CHAT_ID;
+  if (userChatId && !subs.some(s => String(s.chatId) === String(userChatId))) {
+    subs.push({ chatId: String(userChatId), interval: "15m", lang: "ar", curr: "egp" });
+  }
 
-        const data = await getCachedDashboardData();
-        const cairoHMStr = cairoHM(new Date());
-        const cairoH = parseInt(cairoHMStr.split(":")[0], 10);
-        const cairoM = parseInt(cairoHMStr.split(":")[1], 10);
-        const d = new Date();
-        const dayOfWeek = d.getUTCDay(); // 0=Sun, 4=Thu
-        const isMarketHours = (dayOfWeek >= 0 && dayOfWeek <= 4) && (cairoH >= 10 && (cairoH < 14 || (cairoH === 14 && cairoM <= 35)));
+  const cairoHMStr = cairoHM(new Date());
+  const cairoH = parseInt(cairoHMStr.split(":")[0], 10);
+  const cairoM = parseInt(cairoHMStr.split(":")[1], 10);
+  const d = new Date();
+  const dayOfWeek = d.getUTCDay(); // 0=Sun, 4=Thu
+  const isMarketHours = (dayOfWeek >= 0 && dayOfWeek <= 4) && (cairoH >= 10 && (cairoH < 14 || (cairoH === 14 && cairoM <= 35)));
 
-        for (const sub of subs) {
-          if (!sub.chatId || sub.interval === "off") continue;
-          if (sub.interval === "15m" && !isMarketHours && (cairoH < 9 || cairoH > 17)) continue;
-          
-          const sLang = sub.lang || "ar";
-          const sCurr = sub.curr || "egp";
-          const sTz = sub.tz || "cairo";
-          const text = formatPeriodicAlertReport(data, sLang, sCurr, sTz);
-          const kb = getAlertReportKeyboard(sLang, sCurr);
-          await sendTgMessage(sub.chatId, text, kb).catch(e => console.error("sub alert err:", sub.chatId, e.message));
-        }
-      } catch (err) {
-        console.error("Scheduled alerts batch error:", err.message);
-      }
-    })());
+  const results = [];
+  if (!subs.length) {
+    return { status: "no_subscribers", cairo_time: cairoHMStr, is_market_hours: isMarketHours, message: "No subscribers found in KV or USER_CHAT_ID" };
+  }
 
-    // 2. القناة العامة (إن وجدت)
-    const targetChat = ENV.CHANNEL_ID;
-    if (targetChat) {
-      ctx.waitUntil(sendAutomatedDailySummary(targetChat, "ar"));
+  const data = await getCachedDashboardData();
+  for (const sub of subs) {
+    if (!sub.chatId || sub.interval === "off") continue;
+    if (sub.interval === "15m" && !isMarketHours && (cairoH < 9 || cairoH > 17)) {
+      results.push({ chatId: sub.chatId, status: "skipped_outside_market_hours" });
+      continue;
     }
+    const sLang = sub.lang || "ar";
+    const sCurr = sub.curr || "egp";
+    const sTz = sub.tz || "cairo";
+    const text = formatPeriodicAlertReport(data, sLang, sCurr, sTz);
+    const kb = getAlertReportKeyboard(sLang, sCurr);
+    try {
+      const res = await sendTgMessage(sub.chatId, text, kb);
+      const resOk = res && res.ok;
+      results.push({ chatId: sub.chatId, status: resOk ? "sent" : "send_failed" });
+    } catch (e) {
+      results.push({ chatId: sub.chatId, status: "error", error: e.message });
+    }
+  }
+
+  if (ENV.CHANNEL_ID) {
+    try {
+      await sendAutomatedDailySummary(ENV.CHANNEL_ID, "ar");
+      results.push({ target: ENV.CHANNEL_ID, status: "channel_sent" });
+    } catch (e) {
+      results.push({ target: ENV.CHANNEL_ID, status: "channel_failed", error: e.message });
+    }
+  }
+
+  return { status: "completed", cairo_time: cairoHMStr, results };
+}
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runScheduledAlerts(env, ctx));
   }
 };
 
