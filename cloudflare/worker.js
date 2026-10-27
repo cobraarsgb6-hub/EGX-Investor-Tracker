@@ -122,6 +122,8 @@ function bn(bankAr, lang) {
 // ==========================================
 
 let configCache = { data: null, ts: 0 };
+let memorySubscribers = [];
+let lastActiveChatId = "";
 let memoryCache = { data: null, timestamp: 0 };
 let sheetCache = { data: { archive: [], rates: [], banks: [] }, timestamp: 0, lastTry: 0, stale: false };
 const prefCache = new Map();
@@ -472,7 +474,12 @@ async function runScheduledAlerts(env, ctx) {
   if (!BOT_TOKEN) return { status: "error", message: "BOT_TOKEN missing" };
 
   let subs = (await kvGetJson("alerts_subscribers")) || [];
-  const userChatId = ENV.USER_CHAT_ID || ENV.CHAT_ID;
+  for (const ms of memorySubscribers) {
+    if (!subs.some(s => String(s.chatId) === String(ms.chatId))) {
+      subs.push(ms);
+    }
+  }
+  const userChatId = ENV.USER_CHAT_ID || ENV.CHAT_ID || lastActiveChatId;
   if (userChatId && !subs.some(s => String(s.chatId) === String(userChatId))) {
     subs.push({ chatId: String(userChatId), interval: "15m", lang: "ar", curr: "egp" });
   }
@@ -492,10 +499,6 @@ async function runScheduledAlerts(env, ctx) {
   const data = await getCachedDashboardData();
   for (const sub of subs) {
     if (!sub.chatId || sub.interval === "off") continue;
-    if (sub.interval === "15m" && !isMarketHours && (cairoH < 9 || cairoH > 17)) {
-      results.push({ chatId: sub.chatId, status: "skipped_outside_market_hours" });
-      continue;
-    }
     const sLang = sub.lang || "ar";
     const sCurr = sub.curr || "egp";
     const sTz = sub.tz || "cairo";
@@ -1044,6 +1047,8 @@ async function handleTelegramUpdate(update) {
     text = (update.message.text || "").trim().replace(/^(\/\w+)@\w+/, "$1");
   }
   if (!chatId) return;
+  lastActiveChatId = String(chatId);
+
 
   // الأزرار التي تعرض رسالة منبثقة تُجاب لاحقاً، والباقي فوراً
   const toastCbs = ["refresh_", "toggle_curr:", "hist_curr:", "set_tz:", "toggle_alert_lang", "sub_int", "sub_test", "cmd_restart"];
@@ -1151,8 +1156,11 @@ async function handleTelegramUpdate(update) {
       const chosenInt = parts[1] || "15m"; // "15m", "1h", "off"
       let subs = (await kvGetJson("alerts_subscribers")) || [];
       subs = subs.filter(s => String(s.chatId) !== String(chatId));
+      memorySubscribers = memorySubscribers.filter(s => String(s.chatId) !== String(chatId));
       if (chosenInt !== "off") {
-        subs.push({ chatId: String(chatId), interval: chosenInt, lang, curr, tz });
+        const newSubObj = { chatId: String(chatId), interval: chosenInt, lang, curr, tz };
+        subs.push(newSubObj);
+        memorySubscribers.push(newSubObj);
       }
       await kvPutJson("alerts_subscribers", subs);
       
@@ -2168,8 +2176,8 @@ async function answerCallback(callbackId, text) {
 async function sendMainMenu(chatId, lang, cfg, messageId, tz) {
   const updatedDateTime = getCairoFullDateTime(lang, tz);
   const text = lang === "en"
-    ? `🏛️ <b>Egyptian Stock Exchange &amp; Live Markets Bot</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ Powered by <b>Cloudflare Edge &amp; Live Feeds</b> 24/7.\n🔔 <b>Automated Alerts:</b> Get pulses every 15m or 1h.\n\n👇 <i>Choose from the interactive menu below:</i>`
-    : `🏛️ <b>منظومة البورصة المصرية وأسواق الصرف الحية 24/7</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ تعمل سحابياً عبر <b>Cloudflare Edge وموقع تعويم وتريدنج فيو</b> مباشرة.\n🔔 <b>الإشعارات التلقائية:</b> يمكنك ضبط وصول النبضة كل 15 دقيقة أو ساعة.\n\n👇 <i>اختر ما تريد من القائمة التفاعلية أدناه:</i>`;
+    ? `🏛️ <b>Egyptian Stock Exchange &amp; Live Markets Bot</b>\n🕒 <b>${updatedDateTime}</b>\n🆔 <b>Your Chat ID:</b> <code>${chatId}</code>\n\n⚡ Powered by <b>Cloudflare Edge &amp; Live Feeds</b> 24/7.\n🔔 <b>Automated Alerts:</b> Receive pulses every 15m or 1h.\n\n👇 <i>Choose from the interactive menu below:</i>`
+    : `🏛️ <b>منظومة البورصة المصرية وأسواق الصرف الحية 24/7</b>\n🕒 <b>${updatedDateTime}</b>\n🆔 <b>معرف محادثتك (Chat ID):</b> <code>${chatId}</code>\n\n⚡ تعمل سحابياً عبر <b>Cloudflare Edge وموقع تعويم وتريدنج فيو</b> مباشرة.\n🔔 <b>الإشعارات التلقائية:</b> يمكنك ضبط وصول النبضة كل 15 دقيقة أو ساعة.\n\n👇 <i>اختر ما تريد من القائمة التفاعلية أدناه:</i>`;
   const kb = getMenuKeyboard(lang, cfg);
   return messageId ? editTgMessage(chatId, messageId, text, kb) : sendTgMessage(chatId, text, kb);
 }
