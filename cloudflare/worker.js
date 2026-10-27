@@ -369,11 +369,13 @@ export default {
     if (url.pathname === "/set_commands") {
       const commands = [
         { command: "start", description: "Main menu / القائمة الرئيسية" },
-        { command: "egx", description: "Institutional flows / تعاملات المؤسسات بالبورصة" },
+        { command: "alerts", description: "🔔 Scheduled alerts (15m/1h) / إعدادات الإشعارات الدورية" },
+        { command: "pulse", description: "⚡ Live pulse / إرسال نبضة الموجز المالي فوراً" },
+        { command: "report", description: "Full executive report / التقرير الشامل" },
+        { command: "egx", description: "Institutional flows (EGX) / تعاملات المؤسسات بالبورصة" },
         { command: "banks", description: "USD rates in Egyptian banks / أسعار الدولار بالبنوك والمركزي" },
         { command: "commodities", description: "Gold, oil & crypto / الذهب والنفط والكريبتو" },
-        { command: "currencies", description: "Foreign currency rates / أسعار العملات" },
-        { command: "report", description: "Full executive report / التقرير الشامل" }
+        { command: "currencies", description: "Foreign currency rates / أسعار العملات" }
       ];
       const tgRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands`, {
         method: "POST",
@@ -922,7 +924,33 @@ function renderReport(type, data, lang, curr, cfg, tz) {
 
 const KB_TYPE = { gold: "commodities", markets: "currencies", archive: "history" };
 
+let commandsSynced = false;
+async function ensureBotCommands() {
+  if (commandsSynced || !BOT_TOKEN) return;
+  try {
+    const commands = [
+      { command: "start", description: "Main menu / القائمة الرئيسية" },
+      { command: "alerts", description: "🔔 Scheduled alerts / إعدادات الإشعارات الدورية" },
+      { command: "pulse", description: "⚡ Live pulse / إرسال الموجز المالي فوراً" },
+      { command: "report", description: "Executive report / التقرير الشامل" },
+      { command: "egx", description: "EGX flows / تعاملات البورصة" },
+      { command: "banks", description: "Bank USD rates / أسعار البنوك" },
+      { command: "commodities", description: "Gold & Oil / الذهب والنفط" },
+      { command: "currencies", description: "Currencies / العملات الأجنبية" }
+    ];
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ commands })
+    });
+    commandsSynced = true;
+  } catch (e) {
+    console.error("ensureBotCommands failed:", e.message);
+  }
+}
+
 async function handleTelegramUpdate(update) {
+  ensureBotCommands().catch(() => {});
   let chatId = null, text = "", callbackId = null, messageId = null;
   let isCallback = false, isPrivate = true;
 
@@ -1131,7 +1159,7 @@ async function handleTelegramUpdate(update) {
   const isTestAlert = ["/test_alert", "/pulse", "/live_alert"].includes(cmd) || has("تجربة", "اختبار");
   const isAlerts = ["/alerts", "/alert", "/subscribe"].includes(cmd) || has("اشعارات", "إشعارات", "منبه", "تنبيه");
   const isTimezone = ["/timezone", "/tz"].includes(cmd) || has("توقيت", "منطقة زمنية");
-  const isMenu = ["/start", "/help"].includes(cmd) || has("قائمة") || lower === "menu";
+  const isMenu = ["/start", "/help", "/menu"].includes(cmd) || has("قائمة") || lower === "menu" || lower === "/menu";
 
   if (isMenu) {
     await sendMainMenu(chatId, lang, cfg, null, tz);
@@ -1914,6 +1942,10 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
   }
 
   rows.push([
+    { text: T("🔔 Alerts Settings", "🔔 ضبط الإشعارات"), callback_data: `cmd_alerts:${lang}:${curr}` },
+    { text: T("⚡ Instant Pulse", "⚡ موجز فوري"), callback_data: `sub_test:${lang}` }
+  ]);
+  rows.push([
     { text: T("« Main Menu", "« القائمة الرئيسية"), callback_data: `cmd_menu:${lang}:${curr}` },
     { text: T("🌐 اللغة العربية", "🌐 English"), callback_data: lang === "en" ? `cmd_lang_ar:${curr}` : `cmd_lang_en:${curr}` }
   ]);
@@ -1939,7 +1971,12 @@ function getMenuKeyboard(lang, cfg) {
   if (!cfg.hide_report) r3.push({ text: T("📊 Full Executive Report", "📊 التقرير المالي الشامل"), callback_data: `cmd_report:${lang}` });
   r3.push({ text: T("📜 Daily Closings", "📜 أرشيف الإقفال اليومي"), callback_data: `cmd_history:${lang}` });
   rows.push(r3);
-  rows.push([{ text: T("🔔 Scheduled Alerts (15m / 1h)", "🔔 الإشعارات الدورية (كل ربع ساعة / ساعة)"), callback_data: `cmd_alerts:${lang}` }]);
+
+  // صف مخصص وواضح للإشعارات الدورية والموجز اللحظي الفوري
+  rows.push([
+    { text: T("🔔 Scheduled Alerts (15m/1h)", "🔔 ضبط الإشعارات الدورية (15د/ساعة)"), callback_data: `cmd_alerts:${lang}` },
+    { text: T("⚡ Instant Pulse", "⚡ موجز فوري الآن"), callback_data: `sub_test:${lang}` }
+  ]);
 
   rows.push([
     { text: T("🔄 Refresh Menu", "🔄 تحديث القائمة"), callback_data: `refresh_menu:${lang}` },
@@ -2034,8 +2071,8 @@ async function answerCallback(callbackId, text) {
 async function sendMainMenu(chatId, lang, cfg, messageId, tz) {
   const updatedDateTime = getCairoFullDateTime(lang, tz);
   const text = lang === "en"
-    ? `🏛️ <b>Egyptian Stock Exchange &amp; Live Markets Bot</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ Powered by <b>Cloudflare Edge &amp; Live Feeds</b> 24/7.\n\n👇 <i>Choose from the interactive menu below:</i>`
-    : `🏛️ <b>منظومة البورصة المصرية وأسواق الصرف الحية 24/7</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ تعمل سحابياً عبر <b>Cloudflare Edge وموقع تعويم وتريدنج فيو</b> مباشرة.\n\n👇 <i>اختر ما تريد من القائمة التفاعلية أدناه:</i>`;
+    ? `🏛️ <b>Egyptian Stock Exchange &amp; Live Markets Bot</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ Powered by <b>Cloudflare Edge &amp; Live Feeds</b> 24/7.\n🔔 <b>Automated Alerts:</b> Get pulses every 15m or 1h.\n\n👇 <i>Choose from the interactive menu below:</i>`
+    : `🏛️ <b>منظومة البورصة المصرية وأسواق الصرف الحية 24/7</b>\n🕒 <b>${updatedDateTime}</b>\n\n⚡ تعمل سحابياً عبر <b>Cloudflare Edge وموقع تعويم وتريدنج فيو</b> مباشرة.\n🔔 <b>الإشعارات التلقائية:</b> يمكنك ضبط وصول النبضة كل 15 دقيقة أو ساعة.\n\n👇 <i>اختر ما تريد من القائمة التفاعلية أدناه:</i>`;
   const kb = getMenuKeyboard(lang, cfg);
   return messageId ? editTgMessage(chatId, messageId, text, kb) : sendTgMessage(chatId, text, kb);
 }
