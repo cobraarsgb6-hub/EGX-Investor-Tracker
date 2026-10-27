@@ -1142,11 +1142,24 @@ async function handleTelegramUpdate(update) {
     }
 
     if (text.startsWith("cmd_alerts")) {
-      const subs = (await kvGetJson("alerts_subscribers")) || [];
+      let subs = (await kvGetJson("alerts_subscribers")) || [];
+      for (const ms of memorySubscribers) {
+        if (!subs.some(s => String(s.chatId) === String(ms.chatId))) subs.push(ms);
+      }
+      const userChatId = ENV.USER_CHAT_ID || ENV.CHAT_ID;
+      if (userChatId && String(userChatId) === String(chatId) && !subs.some(s => String(s.chatId) === String(chatId))) {
+        subs.push({ chatId: String(chatId), interval: "15m", lang, curr, tz });
+      }
       const userSub = subs.find(s => String(s.chatId) === String(chatId));
-      const title = lang === "en" 
+      const kvNote = (!getKV(ENV) && !userChatId)
+        ? (lang === "en"
+            ? `\n\n⚠️ <i>Storage note: Your Chat ID is: <code>${chatId}</code>. Add <code>USER_CHAT_ID</code> in Cloudflare Worker Variables for 100% permanent alerts.</i>`
+            : `\n\n💡 <b>معرف محادثتك (Chat ID):</b> <code>${chatId}</code>\n⚠️ <i>(ضع هذا الرقم في متغير USER_CHAT_ID بإعدادات كلاودفلير لحفظ الاشتراك دائماً حتى بدون KV)</i>`)
+        : `\n\n🆔 <b>معرف محادثتك:</b> <code>${chatId}</code>`;
+      const title = (lang === "en" 
         ? "⚙️ <b>Periodic Scheduled Alerts Settings:</b>\n\nChoose your preferred notification frequency to receive updates directly in this chat:"
-        : "⚙️ <b>إعدادات الإشعارات الدورية التلقائية:</b>\n\nاختر وتيرة وصول الإشعارات التلقائية لشاشتك هنا في هذه المحادثة:";
+        : "⚙️ <b>إعدادات الإشعارات الدورية التلقائية:</b>\n\nاختر وتيرة وصول الإشعارات التلقائية لشاشتك هنا في هذه المحادثة:")
+        + kvNote;
       await reply(title, getAlertsConfigKeyboard(lang, userSub));
       return;
     }
@@ -1248,13 +1261,20 @@ async function handleTelegramUpdate(update) {
   const isEgx = cmd === "/egx" || has("بورصة", "مؤسسات", "اسهم", "اجانب", "أجانب");
   const isBanks = cmd === "/banks" || has("بنوك", "بنك", "دولار");
   const isReport = cmd === "/report" || has("تقرير", "تنفيذي");
+  const isId = ["/id", "/my_id", "/chat_id"].includes(cmd) || has("معرف", "رقم المحادثة");
   const isRestart = ["/restart", "/reset"].includes(cmd) || has("ريستارت", "إعادة تشغيل", "اعادة تشغيل");
   const isTestAlert = ["/test_alert", "/pulse", "/live_alert"].includes(cmd) || has("تجربة", "اختبار");
   const isAlerts = ["/alerts", "/alert", "/subscribe"].includes(cmd) || has("اشعارات", "إشعارات", "منبه", "تنبيه");
   const isTimezone = ["/timezone", "/tz"].includes(cmd) || has("توقيت", "منطقة زمنية");
   const isMenu = ["/start", "/help", "/menu"].includes(cmd) || has("قائمة") || lower === "menu" || lower === "/menu";
 
-  if (isRestart) {
+  if (isId) {
+    const idMsg = lang === "en"
+      ? `🆔 <b>Your Telegram Chat ID:</b> <code>${chatId}</code>\n\n💡 <i>To receive automated alerts permanently, copy this number and add it as a Variable named <code>USER_CHAT_ID</code> in Cloudflare Worker Settings -> Variables!</i>`
+      : `🆔 <b>معرف محادثتك في تيليجرام (Chat ID):</b> <code>${chatId}</code>\n\n💡 <i>لاستلام الإشعارات الدورية دائماً ومضمونة 100%، انسخ هذا الرقم وأضفه كمتغير باسم <code>USER_CHAT_ID</code> في إعدادات الووركر بكلاودفلير (Settings ➔ Variables)!</i>`;
+    await sendTgMessage(chatId, idMsg);
+    return;
+  } else if (isRestart) {
     await doBotRestart(chatId, lang, cfg, tz);
   } else if (isMenu) {
     await sendMainMenu(chatId, lang, cfg, null, tz);
