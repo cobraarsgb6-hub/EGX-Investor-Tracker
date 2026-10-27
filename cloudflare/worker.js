@@ -925,13 +925,15 @@ function renderReport(type, data, lang, curr, cfg, tz) {
 const KB_TYPE = { gold: "commodities", markets: "currencies", archive: "history" };
 
 let commandsSynced = false;
-async function ensureBotCommands() {
-  if (commandsSynced || !BOT_TOKEN) return;
+async function ensureBotCommands(force = false) {
+  if (!force && commandsSynced) return;
+  if (!BOT_TOKEN) return;
   try {
     const commands = [
       { command: "start", description: "Main menu / القائمة الرئيسية" },
+      { command: "restart", description: "🔄 Restart & resync / إعادة تشغيل وتحديث البوت" },
       { command: "alerts", description: "🔔 Scheduled alerts / إعدادات الإشعارات الدورية" },
-      { command: "pulse", description: "⚡ Live pulse / إرسال الموجز المالي فوراً" },
+      { command: "pulse", description: "⚡ Live pulse / إرسال نبضة الموجز المالي فوراً" },
       { command: "report", description: "Executive report / التقرير الشامل" },
       { command: "egx", description: "EGX flows / تعاملات البورصة" },
       { command: "banks", description: "Bank USD rates / أسعار البنوك" },
@@ -946,6 +948,36 @@ async function ensureBotCommands() {
     commandsSynced = true;
   } catch (e) {
     console.error("ensureBotCommands failed:", e.message);
+  }
+}
+
+async function doBotRestart(chatId, lang, cfg, tz, messageId = null) {
+  memoryCache.data = null;
+  memoryCache.timestamp = 0;
+  sheetCache.stale = true;
+  sheetCache.timestamp = 0;
+  sheetCache.data = null;
+  sheetCache.lastTry = 0;
+  commandsSynced = false;
+
+  await ensureBotCommands(true);
+
+  const data = await getCachedDashboardData();
+  const timeStr = getCairoFullDateTime(lang, tz);
+  const T = (e, a) => (lang === "en" ? e : a);
+
+  const restartMsg = `🔄 <b>${T("Bot Successfully Restarted & Resynced!", "تمت إعادة تشغيل البوت وتحديث المنظومة بنجاح!")}</b>\n${LINE}\n`
+    + `🕒 <code>${timeStr}</code>\n\n`
+    + `✅ <b>${T("Cache Cleared:", "تفريغ الذاكرة المؤقتة:")}</b> ${T("Fresh live feeds loaded from all sources.", "تم جلب أحدث البيانات اللحظية من كافة المصادر.")}\n`
+    + `✅ <b>${T("Commands Synced:", "مزامنة قائمة الأوامر:")}</b> ${T("Telegram bot menu commands updated.", "تم تحديث قائمة الأوامر بزر Menu في تيليجرام.")}\n`
+    + `✅ <b>${T("System Status:", "الحالة التشغيلية:")}</b> ${T("Operational & ready 24/7.", "النظام جاهز ويعمل بكفاءة 24/7.")}\n\n`
+    + `👇 <i>${T("Choose from the menu below:", "اختر ما تريد من القائمة المحدثة أدناه:")}</i>`;
+
+  const kb = getMenuKeyboard(lang, cfg);
+  if (messageId) {
+    await editTgMessage(chatId, messageId, restartMsg, kb);
+  } else {
+    await sendTgMessage(chatId, restartMsg, kb);
   }
 }
 
@@ -968,7 +1000,7 @@ async function handleTelegramUpdate(update) {
   if (!chatId) return;
 
   // الأزرار التي تعرض رسالة منبثقة تُجاب لاحقاً، والباقي فوراً
-  const toastCbs = ["refresh_", "toggle_curr:", "hist_curr:", "set_tz:", "toggle_alert_lang", "sub_int", "sub_test"];
+  const toastCbs = ["refresh_", "toggle_curr:", "hist_curr:", "set_tz:", "toggle_alert_lang", "sub_int", "sub_test", "cmd_restart"];
   if (isCallback && callbackId && !toastCbs.some(p => text.startsWith(p))) {
     try { await answerCallback(callbackId); } catch (e) {}
   }
@@ -1130,6 +1162,12 @@ async function handleTelegramUpdate(update) {
       return;
     }
 
+    if (text.startsWith("cmd_restart")) {
+      await toast(lang === "en" ? "🔄 Restarting bot..." : "🔄 جاري إعادة التشغيل والتحديث...");
+      await doBotRestart(chatId, lang, cfg, tz, messageId);
+      return;
+    }
+
     if (text === "cmd_menu") { await sendMainMenu(chatId, lang, cfg, messageId, tz); return; }
 
     if (text.startsWith("cmd_")) {
@@ -1156,12 +1194,15 @@ async function handleTelegramUpdate(update) {
   const isEgx = cmd === "/egx" || has("بورصة", "مؤسسات", "اسهم", "اجانب", "أجانب");
   const isBanks = cmd === "/banks" || has("بنوك", "بنك", "دولار");
   const isReport = cmd === "/report" || has("تقرير", "تنفيذي");
+  const isRestart = ["/restart", "/reset"].includes(cmd) || has("ريستارت", "إعادة تشغيل", "اعادة تشغيل");
   const isTestAlert = ["/test_alert", "/pulse", "/live_alert"].includes(cmd) || has("تجربة", "اختبار");
   const isAlerts = ["/alerts", "/alert", "/subscribe"].includes(cmd) || has("اشعارات", "إشعارات", "منبه", "تنبيه");
   const isTimezone = ["/timezone", "/tz"].includes(cmd) || has("توقيت", "منطقة زمنية");
   const isMenu = ["/start", "/help", "/menu"].includes(cmd) || has("قائمة") || lower === "menu" || lower === "/menu";
 
-  if (isMenu) {
+  if (isRestart) {
+    await doBotRestart(chatId, lang, cfg, tz);
+  } else if (isMenu) {
     await sendMainMenu(chatId, lang, cfg, null, tz);
   } else if (isTestAlert) {
     const data = await getCachedDashboardData();
@@ -1758,13 +1799,23 @@ function formatPeriodicAlertReport(data, lang, curr, tzKey) {
   const egxTime = getEgxSnapshotTime(data, lang);
   const egxTag = egxTime ? ` [${egxTime}]` : "";
 
-  // 1. البورصة: صافي الأجانب + صافي العرب + إجمالي غير المصريين (صافي فقط)
+  // 1. البورصة: صافي تعاملات غير المصريين للجلسة الحالية
   let egxBlock = `🏛 <b>${T("EGX Non-Egyptian Net Flows", "صافي تعاملات البورصة (غير المصريين)")}${egxTag}:</b>\n`
     + `${ltr}▫️ ${T("Foreigners Net", "صافي الأجانب")}: <code>${f(s.foNet)}</code> ${iconSign(s.foNet)}\n`
     + `${ltr}▫️ ${T("Arabs Net", "صافي العرب")}: <code>${f(s.arNet)}</code> ${iconSign(s.arNet)}\n`
-    + `${ltr}▪️ <b>${T("Total Non-Egyptian Net", "مجموع صافي غير المصريين (عرب + أجانب)")}:</b> <code>${f(arFo)}</code> ${iconSign(arFo)}\n`
-    + `${ltr}▫️ ${T(`Weekly Net (${weekly.count}s)`, `صافي الأسبوع (${weekly.count} جلسات)`)}: <code>${f(weekly.arFoNet, weekly.arFoUsd)}</code> ${iconSign(weekly.arFoNet)}\n`
-    + `${ltr}▫️ ${T(`Monthly Net (${monthly.count}s)`, `صافي الشهر (${monthly.count} جلسات)`)}: <code>${f(monthly.arFoNet, monthly.arFoUsd)}</code> ${iconSign(monthly.arFoNet)}\n`;
+    + `${ltr}▪️ <b>${T("Total Non-Egyptian (Today)", "إجمالي غير المصريين (اليوم)")}:</b> <code>${f(arFo)}</code> ${iconSign(arFo)}\n\n`
+    + `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n`
+    + `🗓 <b>【 ${T(`WEEKLY CUMULATIVE (${weekly.count} Sessions)`, `التراكمي الأسبوعي (${weekly.count} جلسات)`)} 】</b>\n`
+    + `${ltr}▫️ ${T("Foreigners Net (W)", "صافي الأجانب (أسبوعي)")}: <code>${f(weekly.foNet, weekly.foUsd)}</code> ${iconSign(weekly.foNet)}\n`
+    + `${ltr}▫️ ${T("Arabs Net (W)", "صافي العرب (أسبوعي)")}: <code>${f(weekly.arNet, weekly.arUsd)}</code> ${iconSign(weekly.arNet)}\n`
+    + `${ltr}▪️ <b>${T("Total Non-Egyptian (W)", "مجموع غير المصريين (أسبوعي)")}:</b> <code>${f(weekly.arFoNet, weekly.arFoUsd)}</code> ${iconSign(weekly.arFoNet)}\n`
+    + `┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n`
+    + `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n`
+    + `📈 <b>【 ${T(`MONTHLY CUMULATIVE (${monthly.count} Sessions)`, `التراكمي الشهري (${monthly.count} جلسات)`)} 】</b>\n`
+    + `${ltr}▫️ ${T("Foreigners Net (M)", "صافي الأجانب (شهري)")}: <code>${f(monthly.foNet, monthly.foUsd)}</code> ${iconSign(monthly.foNet)}\n`
+    + `${ltr}▫️ ${T("Arabs Net (M)", "صافي العرب (شهري)")}: <code>${f(monthly.arNet, monthly.arUsd)}</code> ${iconSign(monthly.arNet)}\n`
+    + `${ltr}▪️ <b>${T("Total Non-Egyptian (M)", "مجموع غير المصريين (شهري)")}:</b> <code>${f(monthly.arFoNet, monthly.arFoUsd)}</code> ${iconSign(monthly.arFoNet)}\n`
+    + `┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n`;
 
   // 2. الدولار مع توقيت البنك المركزي وأعلى بنك
   const cbeBuy = Number(data.cbe_usd_buy) || 0;
@@ -1979,7 +2030,7 @@ function getMenuKeyboard(lang, cfg) {
   ]);
 
   rows.push([
-    { text: T("🔄 Refresh Menu", "🔄 تحديث القائمة"), callback_data: `refresh_menu:${lang}` },
+    { text: T("🔄 Restart & Resync", "🔄 ريستارت وتحديث شامل"), callback_data: `cmd_restart:${lang}` },
     { text: T("🌐 اللغة العربية", "🌐 English"), callback_data: lang === "en" ? "cmd_lang_ar" : "cmd_lang_en" }
   ]);
   rows.push([{ text: T("🌍 Timezone Settings", "🌍 ضبط المنطقة الزمنية"), callback_data: `cmd_timezone:${lang}` }]);
