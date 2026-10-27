@@ -460,6 +460,11 @@ export default {
     return new Response("Not Found", { status: 404 });
   },
 
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runScheduledAlerts(env, ctx));
+  }
+};
+
 async function runScheduledAlerts(env, ctx) {
   ENV = env || ENV || {};
   if (!ENV.STATE) ENV.STATE = getKV(ENV);
@@ -516,11 +521,6 @@ async function runScheduledAlerts(env, ctx) {
 
   return { status: "completed", cairo_time: cairoHMStr, results };
 }
-
-  async scheduled(event, env, ctx) {
-    ctx.waitUntil(runScheduledAlerts(env, ctx));
-  }
-};
 
 // ==========================================
 // 📡 جلب البيانات الحية
