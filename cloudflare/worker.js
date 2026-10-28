@@ -1865,11 +1865,11 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
   const snapshotTime = getEgxSnapshotTime(data, lang);
   const snapshotLine = (snapshotTime && mStatus.isTodaySession) ? `📸 ${T("Market Snapshot", "لقطة شاشة البورصة")}: <b>[${snapshotTime}]</b>\n` : "";
 
-  const labFo = T("Foreigners", "أجانب"), labAr = T("Arabs", "عرب"), labAf = T("Arabs + Foreigners", "عرب + أجانب");
+  const labFo = T("Foreigners", "أجانب"), labAr = T("Arabs", "عرب"), labAf = T("Arabs + Foreigners", "عرب + أجانب"), labEg = T("Egyptians (Ref)", "المصريين (مرجع)");
   const mLabel = getMonthLabel(monthly.monthPrefix, lang);
 
   const egxBlock = `🏛 <b>${T("Non-Egyptian Flows", "تدفقات غير المصريين")} ${T(mStatus.sessionTagEn, mStatus.sessionTagAr)}:</b>\n`
-    + fl("▫️", labFo, s.foNet) + fl("▫️", labAr, s.arNet) + fl("▪️", labAf, arFo) + "\n"
+    + fl("▫️", labFo, s.foNet) + fl("▫️", labAr, s.arNet) + fl("▪️", labAf, arFo) + fl("▫️", labEg, s.egNet) + "\n"
     + `🗓 <b>${T(`Current Week (${weekly.count} Sessions)`, `الأسبوع الحالي (${weekly.count} جلسات)`)}:</b>\n`
     + fl("▫️", labFo, weekly.foNet, weekly.foUsd) + fl("▫️", labAr, weekly.arNet, weekly.arUsd) + fl("▪️", labAf, weekly.arFoNet, weekly.arFoUsd) + "\n"
     + `📈 <b>${T(`Current Month (${mLabel} • ${monthly.count} Sessions)`, `الشهر الحالي (${mLabel} • ${monthly.count} جلسات)`)}:</b>\n`
@@ -1946,11 +1946,12 @@ function formatPeriodicAlertReport(data, lang, curr, tzKey) {
   const egxTimeTag = egxTime ? ` • ${egxTime}` : "";
   const mLabel = getMonthLabel(monthly.monthPrefix, lang);
 
-  // 1. البورصة: صافي تعاملات غير المصريين للجلسة الحالية
+  // 1. البورصة: صافي تعاملات غير المصريين للجلسة الحالية (مع مرجع المصريين)
   let egxBlock = `🏛 <b>${T("EGX Non-Egyptian Net Flows", "صافي تعاملات البورصة (غير المصريين)")} [${egxDateLabel}${egxTimeTag}]:</b>\n`
     + `${ltr}▫️ ${T("Foreigners Net", "صافي الأجانب")}: <code>${f(s.foNet)}</code> ${iconSign(s.foNet)}\n`
     + `${ltr}▫️ ${T("Arabs Net", "صافي العرب")}: <code>${f(s.arNet)}</code> ${iconSign(s.arNet)}\n`
-    + `${ltr}▪️ <b>${T("Total Non-Egyptian (Today)", "إجمالي غير المصريين (اليوم)")}:</b> <code>${f(arFo)}</code> ${iconSign(arFo)}\n\n`
+    + `${ltr}▪️ <b>${T("Total Non-Egyptian (Today)", "إجمالي غير المصريين (اليوم)")}:</b> <code>${f(arFo)}</code> ${iconSign(arFo)}\n`
+    + `${ltr}▫️ ${T("Egyptians Net (Ref)", "صافي المصريين (مرجع)")}: <code>${f(s.egNet)}</code> ${iconSign(s.egNet)}\n\n`
     + `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n`
     + `🗓 <b>【 ${T(`WEEKLY CUMULATIVE (${weekly.count} Sessions • thru ${s.sessionDate})`, `التراكمي الأسبوعي (${weekly.count} جلسات • حتى إقفال ${s.sessionDate})`)} 】</b>\n`
     + `${ltr}▫️ ${T("Foreigners Net (W)", "صافي الأجانب (أسبوعي)")}: <code>${f(weekly.foNet, weekly.foUsd)}</code> ${iconSign(weekly.foNet)}\n`
