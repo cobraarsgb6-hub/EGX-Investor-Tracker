@@ -967,7 +967,7 @@ function renderReport(type, data, lang, curr, cfg, tz) {
     case "history": case "archive": return formatEgxPeriodicReport(data, "curr_month", lang, curr, null, tz);
     case "banks": return formatBanksReport(data, lang, cfg, tz);
     case "banks_all": return formatAllBanksReport(data, lang, tz);
-    case "commodities": case "gold": return formatCommoditiesReport(data, lang, tz);
+    case "commodities": case "gold": return formatCommoditiesReport(data, lang, tz, curr);
     case "currencies": case "markets": return formatCurrenciesReport(data, lang, tz);
     default: return null;
   }
@@ -1648,24 +1648,51 @@ function formatEgxPeriodicReport(data, periodType, lang, curr, customParam, tz) 
   return txt + `${LINE}\n🔒 <i>${T("Officially recorded historical closing flows from EGX Terminal.", "أرشيف رسمي موثق لجلسات الإقفال من شاشة البورصة المصرية.")}</i>`;
 }
 
-/** 2. الذهب والنفط والكريبتو (بالدولار فقط) */
-function formatCommoditiesReport(data, lang, tz) {
+
+function fmtAssetPrice(item, curr, lang, usdRate) {
+  if (!item) return "N/A ⚠️";
+  usdRate = Number(usdRate) || 56.09;
+  let uP = Number(item.usd_price) || 0;
+  let eP = Number(item.egp_price || item.rate_egp) || 0;
+
+  if (!uP && eP && usdRate > 0) uP = eP / usdRate;
+  if (!eP && uP && usdRate > 0) eP = uP * usdRate;
+
+  const egpSuffix = lang === "en" ? " EGP" : " ج.م";
+  const usdDec = (item.code === "BTC" || uP >= 10000) ? 0 : (uP < 1 ? 4 : 2);
+  const egpDec = eP >= 500 ? 0 : 2;
+
+  if (curr === "usd") {
+    if (uP > 0) {
+      return eP > 0 ? `$${fmtNum(uP, usdDec)} <i>(${fmtNum(eP, egpDec)}${egpSuffix})</i>` : `$${fmtNum(uP, usdDec)}`;
+    }
+    return eP > 0 ? `${fmtNum(eP, egpDec)}${egpSuffix}` : "N/A ⚠️";
+  } else {
+    if (eP > 0) {
+      return uP > 0 ? `${fmtNum(eP, egpDec)}${egpSuffix} <i>(~$${fmtNum(uP, usdDec)})</i>` : `${fmtNum(eP, egpDec)}${egpSuffix}`;
+    }
+    return uP > 0 ? `$${fmtNum(uP, usdDec)}` : "N/A ⚠️";
+  }
+}
+
+/** 2. الذهب والنفط والكريبتو (متعدد العملات) */
+function formatCommoditiesReport(data, lang, tz, curr) {
+  curr = curr || "usd";
   const T = (e, a) => (lang === "en" ? e : a);
   const items = data.live_commodities || [];
+  const usdRate = Number(data.cbe_usd_buy) || Number(data.usd_rate) || 56.09;
   let txt = `🪙 <b>${T("Gold, Oil &amp; Crypto Live Market", "أسواق الذهب والفضة والنفط والكريبتو")}</b>\n${LINE}\n`
     + `🕒 ${T("Query", "وقت الاستعلام")}: <b>${getCairoFullDateTime(lang, tz)}</b>\n`
-    + `💰 ${T("Currency", "العملة")}: <b>USD ($)</b>\n${LINE}\n\n`;
+    + `💰 ${T("Currency", "العملة")}: <b>${currBadge(curr)}</b>\n${LINE}\n\n`;
 
   items.forEach(item => {
     const meta = ASSET_META[String(item.code || "").toUpperCase()] || null;
     const name = lang === "en"
       ? (meta?.name_en || item.name_en || item.code)
       : (meta?.name || item.name);
-    if (!item.usd_price) { txt += `▫️ <b>${name}:</b> <code>N/A</code> ⚠️\n`; return; }
-    const uP = Number(item.usd_price);
-    const dec = uP < 10 ? (uP < 1 ? 4 : 3) : (uP >= 1000 ? 0 : 2);
+    const pStr = fmtAssetPrice(item, curr, lang, usdRate);
     const chg = item.change ? ` <i>(${escapeHtml(item.change)})</i>${getTrendIcon(item.change)}` : "";
-    txt += `▫️ <b>${name}:</b> <code>$${fmtNum(uP, dec)}</code>${chg}\n`;
+    txt += `▫️ <b>${name}:</b> <code>${pStr}</code>${chg}\n`;
   });
 
   if (data.sources && data.sources.markets === false) {
@@ -1853,9 +1880,12 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
 
   // السلع
   const comms = data.live_commodities || [];
-  const get = code => comms.find(c => c.code === code);
-  const usdStr = (item, dec) => (item && item.usd_price ? "$" + fmtNum(item.usd_price, dec) : "N/A ⚠️");
-  const brent = usdStr(get("BRENT"), 2), ounce = usdStr(get("GOLD_OUNCE"), 2), g24 = usdStr(get("GOLD24"), 2), silver = usdStr(get("SILVER"), 2);
+  const ratesList = Array.isArray(data.rates) ? data.rates : [];
+  const get = code => comms.find(c => c.code === code) || ratesList.find(r => r.code === code);
+  const brent = fmtAssetPrice(get("BRENT"), curr, lang, rate);
+  const ounce = fmtAssetPrice(get("GOLD_OUNCE"), curr, lang, rate);
+  const g21 = fmtAssetPrice(get("GOLD21"), curr, lang, rate);
+  const silver = fmtAssetPrice(get("SILVER"), curr, lang, rate);
 
   return `📊 <b>${T("Executive Financial Summary", "التقرير المالي التنفيذي الشامل")}</b>\n${LINE}\n`
     + `📅 <b>${T("Session", "الجلسة")}:</b> <code>${s.sessionDate}</code>${mStatus.isTodaySession ? "" : T(" <i>(Last Audited)</i>", " <i>(آخر جلسة معتمدة)</i>")}\n`
@@ -1869,7 +1899,7 @@ function formatExecutiveReport(data, lang, curr, tzKey) {
     + usdBlock + `\n\n`
     + `${LINE}\n`
     + `🛢 <b>${T("Brent Crude Oil", "خام برنت (نفط)")}:</b> <code>${brent}</code>\n`
-    + `🪙 <b>${T("Gold (Ounce)", "أونصة الذهب")}:</b> <code>${ounce}</code> • <b>${T("24K", "عيار 24")}:</b> <code>${g24}</code>\n`
+    + `🪙 <b>${T("Gold (Ounce)", "أونصة الذهب")}:</b> <code>${ounce}</code> • <b>${T("21K", "عيار 21")}:</b> <code>${g21}</code>\n`
     + `🪙 <b>${T("Silver (Ounce)", "أونصة الفضة")}:</b> <code>${silver}</code>\n`
     + `\n${LINE}\n⚡ <i>${T("Live Executive Summary • Real-time feeds.", "تقرير تنفيذي لحظي موثق ومباشر.")}</i>`;
 }
@@ -1947,35 +1977,34 @@ function formatPeriodicAlertReport(data, lang, curr, tzKey) {
     fxBlock += `${ltr}${flag}${name}: <code>${fmtNum(p)}</code> ${T("EGP", "ج.م")}\n`;
   });
 
-  // 4. الذهب والمعادن
+  // 4. الذهب والمعادن (متعدد العملات)
   const comms = data.live_commodities || [];
   const getC = code => comms.find(c => c.code === code) || rates.find(r => r.code === code);
   const g21 = getC("GOLD21"), gCoin = getC("GOLDC"), gOunce = getC("GOLD_OUNCE"), silv = getC("SILVER");
   let goldBlock = `🪙 <b>${T("Precious Metals", "الذهب والمعادن")}:</b>\n`;
   if (g21) {
-    const ep = Number(g21.egp_price || g21.rate_egp || 0);
-    const up = Number(g21.usd_price || (usdRate ? ep / usdRate : 0));
-    goldBlock += `${ltr}🥇 ${T("Gold 21K (Gram)", "ذهب عيار 21")}: <code>${fmtNum(ep)}</code> ${T("EGP", "ج.م")}${up > 0 ? ` (~$${fmtNum(up, 2)})` : ""}\n`;
+    goldBlock += `${ltr}🥇 ${T("Gold 21K (Gram)", "ذهب عيار 21")}: <code>${fmtAssetPrice(g21, curr, lang, usdRate)}</code>\n`;
   }
   if (gCoin) {
-    const ep = Number(gCoin.egp_price || gCoin.rate_egp || 0);
-    goldBlock += `${ltr}🪙 ${T("Gold Pound Coin", "جنيه الذهب")}: <code>${fmtNum(ep)}</code> ${T("EGP", "ج.م")}\n`;
+    goldBlock += `${ltr}🪙 ${T("Gold Pound Coin", "جنيه الذهب")}: <code>${fmtAssetPrice(gCoin, curr, lang, usdRate)}</code>\n`;
   }
-  if (gOunce && gOunce.usd_price) {
-    goldBlock += `${ltr}🏆 ${T("Gold Spot (Ounce)", "أونصة الذهب عالمياً")}: <code>$${fmtNum(gOunce.usd_price, 2)}</code>\n`;
+  if (gOunce) {
+    goldBlock += `${ltr}🏆 ${T("Gold Spot (Ounce)", "أونصة الذهب عالمياً")}: <code>${fmtAssetPrice(gOunce, curr, lang, usdRate)}</code>\n`;
   }
-  if (silv && silv.usd_price) {
-    goldBlock += `${ltr}🪙 ${T("Silver Spot (Ounce)", "أونصة الفضة عالمياً")}: <code>$${fmtNum(silv.usd_price, 2)}</code>\n`;
+  if (silv) {
+    goldBlock += `${ltr}🪙 ${T("Silver Spot (Ounce)", "أونصة الفضة عالمياً")}: <code>${fmtAssetPrice(silv, curr, lang, usdRate)}</code>\n`;
   }
 
-  // 5. الطاقة والكريبتو
+  // 5. الطاقة والكريبتو (متعدد العملات)
   const brent = getC("BRENT"), wti = getC("WTI"), btc = getC("BTC"), eth = getC("ETH");
   let commBlock = `🛢️ <b>${T("Energy & Crypto", "الطاقة والكريبتو")} [${T("Live", "لحظي")}]:</b>\n`;
-  if (brent?.usd_price || wti?.usd_price) {
-    commBlock += `${ltr}🛢️ ${T("Brent", "خام برنت")}: <code>$${fmtNum(brent?.usd_price || 0, 2)}</code> • ${T("WTI", "تكساس")}: <code>$${fmtNum(wti?.usd_price || 0, 2)}</code>\n`;
+  if (brent || wti) {
+    if (brent) commBlock += `${ltr}🛢️ ${T("Brent", "خام برنت")}: <code>${fmtAssetPrice(brent, curr, lang, usdRate)}</code>\n`;
+    if (wti) commBlock += `${ltr}🛢️ ${T("WTI Texas", "خام تكساس")}: <code>${fmtAssetPrice(wti, curr, lang, usdRate)}</code>\n`;
   }
-  if (btc?.usd_price || eth?.usd_price) {
-    commBlock += `${ltr}🪙 ${T("Bitcoin", "بتكوين")}: <code>$${fmtNum(btc?.usd_price || 0, 0)}</code> • ${T("Ethereum", "إيثريوم")}: <code>$${fmtNum(eth?.usd_price || 0, 2)}</code>\n`;
+  if (btc || eth) {
+    if (btc) commBlock += `${ltr}🪙 ${T("Bitcoin", "بتكوين")}: <code>${fmtAssetPrice(btc, curr, lang, usdRate)}</code>\n`;
+    if (eth) commBlock += `${ltr}🪙 ${T("Ethereum", "إيثريوم")}: <code>${fmtAssetPrice(eth, curr, lang, usdRate)}</code>\n`;
   }
 
   const queryTime = getCairoFullDateTime(lang, tzKey);
@@ -2081,7 +2110,7 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
 
   if (cmdType === "report") {
     rows.push([{ text: currToggleText, callback_data: currToggleData }]);
-  } else if (cmdType === "egx") {
+  } else if (cmdType === "egx" || cmdType === "commodities" || cmdType === "gold") {
     rows.push([{ text: T("📊 Closings Archive", "📊 أرشيف الإقفال"), callback_data: `cmd_history:${lang}:${curr}` }]);
     rows.push([{ text: currToggleText, callback_data: currToggleData }]);
   } else if (cmdType === "banks") {
