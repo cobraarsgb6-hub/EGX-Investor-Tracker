@@ -417,7 +417,7 @@ export default {
     }
 
     if (url.pathname === "/webhook" && request.method === "POST") {
-      if (!ENV.WEBHOOK_SECRET || !safeEqual(request.headers.get("X-Telegram-Bot-Api-Secret-Token") || "", ENV.WEBHOOK_SECRET)) {
+      if (ENV.WEBHOOK_SECRET && !safeEqual(request.headers.get("X-Telegram-Bot-Api-Secret-Token") || "", ENV.WEBHOOK_SECRET)) {
         return new Response("Forbidden", { status: 403 });
       }
       try {
@@ -1053,7 +1053,7 @@ async function handleTelegramUpdate(update) {
 
 
   // الأزرار التي تعرض رسالة منبثقة تُجاب لاحقاً، والباقي فوراً
-  const toastCbs = ["refresh_", "toggle_curr:", "hist_curr:", "set_tz:", "toggle_alert_lang", "sub_int", "sub_test", "cmd_restart"];
+  const toastCbs = ["refresh_", "toggle_curr:", "hist_curr:", "set_tz:", "toggle_alert_lang", "toggle_rep_lang:", "cmd_menu_lang:", "sub_int", "sub_test", "cmd_restart"];
   if (isCallback && callbackId && !toastCbs.some(p => text.startsWith(p))) {
     try { await answerCallback(callbackId); } catch (e) {}
   }
@@ -1124,6 +1124,29 @@ async function handleTelegramUpdate(update) {
       const period = text.split(":")[1] || "curr_month";
       const data = await getCachedDashboardData();
       await reply(formatEgxPeriodicReport(data, period, lang, curr, null, tz), getHistoryKeyboard(lang, curr, period));
+      return;
+    }
+
+    if (text.startsWith("toggle_rep_lang:")) {
+      const parts = text.split(":");
+      const newLang = parts[1] === "ar" ? "ar" : "en";
+      const targetType = parts[2] || "report";
+      const targetCurr = parts[3] || curr;
+      await setPrefs(chatId, { lang: newLang, curr: targetCurr });
+      const data = await getCachedDashboardData();
+      const content = renderReport(targetType, data, newLang, targetCurr, cfg, tz);
+      await toast(newLang === "en" ? "🌐 Switched to English" : "🌐 تم التحويل للغة العربية");
+      if (content) {
+        await reply(content, getReportKeyboard(KB_TYPE[targetType] || targetType, newLang, cfg, targetCurr));
+      }
+      return;
+    }
+
+    if (text.startsWith("cmd_menu_lang:")) {
+      const newLang = text.split(":")[1] === "ar" ? "ar" : "en";
+      await setPrefs(chatId, { lang: newLang });
+      await toast(newLang === "en" ? "🌐 Switched to English" : "🌐 تم التحويل للغة العربية");
+      await sendMainMenu(chatId, newLang, cfg, messageId, tz);
       return;
     }
 
@@ -2038,7 +2061,7 @@ function getHistoryKeyboard(lang, curr, activePeriod) {
       ],
       [
         { text: T("« Main Menu", "« القائمة الرئيسية"), callback_data: `cmd_menu:${lang}:${curr}` },
-        { text: T("🌐 اللغة العربية", "🌐 English"), callback_data: lang === "en" ? "cmd_lang_ar" : "cmd_lang_en" }
+        { text: lang === "en" ? "🌐 اللغة العربية" : "🌐 English", callback_data: `cmd_menu_lang:${lang === "en" ? "ar" : "en"}` }
       ]
     ]
   };
@@ -2074,7 +2097,7 @@ function getReportKeyboard(cmdType, lang, cfg, curr) {
   ]);
   rows.push([
     { text: T("« Main Menu", "« القائمة الرئيسية"), callback_data: `cmd_menu:${lang}:${curr}` },
-    { text: T("🌐 اللغة العربية", "🌐 English"), callback_data: lang === "en" ? `cmd_lang_ar:${curr}` : `cmd_lang_en:${curr}` }
+    { text: lang === "en" ? "🌐 اللغة العربية" : "🌐 English", callback_data: `toggle_rep_lang:${lang === "en" ? "ar" : "en"}:${cmdType}:${curr}` }
   ]);
   return { inline_keyboard: rows };
 }
