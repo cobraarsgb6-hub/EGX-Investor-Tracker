@@ -1946,23 +1946,23 @@ function formatPeriodicAlertReport(data, lang, curr, tzKey) {
   const egxTimeTag = egxTime ? ` • ${egxTime}` : "";
   const mLabel = getMonthLabel(monthly.monthPrefix, lang);
 
-  // 1. البورصة: صافي تعاملات غير المصريين للجلسة الحالية (مع مرجع المصريين)
-  let egxBlock = `🏛 <b>${T("EGX Non-Egyptian Net Flows", "صافي تعاملات البورصة (غير المصريين)")} [${egxDateLabel}${egxTimeTag}]:</b>\n`
-    + `${ltr}▫️ ${T("Foreigners Net", "صافي الأجانب")}: <code>${f(s.foNet)}</code> ${iconSign(s.foNet)}\n`
+  // 1. البورصة: صافي تعاملات البورصة (بالترتيب: مصريين، عرب، أجانب، ثم إجمالي غير المصريين)
+  let egxBlock = `🏛 <b>${T("EGX Investor Net Flows", "صافي تعاملات البورصة")} [${egxDateLabel}${egxTimeTag}]:</b>\n`
+    + `${ltr}▫️ ${T("Egyptians Net (Ref)", "صافي المصريين (مرجع)")}: <code>${f(s.egNet)}</code> ${iconSign(s.egNet)}\n`
     + `${ltr}▫️ ${T("Arabs Net", "صافي العرب")}: <code>${f(s.arNet)}</code> ${iconSign(s.arNet)}\n`
-    + `${ltr}▪️ <b>${T("Total Non-Egyptian (Today)", "إجمالي غير المصريين (اليوم)")}:</b> <code>${f(arFo)}</code> ${iconSign(arFo)}\n`
-    + `${ltr}▫️ ${T("Egyptians Net (Ref)", "صافي المصريين (مرجع)")}: <code>${f(s.egNet)}</code> ${iconSign(s.egNet)}\n\n`
+    + `${ltr}▫️ ${T("Foreigners Net", "صافي الأجانب")}: <code>${f(s.foNet)}</code> ${iconSign(s.foNet)}\n`
+    + `${ltr}▪️ <b>${T("Total Non-Egyptian (Today)", "إجمالي غير المصريين (عرب + أجانب)")}:</b> <code>${f(arFo)}</code> ${iconSign(arFo)}\n\n`
     + `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n`
     + `🗓 <b>【 ${T(`WEEKLY CUMULATIVE (${weekly.count} Sessions • thru ${s.sessionDate})`, `التراكمي الأسبوعي (${weekly.count} جلسات • حتى إقفال ${s.sessionDate})`)} 】</b>\n`
     + `${ltr}▫️ ${T("Foreigners Net (W)", "صافي الأجانب (أسبوعي)")}: <code>${f(weekly.foNet, weekly.foUsd)}</code> ${iconSign(weekly.foNet)}\n`
     + `${ltr}▫️ ${T("Arabs Net (W)", "صافي العرب (أسبوعي)")}: <code>${f(weekly.arNet, weekly.arUsd)}</code> ${iconSign(weekly.arNet)}\n`
-    + `${ltr}▪️ <b>${T("Total Non-Egyptian (W)", "مجموع غير المصريين (أسبوعي)")}:</b> <code>${f(weekly.arFoNet, weekly.arFoUsd)}</code> ${iconSign(weekly.arFoNet)}\n`
+    + `${ltr}▪️ <b>${T("Total Non-Egyptian (W)", "إجمالي غير المصريين (شامل العرب)")}:</b> <code>${f(weekly.arFoNet, weekly.arFoUsd)}</code> ${iconSign(weekly.arFoNet)}\n`
     + `┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n`
     + `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n`
     + `📈 <b>【 ${T(`MONTHLY CUMULATIVE (${monthly.count} Sessions • ${mLabel})`, `التراكمي الشهري (${monthly.count} جلسات • ${mLabel})`)} 】</b>\n`
     + `${ltr}▫️ ${T("Foreigners Net (M)", "صافي الأجانب (شهري)")}: <code>${f(monthly.foNet, monthly.foUsd)}</code> ${iconSign(monthly.foNet)}\n`
     + `${ltr}▫️ ${T("Arabs Net (M)", "صافي العرب (شهري)")}: <code>${f(monthly.arNet, monthly.arUsd)}</code> ${iconSign(monthly.arNet)}\n`
-    + `${ltr}▪️ <b>${T("Total Non-Egyptian (M)", "مجموع غير المصريين (شهري)")}:</b> <code>${f(monthly.arFoNet, monthly.arFoUsd)}</code> ${iconSign(monthly.arFoNet)}\n`
+    + `${ltr}▪️ <b>${T("Total Non-Egyptian (M)", "إجمالي غير المصريين (شامل العرب)")}:</b> <code>${f(monthly.arFoNet, monthly.arFoUsd)}</code> ${iconSign(monthly.arFoNet)}\n`
     + `┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n`;
 
   // 2. الدولار مع توقيت البنك المركزي وأعلى بنك
