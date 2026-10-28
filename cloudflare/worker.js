@@ -286,11 +286,20 @@ function extractTimeFromTimestamp(ts) {
 }
 
 function formatCleanTime(val, lang) {
-  const str = String(val || "").trim();
-  if (!str || str.includes("1899") || str.includes("1900") || str.includes("1970")) {
+  if (!val) return format12HourTime(getCairoTimeStr(), lang);
+  const str = String(val).trim();
+  if (str.includes("1899") || str.includes("1900") || str.includes("1970")) {
     return format12HourTime(getCairoTimeStr(), lang);
   }
-  const match = str.match(/(\d{1,2}):(\d{2})/);
+  // إذا كانت القيمة تاريخاً كاملاً أو توقيت UTC مع Z أو T، يتم تحويله بدقة لتوقيت القاهرة
+  if (str.includes("T") || str.includes("Z") || str.includes("-")) {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const cairoTime = d.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+      return format12HourTime(cairoTime, lang);
+    }
+  }
+  const match = str.match(/^(\d{1,2}):(\d{2})/);
   if (match) return format12HourTime(`${match[1].padStart(2, "0")}:${match[2]}`, lang);
   return format12HourTime(getCairoTimeStr(), lang);
 }
