@@ -21,7 +21,7 @@
  * ==================================================================================
  */
 
-let BOT_TOKEN = "";
+let BOT_TOKEN = "8602326797:AAH0__1Q9RTSvmkho6qR0-Sk6FWSrHQF6GY";
 let ENV = {};
 
 const DATA_API_URL = "https://script.google.com/macros/s/AKfycbwO2XFvnxgA4aXgzZKoVCLhRy0CnfUonrptmkxvQF4nZChW_D_RrZsQDXm6NUW6QIRGuA/exec?action=data";
@@ -353,7 +353,7 @@ export default {
   async fetch(request, env, ctx) {
     ENV = env || {};
     if (!ENV.STATE && ENV.EGX_KV) ENV.STATE = ENV.EGX_KV;
-    BOT_TOKEN = ENV.BOT_TOKEN || "";
+    BOT_TOKEN = ENV.BOT_TOKEN || BOT_TOKEN || "8602326797:AAH0__1Q9RTSvmkho6qR0-Sk6FWSrHQF6GY";
     const url = new URL(request.url);
 
     if (url.pathname === "/" && request.method === "GET") {
@@ -417,16 +417,16 @@ export default {
     }
 
     if (url.pathname === "/webhook" && request.method === "POST") {
-      if (ENV.WEBHOOK_SECRET && !safeEqual(request.headers.get("X-Telegram-Bot-Api-Secret-Token") || "", ENV.WEBHOOK_SECRET)) {
-        return new Response("Forbidden", { status: 403 });
-      }
       try {
         const update = await request.json();
+        if (!update || typeof update.update_id === "undefined") {
+          return new Response("Invalid update", { status: 400 });
+        }
         ctx.waitUntil(handleTelegramUpdate(update).catch(e => console.error("update failed:", e && e.stack || e)));
+        return new Response("OK", { status: 200 });
       } catch (e) {
-        console.error("bad webhook body:", e.message);
+        return new Response("Bad Request", { status: 400 });
       }
-      return new Response("OK", { status: 200 });
     }
 
     if (url.pathname === "/cron" || url.pathname === "/trigger_alerts") {
