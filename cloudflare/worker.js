@@ -286,7 +286,11 @@ function extractTimeFromTimestamp(ts) {
 }
 
 function formatCleanTime(val, lang) {
-  const match = String(val || "").trim().match(/(\d{1,2}):(\d{2})/);
+  const str = String(val || "").trim();
+  if (!str || str.includes("1899") || str.includes("1900") || str.includes("1970")) {
+    return format12HourTime(getCairoTimeStr(), lang);
+  }
+  const match = str.match(/(\d{1,2}):(\d{2})/);
   if (match) return format12HourTime(`${match[1].padStart(2, "0")}:${match[2]}`, lang);
   return format12HourTime(getCairoTimeStr(), lang);
 }
@@ -1925,22 +1929,27 @@ function formatPeriodicAlertReport(data, lang, curr, tzKey) {
   const f = (v, usd) => fmtFlow(v, curr, lang, rate, usd);
   const iconSign = v => (Number(v) >= 0 ? "🟢" : "🔴");
 
-  const egxTime = getEgxSnapshotTime(data, lang);
-  const egxTag = egxTime ? ` [${egxTime}]` : "";
+  const isToday = s.sessionDate === cairoToday();
+  const egxDateLabel = isToday
+    ? T(`Today's Session (${s.sessionDate})`, `جلسة اليوم (${s.sessionDate})`)
+    : T(`Last Close (${s.sessionDate})`, `إقفال جلسة ${s.sessionDate}`);
+  const egxTime = isToday ? getEgxSnapshotTime(data, lang) : format12HourTime("14:30", lang);
+  const egxTimeTag = egxTime ? ` • ${egxTime}` : "";
+  const mLabel = getMonthLabel(monthly.monthPrefix, lang);
 
   // 1. البورصة: صافي تعاملات غير المصريين للجلسة الحالية
-  let egxBlock = `🏛 <b>${T("EGX Non-Egyptian Net Flows", "صافي تعاملات البورصة (غير المصريين)")}${egxTag}:</b>\n`
+  let egxBlock = `🏛 <b>${T("EGX Non-Egyptian Net Flows", "صافي تعاملات البورصة (غير المصريين)")} [${egxDateLabel}${egxTimeTag}]:</b>\n`
     + `${ltr}▫️ ${T("Foreigners Net", "صافي الأجانب")}: <code>${f(s.foNet)}</code> ${iconSign(s.foNet)}\n`
     + `${ltr}▫️ ${T("Arabs Net", "صافي العرب")}: <code>${f(s.arNet)}</code> ${iconSign(s.arNet)}\n`
     + `${ltr}▪️ <b>${T("Total Non-Egyptian (Today)", "إجمالي غير المصريين (اليوم)")}:</b> <code>${f(arFo)}</code> ${iconSign(arFo)}\n\n`
     + `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n`
-    + `🗓 <b>【 ${T(`WEEKLY CUMULATIVE (${weekly.count} Sessions)`, `التراكمي الأسبوعي (${weekly.count} جلسات)`)} 】</b>\n`
+    + `🗓 <b>【 ${T(`WEEKLY CUMULATIVE (${weekly.count} Sessions • thru ${s.sessionDate})`, `التراكمي الأسبوعي (${weekly.count} جلسات • حتى إقفال ${s.sessionDate})`)} 】</b>\n`
     + `${ltr}▫️ ${T("Foreigners Net (W)", "صافي الأجانب (أسبوعي)")}: <code>${f(weekly.foNet, weekly.foUsd)}</code> ${iconSign(weekly.foNet)}\n`
     + `${ltr}▫️ ${T("Arabs Net (W)", "صافي العرب (أسبوعي)")}: <code>${f(weekly.arNet, weekly.arUsd)}</code> ${iconSign(weekly.arNet)}\n`
     + `${ltr}▪️ <b>${T("Total Non-Egyptian (W)", "مجموع غير المصريين (أسبوعي)")}:</b> <code>${f(weekly.arFoNet, weekly.arFoUsd)}</code> ${iconSign(weekly.arFoNet)}\n`
     + `┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n`
     + `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n`
-    + `📈 <b>【 ${T(`MONTHLY CUMULATIVE (${monthly.count} Sessions)`, `التراكمي الشهري (${monthly.count} جلسات)`)} 】</b>\n`
+    + `📈 <b>【 ${T(`MONTHLY CUMULATIVE (${monthly.count} Sessions • ${mLabel})`, `التراكمي الشهري (${monthly.count} جلسات • ${mLabel})`)} 】</b>\n`
     + `${ltr}▫️ ${T("Foreigners Net (M)", "صافي الأجانب (شهري)")}: <code>${f(monthly.foNet, monthly.foUsd)}</code> ${iconSign(monthly.foNet)}\n`
     + `${ltr}▫️ ${T("Arabs Net (M)", "صافي العرب (شهري)")}: <code>${f(monthly.arNet, monthly.arUsd)}</code> ${iconSign(monthly.arNet)}\n`
     + `${ltr}▪️ <b>${T("Total Non-Egyptian (M)", "مجموع غير المصريين (شهري)")}:</b> <code>${f(monthly.arFoNet, monthly.arFoUsd)}</code> ${iconSign(monthly.arFoNet)}\n`
@@ -1951,22 +1960,21 @@ function formatPeriodicAlertReport(data, lang, curr, tzKey) {
   const cbeSell = Number(data.cbe_usd_sell) || 0;
   const topBank = (data.banks && data.banks[0]) || null;
   const buyL = T("Buy", "شراء"), sellL = T("Sell", "بيع");
-  const cbeTime = formatCleanTime(data.cbe_updated_at || extractTimeFromTimestamp(data.timestamp), lang);
+  const cbeTime = formatCleanTime(data.cbe_updated_at || data.timestamp, lang);
   const topBankTime = topBank?.updated_at ? ` [${formatCleanTime(topBank.updated_at, lang)}]` : "";
 
-  let usdBlock = `💵 <b>${T("USD Exchange Rates", "أسعار صرف الدولار")}:</b>\n`
-    + `${ltr}▫️ ${T("Central Bank (CBE)", "البنك المركزي")}: ${buyL} <code>${cbeBuy.toFixed(2)}</code> • ${sellL} <code>${cbeSell.toFixed(2)}</code> [${cbeTime}]\n`;
+  let usdBlock = `💵 <b>${T("USD Exchange Rates", "أسعار صرف الدولار")} [${T("CBE Snapshot", "لقطة البنك المركزي")}: ${cbeTime}]:</b>\n`
+    + `${ltr}▫️ ${T("Central Bank (CBE)", "البنك المركزي")}: ${buyL} <code>${cbeBuy.toFixed(2)}</code> • ${sellL} <code>${cbeSell.toFixed(2)}</code>\n`;
   if (topBank && Number(topBank.buy) > 0) {
     usdBlock += `${ltr}▫️ ${T("Top Buy Bank", "أعلى بنك شراء")}: ${bn(topBank.bank, lang)} • <code>${Number(topBank.buy).toFixed(2)}</code> ${T("EGP", "ج.م")}${topBankTime}\n`;
   }
 
   // 3. العملات الرئيسية مع توقيت لقطة الأسعار
-  const bankSnapshot = getBankSnapshotTime(data, lang);
-  const fxSnap = bankSnapshot ? ` [${bankSnapshot}]` : "";
+  const ratesTime = formatCleanTime(data.timestamp, lang);
   const rates = Array.isArray(data.rates) ? data.rates : [];
   const getFx = code => rates.find(r => (r.code || "").toUpperCase() === code);
   const fxList = ["EUR", "SAR", "AED", "KWD", "GBP"];
-  let fxBlock = `💱 <b>${T("Major Currencies", "العملات الرئيسية")}${fxSnap}:</b>\n`;
+  let fxBlock = `💱 <b>${T("Major Currencies (vs EGP)", "العملات الرئيسية مقابل الجنيه")} [${T("Banks Snapshot", "لقطة البنوك")}: ${ratesTime}]:</b>\n`;
   fxList.forEach(code => {
     const item = getFx(code);
     if (!item) return;
@@ -1981,7 +1989,8 @@ function formatPeriodicAlertReport(data, lang, curr, tzKey) {
   const comms = data.live_commodities || [];
   const getC = code => comms.find(c => c.code === code) || rates.find(r => r.code === code);
   const g21 = getC("GOLD21"), gCoin = getC("GOLDC"), gOunce = getC("GOLD_OUNCE"), silv = getC("SILVER");
-  let goldBlock = `🪙 <b>${T("Precious Metals", "الذهب والمعادن")}:</b>\n`;
+  const commsTime = formatCleanTime(comms[0]?.updated_at || data.timestamp, lang);
+  let goldBlock = `🪙 <b>${T("Precious Metals", "الذهب والمعادن")} [${T("Sagha & Spot Snapshot", "لقطة الصاغة والبورصات العالمية")} • ${commsTime}]:</b>\n`;
   if (g21) {
     goldBlock += `${ltr}🥇 ${T("Gold 21K (Gram)", "ذهب عيار 21")}: <code>${fmtAssetPrice(g21, curr, lang, usdRate)}</code>\n`;
   }
@@ -1997,7 +2006,7 @@ function formatPeriodicAlertReport(data, lang, curr, tzKey) {
 
   // 5. الطاقة والكريبتو (متعدد العملات)
   const brent = getC("BRENT"), wti = getC("WTI"), btc = getC("BTC"), eth = getC("ETH");
-  let commBlock = `🛢️ <b>${T("Energy & Crypto", "الطاقة والكريبتو")} [${T("Live", "لحظي")}]:</b>\n`;
+  let commBlock = `🛢️ <b>${T("Energy & Crypto", "الطاقة والكريبتو")} [${T("Global Live Feeds", "شاشات التداول العالمية")} • ${commsTime}]:</b>\n`;
   if (brent || wti) {
     if (brent) commBlock += `${ltr}🛢️ ${T("Brent", "خام برنت")}: <code>${fmtAssetPrice(brent, curr, lang, usdRate)}</code>\n`;
     if (wti) commBlock += `${ltr}🛢️ ${T("WTI Texas", "خام تكساس")}: <code>${fmtAssetPrice(wti, curr, lang, usdRate)}</code>\n`;
