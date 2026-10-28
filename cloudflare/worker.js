@@ -1676,15 +1676,9 @@ function fmtAssetPrice(item, curr, lang, usdRate) {
   const egpDec = eP >= 500 ? 0 : 2;
 
   if (curr === "usd") {
-    if (uP > 0) {
-      return eP > 0 ? `$${fmtNum(uP, usdDec)} <i>(${fmtNum(eP, egpDec)}${egpSuffix})</i>` : `$${fmtNum(uP, usdDec)}`;
-    }
-    return eP > 0 ? `${fmtNum(eP, egpDec)}${egpSuffix}` : "N/A ⚠️";
+    return uP > 0 ? `$${fmtNum(uP, usdDec)}` : (eP > 0 ? `${fmtNum(eP, egpDec)}${egpSuffix}` : "N/A ⚠️");
   } else {
-    if (eP > 0) {
-      return uP > 0 ? `${fmtNum(eP, egpDec)}${egpSuffix} <i>(~$${fmtNum(uP, usdDec)})</i>` : `${fmtNum(eP, egpDec)}${egpSuffix}`;
-    }
-    return uP > 0 ? `$${fmtNum(uP, usdDec)}` : "N/A ⚠️";
+    return eP > 0 ? `${fmtNum(eP, egpDec)}${egpSuffix}` : (uP > 0 ? `$${fmtNum(uP, usdDec)}` : "N/A ⚠️");
   }
 }
 
@@ -1776,12 +1770,10 @@ function formatCurrenciesReport(data, lang, tz) {
     assets.forEach(r => {
       const isLocalGold = ["GOLD21", "GOLD24", "GOLD18", "GOLDC"].includes(r.code);
       if (isLocalGold) {
-        const uSub = r.uP > 0 ? ` (~$${fmtNum(r.uP, 2)})` : "";
-        txt += `${ltr}${r.flag}<b>${escapeHtml(r.name)}</b> [<code>${r.code}</code>]: <code>${r.eP > 0 ? fmtNum(r.eP) : "N/A"}</code> ${unit}${uSub}\n`;
+        txt += `${ltr}${r.flag}<b>${escapeHtml(r.name)}</b> [<code>${r.code}</code>]: <code>${r.eP > 0 ? fmtNum(r.eP) : "N/A"}</code> ${unit}\n`;
       } else {
         const uPStr = r.uP > 0 ? `$${fmtNum(r.uP, r.uP >= 1000 ? 0 : 2)}` : "N/A";
-        const eSub = r.eP > 0 ? ` (~${fmtNum(r.eP, 0)} ${unit})` : "";
-        txt += `${ltr}${r.flag}<b>${escapeHtml(r.name)}</b> [<code>${r.code}</code>]: <code>${uPStr}</code>${eSub}\n`;
+        txt += `${ltr}${r.flag}<b>${escapeHtml(r.name)}</b> [<code>${r.code}</code>]: <code>${uPStr}</code>\n`;
       }
     });
   }
