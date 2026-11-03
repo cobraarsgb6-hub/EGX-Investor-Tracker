@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-11-03 15:31:15",
-  "usd_rate": 55.44,
-  "cbe_usd_buy": 55.37,
-  "cbe_usd_sell": 55.51,
+  "timestamp": "2026-11-03 15:46:28",
+  "usd_rate": 55.35,
+  "cbe_usd_buy": 55.28,
+  "cbe_usd_sell": 55.42,
   "archive": [
     {
       "date": "2026-11-03",
@@ -443,324 +443,324 @@
       "name": "دولار أمريكي",
       "code": "USD",
       "usd_price": 1.0,
-      "egp_price": 55.44,
-      "buy": 55.37,
-      "sell": 55.51,
-      "rate_egp": 55.44,
+      "egp_price": 55.35,
+      "buy": 55.28,
+      "sell": 55.42,
+      "rate_egp": 55.35,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "يورو أوروبي",
       "code": "EUR",
-      "usd_price": 1.1207,
-      "egp_price": 62.13,
-      "buy": 62.05,
-      "sell": 62.22,
-      "rate_egp": 62.13,
+      "usd_price": 1.118,
+      "egp_price": 61.88,
+      "buy": 61.8,
+      "sell": 61.97,
+      "rate_egp": 61.88,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "جنيه إسترليني",
       "code": "GBP",
-      "usd_price": 1.3413,
-      "egp_price": 74.36,
-      "buy": 74.26,
-      "sell": 74.45,
-      "rate_egp": 74.36,
+      "usd_price": 1.3411,
+      "egp_price": 74.23,
+      "buy": 74.13,
+      "sell": 74.34,
+      "rate_egp": 74.23,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "ريال سعودي",
       "code": "SAR",
-      "usd_price": 0.2664,
-      "egp_price": 14.77,
-      "buy": 14.75,
-      "sell": 14.79,
-      "rate_egp": 14.77,
+      "usd_price": 0.2665,
+      "egp_price": 14.75,
+      "buy": 14.73,
+      "sell": 14.77,
+      "rate_egp": 14.75,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "درهم إماراتي",
       "code": "AED",
-      "usd_price": 0.2722,
-      "egp_price": 15.09,
-      "buy": 15.07,
-      "sell": 15.11,
-      "rate_egp": 15.09,
+      "usd_price": 0.2723,
+      "egp_price": 15.07,
+      "buy": 15.05,
+      "sell": 15.09,
+      "rate_egp": 15.07,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "ريال قطري",
       "code": "QAR",
-      "usd_price": 0.2744,
-      "egp_price": 15.21,
-      "buy": 15.18,
-      "sell": 15.24,
-      "rate_egp": 15.21,
+      "usd_price": 0.2743,
+      "egp_price": 15.18,
+      "buy": 15.15,
+      "sell": 15.21,
+      "rate_egp": 15.18,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "دينار كويتي",
       "code": "KWD",
-      "usd_price": 3.2449,
-      "egp_price": 179.9,
-      "buy": 179.65,
-      "sell": 180.15,
-      "rate_egp": 179.9,
+      "usd_price": 3.2464,
+      "egp_price": 179.69,
+      "buy": 179.43,
+      "sell": 179.94,
+      "rate_egp": 179.69,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "دينار بحريني",
       "code": "BHD",
-      "usd_price": 2.6501,
-      "egp_price": 146.92,
-      "buy": 146.69,
-      "sell": 147.15,
-      "rate_egp": 146.92,
+      "usd_price": 2.6508,
+      "egp_price": 146.72,
+      "buy": 146.48,
+      "sell": 146.97,
+      "rate_egp": 146.72,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "ين ياباني (100)",
       "code": "JPY",
-      "usd_price": 0.6331,
-      "egp_price": 35.1,
-      "buy": 35.05,
-      "sell": 35.15,
-      "rate_egp": 35.1,
+      "usd_price": 0.632,
+      "egp_price": 34.98,
+      "buy": 34.94,
+      "sell": 35.03,
+      "rate_egp": 34.98,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "دينار أردني",
       "code": "JOD",
-      "usd_price": 1.4104,
-      "egp_price": 78.19,
-      "buy": 77.98,
-      "sell": 78.4,
-      "rate_egp": 78.19,
+      "usd_price": 1.4105,
+      "egp_price": 78.07,
+      "buy": 77.86,
+      "sell": 78.28,
+      "rate_egp": 78.07,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "ريال عماني",
       "code": "OMR",
-      "usd_price": 2.5972,
-      "egp_price": 143.99,
-      "buy": 143.8,
-      "sell": 144.17,
-      "rate_egp": 143.99,
+      "usd_price": 2.5973,
+      "egp_price": 143.76,
+      "buy": 143.58,
+      "sell": 143.95,
+      "rate_egp": 143.76,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "فرنك سويسري",
       "code": "CHF",
-      "usd_price": 1.219,
-      "egp_price": 67.58,
-      "buy": 67.48,
-      "sell": 67.69,
-      "rate_egp": 67.58,
+      "usd_price": 1.2206,
+      "egp_price": 67.56,
+      "buy": 67.45,
+      "sell": 67.66,
+      "rate_egp": 67.56,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "كرونة سويدية",
       "code": "SEK",
-      "usd_price": 0.1025,
-      "egp_price": 5.68,
-      "buy": 5.67,
-      "sell": 5.69,
-      "rate_egp": 5.68,
+      "usd_price": 0.1021,
+      "egp_price": 5.65,
+      "buy": 5.64,
+      "sell": 5.66,
+      "rate_egp": 5.65,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "كرونة نرويجية",
       "code": "NOK",
-      "usd_price": 0.1079,
-      "egp_price": 5.98,
-      "buy": 5.97,
-      "sell": 5.99,
-      "rate_egp": 5.98,
+      "usd_price": 0.1084,
+      "egp_price": 6.0,
+      "buy": 5.99,
+      "sell": 6.0,
+      "rate_egp": 6.0,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "كرونة دانماركية",
       "code": "DKK",
-      "usd_price": 0.1499,
-      "egp_price": 8.31,
-      "buy": 8.3,
-      "sell": 8.32,
-      "rate_egp": 8.31,
+      "usd_price": 0.1496,
+      "egp_price": 8.28,
+      "buy": 8.27,
+      "sell": 8.29,
+      "rate_egp": 8.28,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "يوان صيني",
       "code": "CNY",
-      "usd_price": 0.1504,
-      "egp_price": 8.34,
-      "buy": 8.33,
-      "sell": 8.35,
-      "rate_egp": 8.34,
+      "usd_price": 0.15,
+      "egp_price": 8.3,
+      "buy": 8.29,
+      "sell": 8.31,
+      "rate_egp": 8.3,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "دولار كندي",
       "code": "CAD",
-      "usd_price": 0.7154,
+      "usd_price": 0.7165,
       "egp_price": 39.66,
       "buy": 39.61,
-      "sell": 39.72,
+      "sell": 39.71,
       "rate_egp": 39.66,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رئيسية",
       "name": "دولار أسترالي",
       "code": "AUD",
-      "usd_price": 0.7006,
-      "egp_price": 38.84,
-      "buy": 38.78,
-      "sell": 38.89,
-      "rate_egp": 38.84,
+      "usd_price": 0.6979,
+      "egp_price": 38.63,
+      "buy": 38.58,
+      "sell": 38.69,
+      "rate_egp": 38.63,
       "change": "+0.00%",
-      "updated_at": "15:31:15"
+      "updated_at": "15:46:28"
     },
     {
       "category": "ذهب ومعادن",
       "name": "ذهب عيار 21",
       "code": "GOLD21",
-      "usd_price": 110.21,
-      "egp_price": 6110.0,
-      "buy": 6048.9,
-      "sell": 6110.0,
-      "rate_egp": 6110.0,
-      "change": "0.391%",
-      "updated_at": "15:31:15"
+      "usd_price": 110.39,
+      "egp_price": 6110.03,
+      "buy": 6048.93,
+      "sell": 6110.03,
+      "rate_egp": 6110.03,
+      "change": "0.491%",
+      "updated_at": "15:46:28"
     },
     {
       "category": "ذهب ومعادن",
       "name": "ذهب عيار 24",
       "code": "GOLD24",
-      "usd_price": 125.96,
-      "egp_price": 6983.0,
-      "buy": 6913.17,
-      "sell": 6983.0,
-      "rate_egp": 6983.0,
-      "change": "0.399%",
-      "updated_at": "15:31:15"
+      "usd_price": 126.17,
+      "egp_price": 6983.37,
+      "buy": 6913.54,
+      "sell": 6983.37,
+      "rate_egp": 6983.37,
+      "change": "0.309%",
+      "updated_at": "15:46:28"
     },
     {
       "category": "ذهب ومعادن",
       "name": "جنيه الذهب",
       "code": "GOLDC",
-      "usd_price": 882.43,
-      "egp_price": 48922.0,
-      "buy": 48432.78,
-      "sell": 48922.0,
-      "rate_egp": 48922.0,
-      "change": "0.071%",
-      "updated_at": "15:31:15"
+      "usd_price": 884.75,
+      "egp_price": 48971.0,
+      "buy": 48481.29,
+      "sell": 48971.0,
+      "rate_egp": 48971.0,
+      "change": "0.029%",
+      "updated_at": "15:46:28"
     },
     {
       "category": "ذهب ومعادن",
       "name": "أونصة الذهب (Gold Ounce)",
       "code": "GOLD_OUNCE",
-      "usd_price": 3911.7,
-      "egp_price": 216864.65,
-      "buy": 3911.7,
-      "sell": 3911.7,
-      "rate_egp": 216864.65,
-      "change": "-0.89%",
-      "updated_at": "15:31:15"
+      "usd_price": 3915.81,
+      "egp_price": 216740.08,
+      "buy": 3915.81,
+      "sell": 3915.81,
+      "rate_egp": 216740.08,
+      "change": "-0.79%",
+      "updated_at": "15:46:28"
     },
     {
       "category": "ذهب ومعادن",
       "name": "أونصة الفضة (Silver Ounce)",
       "code": "SILVER",
-      "usd_price": 49.15,
-      "egp_price": 2724.88,
-      "buy": 49.15,
-      "sell": 49.15,
-      "rate_egp": 2724.88,
-      "change": "-2.97%",
-      "updated_at": "15:31:15"
+      "usd_price": 49.32,
+      "egp_price": 2729.86,
+      "buy": 49.32,
+      "sell": 49.32,
+      "rate_egp": 2729.86,
+      "change": "-2.63%",
+      "updated_at": "15:46:28"
     },
     {
       "category": "طاقة وبترول",
       "name": "نفط برنت (خام)",
       "code": "BRENT",
-      "usd_price": 105.0,
-      "egp_price": 5821.2,
-      "buy": 105.0,
-      "sell": 105.0,
-      "rate_egp": 5821.2,
-      "change": "+0.78%",
-      "updated_at": "15:31:15"
+      "usd_price": 105.16,
+      "egp_price": 5820.61,
+      "buy": 105.16,
+      "sell": 105.16,
+      "rate_egp": 5820.61,
+      "change": "+0.93%",
+      "updated_at": "15:46:28"
     },
     {
       "category": "طاقة وبترول",
       "name": "خام غرب تكساس (WTI)",
       "code": "WTI",
-      "usd_price": 97.16,
-      "egp_price": 5386.55,
-      "buy": 97.16,
-      "sell": 97.16,
-      "rate_egp": 5386.55,
-      "change": "+0.92%",
-      "updated_at": "15:31:15"
+      "usd_price": 97.33,
+      "egp_price": 5387.22,
+      "buy": 97.33,
+      "sell": 97.33,
+      "rate_egp": 5387.22,
+      "change": "+1.10%",
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رقمية",
       "name": "بتكوين",
       "code": "BTC",
-      "usd_price": 77328.01,
-      "egp_price": 4287064.87,
-      "buy": 77328.01,
-      "sell": 77328.01,
-      "rate_egp": 4287064.87,
-      "change": "+0.67%",
-      "updated_at": "15:31:15"
+      "usd_price": 77427.54,
+      "egp_price": 4285614.34,
+      "buy": 77427.54,
+      "sell": 77427.54,
+      "rate_egp": 4285614.34,
+      "change": "+0.80%",
+      "updated_at": "15:46:28"
     },
     {
       "category": "عملات رقمية",
       "name": "إيثريوم",
       "code": "ETH",
-      "usd_price": 2280.78,
-      "egp_price": 126446.44,
-      "buy": 2280.78,
-      "sell": 2280.78,
-      "rate_egp": 126446.44,
-      "change": "+1.22%",
-      "updated_at": "15:31:15"
+      "usd_price": 2283.6,
+      "egp_price": 126397.26,
+      "buy": 2283.6,
+      "sell": 2283.6,
+      "rate_egp": 126397.26,
+      "change": "+1.35%",
+      "updated_at": "15:46:28"
     }
   ],
   "banks": [
@@ -769,35 +769,21 @@
       "buy": 55.41,
       "sell": 55.51,
       "avg": 55.46,
-      "updated_at": "14:30"
-    },
-    {
-      "bank": "البنك المركزي المصري (CBE)",
-      "buy": 55.37,
-      "sell": 55.51,
-      "avg": 55.44,
-      "updated_at": "الرسمي"
+      "updated_at": "14:45"
     },
     {
       "bank": "المصرف المتحد (UB)",
       "buy": 55.36,
       "sell": 55.46,
       "avg": 55.41,
-      "updated_at": "14:30"
-    },
-    {
-      "bank": "بنك فيصل (Faisal)",
-      "buy": 55.35,
-      "sell": 55.45,
-      "avg": 55.4,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "قناة السويس (SCB)",
       "buy": 55.35,
       "sell": 55.45,
       "avg": 55.4,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "التنمية الصناعية (IDB)",
@@ -811,140 +797,154 @@
       "buy": 55.33,
       "sell": 55.43,
       "avg": 55.38,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "بنك الشركة المصرفية (SAIB)",
       "buy": 55.31,
       "sell": 55.41,
       "avg": 55.36,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "الأهلي الكويتي (ABK)",
       "buy": 55.3,
       "sell": 55.4,
       "avg": 55.35,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "بنك نكست (NXT)",
       "buy": 55.3,
       "sell": 55.4,
       "avg": 55.35,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "التعمير والإسكان (HDB)",
       "buy": 55.3,
       "sell": 55.4,
       "avg": 55.35,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "بنك بيت التمويل الكويتي (KFH)",
       "buy": 55.3,
       "sell": 55.4,
       "avg": 55.35,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "الأهلي المصري (NBE)",
       "buy": 55.29,
       "sell": 55.39,
       "avg": 55.34,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "كريدي أجريكول (CA)",
       "buy": 55.29,
       "sell": 55.39,
       "avg": 55.34,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "البركة (Al Baraka)",
       "buy": 55.29,
       "sell": 55.39,
       "avg": 55.34,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "المصرف العربي (AIB)",
       "buy": 55.29,
       "sell": 55.39,
       "avg": 55.34,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "التجاري الدولي (CIB)",
       "buy": 55.29,
       "sell": 55.39,
       "avg": 55.34,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "بنك مصر (BM)",
       "buy": 55.29,
       "sell": 55.39,
       "avg": 55.34,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "بنك الإسكندرية (ALEXBANK)",
       "buy": 55.29,
       "sell": 55.39,
       "avg": 55.34,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
+    },
+    {
+      "bank": "بنك فيصل (Faisal)",
+      "buy": 55.29,
+      "sell": 55.39,
+      "avg": 55.34,
+      "updated_at": "14:45"
     },
     {
       "bank": "الكويت الوطني (NBK)",
       "buy": 55.29,
       "sell": 55.39,
       "avg": 55.34,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "العربي الأفريقي (AAIB)",
       "buy": 55.29,
       "sell": 55.39,
       "avg": 55.34,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "قطر الوطني (QNB Alahli)",
       "buy": 55.29,
       "sell": 55.39,
       "avg": 55.34,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
+    },
+    {
+      "bank": "البنك المركزي المصري (CBE)",
+      "buy": 55.28,
+      "sell": 55.42,
+      "avg": 55.35,
+      "updated_at": "الرسمي"
     },
     {
       "bank": "المصري الخليجي (EG Bank)",
       "buy": 55.28,
       "sell": 55.38,
       "avg": 55.33,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "العقاري المصري العربي (EALB)",
       "buy": 55.28,
       "sell": 55.38,
       "avg": 55.33,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "أبوظبي اﻷول (FABMISR)",
       "buy": 55.27,
       "sell": 55.37,
       "avg": 55.32,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     },
     {
       "bank": "أبوظبي التجاري (ADCB)",
       "buy": 55.25,
       "sell": 55.35,
       "avg": 55.3,
-      "updated_at": "14:30"
+      "updated_at": "14:45"
     }
   ],
   "latest_egx": {
