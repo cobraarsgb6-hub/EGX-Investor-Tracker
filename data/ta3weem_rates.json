@@ -1,9 +1,9 @@
 {
-  "cached_at": 1794916861.183033,
-  "ta3weem_scraped_at": 1794916861.183033,
-  "updated_at": "2026-11-17 12:01:04",
+  "cached_at": 1794917797.6788032,
+  "ta3weem_scraped_at": 1794917797.6788032,
+  "updated_at": "2026-11-17 12:16:40",
   "banks_fresh": true,
-  "banks_scraped_at_str": "15:01",
+  "banks_scraped_at_str": "15:16",
   "source": "البنك المركزي المصري (CBE) + منصات الطاقة والكريبتو العالمية",
   "source_url": "https://www.cbe.org.eg/ar",
   "cbe_official": {
@@ -164,7 +164,7 @@
       "avg": 53.75,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:01"
+      "fetched_at": "2026-11-17 12:16:38"
     },
     {
       "code": "EUR",
@@ -182,7 +182,7 @@
       "avg": 59.11,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:02"
+      "fetched_at": "2026-11-17 12:16:38"
     },
     {
       "code": "GBP",
@@ -200,7 +200,7 @@
       "avg": 70.87,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:02"
+      "fetched_at": "2026-11-17 12:16:38"
     },
     {
       "code": "SAR",
@@ -218,7 +218,7 @@
       "avg": 14.28,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:02"
+      "fetched_at": "2026-11-17 12:16:38"
     },
     {
       "code": "AED",
@@ -236,7 +236,7 @@
       "avg": 14.62,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:02"
+      "fetched_at": "2026-11-17 12:16:38"
     },
     {
       "code": "QAR",
@@ -254,7 +254,7 @@
       "avg": 14.36,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:02"
+      "fetched_at": "2026-11-17 12:16:38"
     },
     {
       "code": "KWD",
@@ -267,12 +267,12 @@
       "sell": 174.1,
       "cbe_buy": 173.6,
       "cbe_sell": 174.1,
-      "best_buy": 174.51,
+      "best_buy": 174.29,
       "best_sell": 174.1,
       "avg": 164.21,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:02"
+      "fetched_at": "2026-11-17 12:16:39"
     },
     {
       "code": "BHD",
@@ -286,11 +286,11 @@
       "cbe_buy": 142.11,
       "cbe_sell": 142.54,
       "best_buy": 142.35,
-      "best_sell": 142.53,
+      "best_sell": 142.56,
       "avg": 141.52,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:39"
     },
     {
       "code": "JPY",
@@ -304,11 +304,11 @@
       "cbe_buy": 33.6,
       "cbe_sell": 33.69,
       "best_buy": 35.0,
-      "best_sell": 33.77,
-      "avg": 33.81,
+      "best_sell": 33.79,
+      "avg": 33.82,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:39"
     },
     {
       "code": "JOD",
@@ -326,7 +326,7 @@
       "avg": 75.6,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:39"
     },
     {
       "code": "OMR",
@@ -341,10 +341,10 @@
       "cbe_sell": 139.62,
       "best_buy": 138.82,
       "best_sell": 139.6,
-      "avg": 138.92,
+      "avg": 138.95,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:39"
     },
     {
       "code": "CHF",
@@ -362,7 +362,7 @@
       "avg": 60.95,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:39"
     },
     {
       "code": "SEK",
@@ -380,7 +380,7 @@
       "avg": 5.35,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:39"
     },
     {
       "code": "NOK",
@@ -398,7 +398,7 @@
       "avg": 5.62,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:40"
     },
     {
       "code": "DKK",
@@ -416,7 +416,7 @@
       "avg": 7.96,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:39"
     },
     {
       "code": "CNY",
@@ -434,7 +434,7 @@
       "avg": 8.15,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:39"
     },
     {
       "code": "CAD",
@@ -452,7 +452,7 @@
       "avg": 35.46,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:40"
     },
     {
       "code": "AUD",
@@ -470,27 +470,27 @@
       "avg": 36.07,
       "source": "البنك المركزي المصري (CBE) عبر Ta3weem",
       "change": "+0.00%",
-      "fetched_at": "2026-11-17 12:01:03"
+      "fetched_at": "2026-11-17 12:16:40"
     }
   ],
   "gold": [
     {
       "name": "ذهب عيار 21",
-      "rate": 5890.1,
-      "rate_formatted": "5,890.10",
-      "change": "0.149%"
+      "rate": 5889.0,
+      "rate_formatted": "5,889.00",
+      "change": "0.153%"
     },
     {
       "name": "ذهب عيار 24",
-      "rate": 6731.53,
-      "rate_formatted": "6,731.53",
-      "change": "0.199%"
+      "rate": 6731.0,
+      "rate_formatted": "6,731.00",
+      "change": "0.164%"
     },
     {
       "name": "جنيه الذهب",
-      "rate": 47277.0,
-      "rate_formatted": "47,277.00",
-      "change": "0.465%"
+      "rate": 47063.0,
+      "rate_formatted": "47,063.00",
+      "change": "0.011%"
     }
   ],
   "banks": [
@@ -503,178 +503,178 @@
     },
     {
       "bank": "الأهلي المصري (NBE)",
-      "buy": 53.68,
-      "sell": 53.78,
-      "avg": 53.73,
-      "updated_at": "14:00"
+      "buy": 53.67,
+      "sell": 53.77,
+      "avg": 53.72,
+      "updated_at": "14:15"
     },
     {
       "bank": "كريدي أجريكول (CA)",
       "buy": 53.69,
       "sell": 53.79,
       "avg": 53.74,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "أبوظبي التجاري (ADCB)",
       "buy": 53.6,
       "sell": 53.7,
       "avg": 53.65,
-      "updated_at": "14:00"
+      "updated_at": "14:12"
     },
     {
       "bank": "أبوظبي الإسلامي (ADIB)",
       "buy": 53.65,
       "sell": 53.75,
       "avg": 53.7,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "الأهلي الكويتي (ABK)",
-      "buy": 53.67,
-      "sell": 53.77,
-      "avg": 53.72,
-      "updated_at": "14:00"
+      "buy": 53.75,
+      "sell": 53.85,
+      "avg": 53.8,
+      "updated_at": "14:15"
     },
     {
       "bank": "البركة (Al Baraka)",
       "buy": 53.78,
       "sell": 53.88,
       "avg": 53.83,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "المصرف العربي (AIB)",
-      "buy": 53.68,
-      "sell": 53.78,
-      "avg": 53.73,
-      "updated_at": "14:00"
+      "buy": 53.67,
+      "sell": 53.77,
+      "avg": 53.72,
+      "updated_at": "14:15"
     },
     {
       "bank": "التجاري الدولي (CIB)",
       "buy": 53.68,
       "sell": 53.78,
       "avg": 53.73,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "بنك نكست (NXT)",
       "buy": 53.65,
       "sell": 53.75,
       "avg": 53.7,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "بنك مصر (BM)",
-      "buy": 53.72,
-      "sell": 53.82,
-      "avg": 53.77,
-      "updated_at": "14:00"
+      "buy": 53.69,
+      "sell": 53.79,
+      "avg": 53.74,
+      "updated_at": "14:15"
     },
     {
       "bank": "بنك الإسكندرية (ALEXBANK)",
       "buy": 53.78,
       "sell": 53.88,
       "avg": 53.83,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "المصري الخليجي (EG Bank)",
-      "buy": 53.63,
-      "sell": 53.73,
-      "avg": 53.68,
-      "updated_at": "14:00"
+      "buy": 53.67,
+      "sell": 53.77,
+      "avg": 53.72,
+      "updated_at": "14:15"
     },
     {
       "bank": "بنك فيصل (Faisal)",
       "buy": 53.71,
       "sell": 53.81,
       "avg": 53.76,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "التعمير والإسكان (HDB)",
       "buy": 53.65,
       "sell": 53.75,
       "avg": 53.7,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "التنمية الصناعية (IDB)",
       "buy": 53.75,
       "sell": 53.85,
       "avg": 53.8,
-      "updated_at": "13:57"
+      "updated_at": "14:12"
     },
     {
       "bank": "الكويت الوطني (NBK)",
       "buy": 53.73,
       "sell": 53.83,
       "avg": 53.78,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "بنك الشركة المصرفية (SAIB)",
-      "buy": 53.75,
-      "sell": 53.85,
-      "avg": 53.8,
-      "updated_at": "14:00"
+      "buy": 53.68,
+      "sell": 53.78,
+      "avg": 53.73,
+      "updated_at": "14:15"
     },
     {
       "bank": "قناة السويس (SCB)",
       "buy": 53.75,
       "sell": 53.85,
       "avg": 53.8,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "المصرف المتحد (UB)",
       "buy": 53.7,
       "sell": 53.8,
       "avg": 53.75,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "اتش اس بي سي (HSBC)",
       "buy": 53.68,
       "sell": 53.78,
       "avg": 53.73,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "بنك بيت التمويل الكويتي (KFH)",
       "buy": 53.68,
       "sell": 53.78,
       "avg": 53.73,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "العقاري المصري العربي (EALB)",
       "buy": 53.6,
       "sell": 53.7,
       "avg": 53.65,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "العربي الأفريقي (AAIB)",
       "buy": 53.67,
       "sell": 53.77,
       "avg": 53.72,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "أبوظبي اﻷول (FABMISR)",
       "buy": 53.78,
       "sell": 53.88,
       "avg": 53.83,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     },
     {
       "bank": "قطر الوطني (QNB Alahli)",
       "buy": 53.75,
       "sell": 53.85,
       "avg": 53.8,
-      "updated_at": "14:00"
+      "updated_at": "14:15"
     }
   ],
   "crypto": [
@@ -682,23 +682,23 @@
       "name": "بتكوين",
       "code": "BTC",
       "icon": "🪙",
-      "usd_price": 65020.01,
-      "usd_price_formatted": "$65,020.01",
-      "change_24h": "+0.20%",
-      "is_positive": true,
-      "egp_price": 3490924.34,
-      "egp_price_formatted": "3,490,924 ج.م"
+      "usd_price": 64887.17,
+      "usd_price_formatted": "$64,887.17",
+      "change_24h": "-0.00%",
+      "is_positive": false,
+      "egp_price": 3483792.16,
+      "egp_price_formatted": "3,483,792 ج.م"
     },
     {
       "name": "إيثريوم",
       "code": "ETH",
       "icon": "🔷",
-      "usd_price": 1821.84,
-      "usd_price_formatted": "$1,821.84",
-      "change_24h": "+0.06%",
-      "is_positive": true,
-      "egp_price": 97814.59,
-      "egp_price_formatted": "97,815 ج.م"
+      "usd_price": 1815.88,
+      "usd_price_formatted": "$1,815.88",
+      "change_24h": "-0.27%",
+      "is_positive": false,
+      "egp_price": 97494.6,
+      "egp_price_formatted": "97,495 ج.م"
     }
   ],
   "commodities": [
@@ -707,28 +707,28 @@
       "code": "BRENT",
       "icon": "🛢️",
       "unit": "$/برميل",
-      "usd_price": 92.69,
-      "usd_price_formatted": "$92.69",
-      "change_24h": "+0.93%",
+      "usd_price": 92.81,
+      "usd_price_formatted": "$92.81",
+      "change_24h": "+1.06%",
       "is_positive": true,
-      "egp_price": 4976.53,
-      "egp_price_formatted": "4,977 ج.م"
+      "egp_price": 4982.97,
+      "egp_price_formatted": "4,983 ج.م"
     },
     {
       "name": "خام غرب تكساس (WTI)",
       "code": "WTI",
       "icon": "⚡",
       "unit": "$/برميل",
-      "usd_price": 86.1,
-      "usd_price_formatted": "$86.10",
-      "change_24h": "+1.22%",
+      "usd_price": 86.13,
+      "usd_price_formatted": "$86.13",
+      "change_24h": "+1.27%",
       "is_positive": true,
-      "egp_price": 4622.71,
-      "egp_price_formatted": "4,623 ج.م"
+      "egp_price": 4624.32,
+      "egp_price_formatted": "4,624 ج.م"
     }
   ],
-  "gold_ounce": 3868.48,
-  "gold_ounce_change": "+0.31%",
+  "gold_ounce": 3864.95,
+  "gold_ounce_change": "+0.22%",
   "silver": 47.68,
-  "silver_change": "+1.50%"
+  "silver_change": "+1.49%"
 }
