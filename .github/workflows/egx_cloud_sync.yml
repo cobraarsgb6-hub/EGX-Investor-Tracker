@@ -42,7 +42,7 @@ jobs:
         run: |
           python cloud_sync.py
 
-      - name: Commit & Push Updated Archive Database and Data Payloads
+            - name: Commit & Push Updated Archive Database and Data Payloads
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -50,7 +50,9 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "chore(data): auto-persist archive database and market cache [skip ci]"
           for i in 1 2 3 4 5; do
-            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            # Generated data: on conflict keep THIS run's fresh files (-X theirs = our commit during a rebase)
+            if git pull --rebase -X theirs origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
             sleep $((i * 3))
           done
           exit 1
